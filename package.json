@@ -1,0 +1,22 @@
+{
+  "name": "zip-book-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron ZIP book viewer",
+  "main": "dist/main/electron-main.js",
+  "scripts": {
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "dev": "npm run build && node scripts/run-electron.js",
+    "start": "node scripts/run-electron.js"
+  },
+  "dependencies": {
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/yauzl": "^2.10.3",
+    "electron": "^37.0.0",
+    "typescript": "^5.8.2"
+  }
+}

@@ -1,0 +1,47 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' blob: data:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZIP Book Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main id="workspace" class="workspace">
+        <aside class="sidebar">
+          <div id="sidebar-title" class="sidebar-title">파일 목록</div>
+          <div id="sidebar-drag-layer" class="sidebar-drag-layer" aria-hidden="true"></div>
+          <div id="file-tree" class="file-tree"></div>
+        </aside>
+
+        <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="sidebar splitter"></div>
+
+        <section class="content-pane">
+          <div id="global-error" class="global-error"></div>
+
+          <div id="view-launcher" class="view"></div>
+
+          <div id="view-viewer" class="view hidden">
+            <div id="viewer-image" class="viewer-image"></div>
+          </div>
+
+          <div id="view-settings" class="view hidden">
+            <div id="settings-placeholder" class="card"></div>
+          </div>
+        </section>
+      </main>
+
+      <div id="drop-overlay" class="drop-overlay hidden">
+        <div id="drop-overlay-text" class="drop-overlay-text">ZIP 파일을 여기에 놓으세요.</div>
+      </div>
+    </div>
+
+    <script src="./dist/renderer/index.js"></script>
+  </body>
+</html>
+
