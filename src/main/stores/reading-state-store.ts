@@ -84,8 +84,15 @@ export async function upsertRecentItem(input: UpsertRecentInput): Promise<Recent
     lastOpenedAt: nowIso
   };
 
-  const deduplicated = previousItems.filter((item) => item.fileId !== input.fileId);
+  const deduplicated = previousItems.filter((item) => item.fileId !== input.fileId && item.zipPath !== input.zipPath);
   const nextItems = [nextItem, ...deduplicated].slice(0, maxRecentItems);
+  await writeJsonAtomic(getRecentFilePath(), nextItems);
+  return nextItems;
+}
+
+export async function removeRecentItemByZipPath(zipPath: string): Promise<RecentItem[]> {
+  const previousItems = await getRecentItems();
+  const nextItems = previousItems.filter((item) => item.zipPath !== zipPath).slice(0, maxRecentItems);
   await writeJsonAtomic(getRecentFilePath(), nextItems);
   return nextItems;
 }

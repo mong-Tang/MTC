@@ -39,12 +39,22 @@ body {
   height: 100%;
 }
 
+.workspace.sidebar-collapsed {
+  grid-template-columns: 0 0 minmax(0, 1fr);
+}
+
 .sidebar {
   position: relative;
   border-right: 1px solid var(--border);
   padding: 10px 8px;
   overflow: auto;
   min-width: 0;
+}
+
+.workspace.sidebar-collapsed .sidebar {
+  border-right: none;
+  padding: 0;
+  overflow: hidden;
 }
 
 .sidebar-drag-layer {
@@ -66,6 +76,11 @@ body {
   cursor: col-resize;
   background: color-mix(in srgb, var(--border) 50%, transparent);
   transition: background 120ms ease;
+}
+
+.workspace.sidebar-collapsed .splitter {
+  background: transparent;
+  cursor: default;
 }
 
 .splitter:hover,
@@ -431,4 +446,60 @@ body {
   border-radius: 12px;
   font-size: 18px;
   font-weight: 600;
+}
+
+.page-move-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1001;
+  background: color-mix(in srgb, var(--panel) 88%, black 12%);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, white 20%);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.size-adjust-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.size-adjust-modal.hidden {
+  display: none;
+}
+
+.size-adjust-panel {
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 90%, black 10%);
+  padding: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.size-adjust-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.size-adjust-message {
+  margin: 0 0 14px;
+  white-space: pre-line;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.size-adjust-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

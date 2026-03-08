@@ -1,20 +1,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { BrowserWindow, dialog, ipcMain } from 'electron';
+import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
 
 import { AppError } from '../../shared/errors/app-error';
 import type { SerializableAppError } from '../../shared/ipc/ipc-result';
 import type { UpsertRecentInput } from '../../shared/stores/reading-state';
 import en from '../../locales/en.json';
 import ko from '../../locales/ko.json';
+import { applyZipEditInTemp, type ZipEditRequest } from '../services/archive-workflow';
 import { getZipPage, openZip } from '../services/zip-index-service';
-import { getProgress, getRecentItems, setProgress, upsertRecentItem } from '../stores/reading-state-store';
+import { getProgress, getRecentItems, removeRecentItemByZipPath, setProgress, upsertRecentItem } from '../stores/reading-state-store';
 
 interface OpenFileDialogOptions {
   title: string;
   zipFilterName: string;
   imageFilterName: string;
+  defaultPath?: string;
 }
 
 interface SidebarListItem {
@@ -81,6 +83,7 @@ function toSerializableError(error: unknown): SerializableAppError {
   return { code: 'UNKNOWN', message: 'Unknown error.' };
 }
 
+
 async function resolveUniquePath(destinationDirectory: string, baseName: string): Promise<string> {
   const extension = path.extname(baseName);
   const stem = path.basename(baseName, extension);
@@ -126,14 +129,19 @@ export function registerIpcHandlers(): void {
     const title = options?.title ?? '';
     const zipFilterName = options?.zipFilterName ?? '';
     const imageFilterName = options?.imageFilterName ?? '';
+    const filters = [];
+    if (zipFilterName.trim()) {
+      filters.push({ name: zipFilterName, extensions: ['zip'] });
+    }
+    if (imageFilterName.trim()) {
+      filters.push({ name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] });
+    }
 
     const result = await dialog.showOpenDialog({
       title,
+      defaultPath: options?.defaultPath,
       properties: ['openFile'],
-      filters: [
-        { name: zipFilterName, extensions: ['zip'] },
-        { name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] }
-      ]
+      filters
     });
 
     if (result.canceled || result.filePaths.length === 0) {
@@ -209,6 +217,20 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('file:delete', async (_event, targetPath: string) => {
+    try {
+      const targetStat = await fs.stat(targetPath);
+      if (!targetStat.isFile()) {
+        throw new AppError('UNKNOWN', `Target is not a file: ${targetPath}`);
+      }
+
+      await shell.trashItem(targetPath);
+      return { ok: true, data: true } as const;
+    } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
   ipcMain.handle('image:open', async (_event, imagePath: string) => {
     try {
       const extension = path.extname(imagePath).toLowerCase();
@@ -249,6 +271,15 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  ipcMain.handle('zip:edit-pages', async (_event, zipPath: string, request: ZipEditRequest) => {
+    try {
+      const data = await applyZipEditInTemp(zipPath, request);
+      return { ok: true, data } as const;
+    } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
   ipcMain.handle('recent:get', async () => {
     try {
       const data = await getRecentItems();
@@ -261,6 +292,15 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('recent:upsert', async (_event, input: UpsertRecentInput) => {
     try {
       const data = await upsertRecentItem(input);
+      return { ok: true, data } as const;
+    } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
+  ipcMain.handle('recent:remove-by-path', async (_event, zipPath: string) => {
+    try {
+      const data = await removeRecentItemByZipPath(zipPath);
       return { ok: true, data } as const;
     } catch (error) {
       return { ok: false, error: toSerializableError(error) } as const;

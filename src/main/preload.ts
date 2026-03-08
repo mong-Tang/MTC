@@ -9,6 +9,7 @@ interface OpenFileDialogOptions {
   title: string;
   zipFilterName: string;
   imageFilterName: string;
+  defaultPath?: string;
 }
 
 interface I18nDictionaries {
@@ -28,10 +29,23 @@ type MenuAction =
   | 'show-launcher'
   | 'show-viewer'
   | 'show-settings'
+  | 'toggle-folder-list'
+  | 'move-prev-page'
+  | 'move-next-page'
+  | 'move-prev-10-pages'
+  | 'move-next-10-pages'
+  | 'open-prev-book'
+  | 'open-next-book'
+  | 'move-first-page'
+  | 'move-last-page'
   | 'file-copy'
   | 'file-cut'
+  | 'file-delete'
   | 'file-paste'
   | 'file-cancel-transfer'
+  | 'edit-delete-left-page'
+  | 'edit-delete-right-page'
+  | 'edit-insert-after-current-page'
   | 'view-single-page'
   | 'view-double-page'
   | 'image-fit-auto'
@@ -55,6 +69,16 @@ interface ImageOpenResult {
   bytes: number[];
 }
 
+type ZipEditRequest =
+  | { kind: 'delete'; targetEntryName: string }
+  | {
+      kind: 'insert-after';
+      afterEntryName: string;
+      insertFileName: string;
+      insertMimeType: string;
+      insertBytes: number[];
+    };
+
 const api = {
   getI18nDictionaries: () => ipcRenderer.invoke('i18n:get-dictionaries') as Promise<I18nDictionaries>,
   getAppSettings: () => ipcRenderer.invoke('app:get-settings') as Promise<AppSettings>,
@@ -64,6 +88,12 @@ const api = {
   updateRecentMenu: (items: MenuRecentItem[]) => ipcRenderer.send('menu:update-recent-items', items),
   updateFileEditState: (hasTransferClipboard: boolean) =>
     ipcRenderer.send('menu:update-file-edit-state', hasTransferClipboard),
+  updateFileSelectionState: (hasFileSelection: boolean) =>
+    ipcRenderer.send('menu:update-file-selection-state', hasFileSelection),
+  updatePageEditState: (state: { canEditLeftPage: boolean; canEditRightPage: boolean }) =>
+    ipcRenderer.send('menu:update-page-edit-state', state),
+  updateBookNavState: (state: { canOpenPrevBook: boolean; canOpenNextBook: boolean }) =>
+    ipcRenderer.send('menu:update-book-nav-state', state),
   onMenuAction: (listener: (action: MenuAction) => void) => {
     const channel = 'menu:action';
     const handler = (_event: Electron.IpcRendererEvent, action: MenuAction) => listener(action);
@@ -76,14 +106,19 @@ const api = {
   openFolderDialog: (title: string) => ipcRenderer.invoke('folder:open-dialog', title) as Promise<string | null>,
   transferFile: (sourcePath: string, destinationDirectory: string, mode: 'copy' | 'cut') =>
     ipcRenderer.invoke('file:transfer', sourcePath, destinationDirectory, mode) as Promise<IpcResult<string>>,
+  deleteFile: (targetPath: string) => ipcRenderer.invoke('file:delete', targetPath) as Promise<IpcResult<boolean>>,
   listFolderItems: (folderPath: string) => ipcRenderer.invoke('folder:list-items', folderPath) as Promise<IpcResult<SidebarListItem[]>>,
   showFileEditContextMenu: () => ipcRenderer.invoke('menu:popup-file-edit') as Promise<boolean>,
+  showImageContextMenu: () => ipcRenderer.invoke('menu:popup-image-context') as Promise<boolean>,
   openZip: (zipPath: string) => ipcRenderer.invoke('zip:open', zipPath) as Promise<IpcResult<ArchiveOpenResult>>,
   openImage: (imagePath: string) => ipcRenderer.invoke('image:open', imagePath) as Promise<IpcResult<ImageOpenResult>>,
+  editZipPages: (zipPath: string, request: ZipEditRequest) =>
+    ipcRenderer.invoke('zip:edit-pages', zipPath, request) as Promise<IpcResult<{ editedZipPath: string }>>,
   getPage: (zipPath: string, entryName: string) =>
     ipcRenderer.invoke('zip:get-page', zipPath, entryName) as Promise<IpcResult<ArchivePageData>>,
   getRecent: () => ipcRenderer.invoke('recent:get') as Promise<IpcResult<RecentItem[]>>,
   upsertRecent: (input: UpsertRecentInput) => ipcRenderer.invoke('recent:upsert', input) as Promise<IpcResult<RecentItem[]>>,
+  removeRecentByPath: (zipPath: string) => ipcRenderer.invoke('recent:remove-by-path', zipPath) as Promise<IpcResult<RecentItem[]>>,
   getProgress: (fileId: string) => ipcRenderer.invoke('progress:get', fileId) as Promise<IpcResult<number | null>>,
   setProgress: (fileId: string, pageIndex: number) =>
     ipcRenderer.invoke('progress:set', fileId, pageIndex) as Promise<IpcResult<boolean>>,

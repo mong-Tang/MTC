@@ -14,9 +14,9 @@
     <div class="app-shell">
       <main id="workspace" class="workspace">
         <aside class="sidebar">
-          <div id="sidebar-title" class="sidebar-title">파일 목록</div>
-          <div id="sidebar-drag-layer" class="sidebar-drag-layer" aria-hidden="true"></div>
-          <div id="file-tree" class="file-tree"></div>
+          <div id="sidebar-title" class="sidebar-title hidden">파일 목록</div>
+          <div id="sidebar-drag-layer" class="sidebar-drag-layer hidden" aria-hidden="true"></div>
+          <div id="file-tree" class="file-tree hidden"></div>
         </aside>
 
         <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="sidebar splitter"></div>
@@ -38,6 +38,18 @@
 
       <div id="drop-overlay" class="drop-overlay hidden">
         <div id="drop-overlay-text" class="drop-overlay-text">ZIP 파일을 여기에 놓으세요.</div>
+      </div>
+      <div id="page-move-toast" class="page-move-toast hidden" aria-live="polite"></div>
+      <div id="size-adjust-modal" class="size-adjust-modal hidden" role="dialog" aria-modal="true" aria-labelledby="size-adjust-title">
+        <div class="size-adjust-panel">
+          <h2 id="size-adjust-title" class="size-adjust-title"></h2>
+          <div id="size-adjust-message" class="size-adjust-message"></div>
+          <div class="size-adjust-actions">
+            <button id="size-adjust-cancel" type="button" class="secondary-button">취소</button>
+            <button id="size-adjust-original" type="button" class="secondary-button">원본 그대로</button>
+            <button id="size-adjust-confirm" type="button" class="primary-button">확인</button>
+          </div>
+        </div>
       </div>
     </div>
 

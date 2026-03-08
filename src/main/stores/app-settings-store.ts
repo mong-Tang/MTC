@@ -81,6 +81,7 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
       candidate?.imageFitMode === 'height'
         ? candidate.imageFitMode
         : 'auto',
+    showSidebarList: candidate?.showSidebarList === true,
     sidebarWidth:
       typeof candidate?.sidebarWidth === 'number' && Number.isFinite(candidate.sidebarWidth)
         ? Math.min(520, Math.max(180, candidate.sidebarWidth))

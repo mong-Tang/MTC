@@ -61,6 +61,11 @@ interface OpenedImageFile {
   bytes: number[];
 }
 
+interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
 interface FileTransferClipboard {
   sourcePath: string;
   sourceName: string;
@@ -77,10 +82,23 @@ type MenuAction =
   | 'show-launcher'
   | 'show-viewer'
   | 'show-settings'
+  | 'toggle-folder-list'
+  | 'move-prev-page'
+  | 'move-next-page'
+  | 'move-prev-10-pages'
+  | 'move-next-10-pages'
+  | 'open-prev-book'
+  | 'open-next-book'
+  | 'move-first-page'
+  | 'move-last-page'
   | 'file-copy'
   | 'file-cut'
+  | 'file-delete'
   | 'file-paste'
   | 'file-cancel-transfer'
+  | 'edit-delete-left-page'
+  | 'edit-delete-right-page'
+  | 'edit-insert-after-current-page'
   | 'view-single-page'
   | 'view-double-page'
   | 'image-fit-auto'
@@ -171,11 +189,14 @@ interface AppState {
   sidebarWidth: number;
   currentFolderPath: string | null;
   sidebarItems: SidebarListItem[];
+  bookNavItems: SidebarListItem[];
   selectedSidebarItemPath: string | null;
   fileTransferClipboard: FileTransferClipboard | null;
   pageViewMode: PageViewMode;
   imageFitMode: ImageFitMode;
+  showSidebarList: boolean;
   dragDebugText: string;
+  skipRecentSyncOnce: boolean;
 }
 
 const state: AppState = {
@@ -193,11 +214,14 @@ const state: AppState = {
   sidebarWidth: 260,
   currentFolderPath: null,
   sidebarItems: [],
+  bookNavItems: [],
   selectedSidebarItemPath: null,
   fileTransferClipboard: null,
   pageViewMode: 'single',
   imageFitMode: 'auto',
-  dragDebugText: 'drag: idle'
+  showSidebarList: false,
+  dragDebugText: 'drag: idle',
+  skipRecentSyncOnce: false
 };
 
 let dragDepth = 0;
@@ -246,8 +270,33 @@ const elements = {
   globalError: () => byId<HTMLDivElement>('global-error'),
   dropOverlay: () => byId<HTMLDivElement>('drop-overlay'),
   splitter: () => byId<HTMLDivElement>('splitter'),
-  dropOverlayText: () => byId<HTMLDivElement>('drop-overlay-text')
+  dropOverlayText: () => byId<HTMLDivElement>('drop-overlay-text'),
+  pageMoveToast: () => byId<HTMLDivElement>('page-move-toast'),
+  sizeAdjustModal: () => byId<HTMLDivElement>('size-adjust-modal'),
+  sizeAdjustTitle: () => byId<HTMLHeadingElement>('size-adjust-title'),
+  sizeAdjustMessage: () => byId<HTMLDivElement>('size-adjust-message'),
+  sizeAdjustCancel: () => byId<HTMLButtonElement>('size-adjust-cancel'),
+  sizeAdjustOriginal: () => byId<HTMLButtonElement>('size-adjust-original'),
+  sizeAdjustConfirm: () => byId<HTMLButtonElement>('size-adjust-confirm')
 };
+
+let pageMoveToastTimer: number | null = null;
+let sizeAdjustChoiceResolver: ((choice: 'cancel' | 'original' | 'confirm') => void) | null = null;
+
+function setSidebarListVisible(visible: boolean): void {
+  elements.workspace().classList.toggle('sidebar-collapsed', !visible);
+  elements.sidebarTitle().classList.toggle('hidden', !visible);
+  elements.fileTree().classList.toggle('hidden', !visible);
+  elements.sidebarDragLayer().classList.toggle('hidden', !visible);
+}
+
+function applySidebarVisibility(): void {
+  setSidebarListVisible(state.showSidebarList && Boolean(state.currentFolderPath));
+  reflowRenderedViewerImages();
+  window.requestAnimationFrame(() => {
+    reflowRenderedViewerImages();
+  });
+}
 
 function getViewTitleKey(view: ViewMode): string {
   const mapping: Record<ViewMode, string> = {
@@ -264,6 +313,8 @@ function switchView(view: ViewMode): void {
   elements.launcherView().classList.toggle('hidden', view !== 'launcher');
   elements.viewerView().classList.toggle('hidden', view !== 'viewer');
   elements.settingsView().classList.toggle('hidden', view !== 'settings');
+  applySidebarVisibility();
+  syncPageEditStateToMenu();
 }
 
 function renderGlobalError(): void {
@@ -280,12 +331,20 @@ function showError(error: SerializableAppError): void {
   renderGlobalError();
 }
 
+function normalizePathForCompare(filePath: string): string {
+  return filePath.replace(/\//g, '\\').toLowerCase();
+}
+
+function isSamePath(left: string, right: string): boolean {
+  return normalizePathForCompare(left) === normalizePathForCompare(right);
+}
+
 function getSelectedSidebarItem(): SidebarListItem | null {
   if (!state.selectedSidebarItemPath) {
     return null;
   }
 
-  return state.sidebarItems.find((item) => item.path === state.selectedSidebarItemPath) ?? null;
+  return state.sidebarItems.find((item) => isSamePath(item.path, state.selectedSidebarItemPath as string)) ?? null;
 }
 
 function getCurrentFilePathForTransfer(): string | null {
@@ -305,13 +364,138 @@ function getCurrentFilePathForTransfer(): string | null {
   return null;
 }
 
+function isOpenedFilePath(filePath: string): boolean {
+  return (
+    (!!state.zipPath && isSamePath(state.zipPath, filePath)) ||
+    (!!state.openedImage?.path && isSamePath(state.openedImage.path, filePath))
+  );
+}
+
 function setSelectedSidebarItem(itemPath: string | null): void {
   state.selectedSidebarItemPath = itemPath;
+  syncFileSelectionStateToMenu();
   renderSidebarItems();
 }
 
 function syncFileEditStateToMenu(): void {
   window.appApi.updateFileEditState(state.fileTransferClipboard !== null);
+}
+
+function syncFileSelectionStateToMenu(): void {
+  window.appApi.updateFileSelectionState(state.selectedSidebarItemPath !== null);
+}
+
+function canEditCurrentPage(): boolean {
+  return state.currentView === 'viewer' && !!state.archive && !!state.archive.pages[state.currentPageIndex];
+}
+
+function canEditRightPage(): boolean {
+  return (
+    state.currentView === 'viewer' &&
+    state.pageViewMode === 'double' &&
+    !!state.archive &&
+    !!state.archive.pages[state.currentPageIndex + 1]
+  );
+}
+
+function syncPageEditStateToMenu(): void {
+  window.appApi.updatePageEditState({
+    canEditLeftPage: canEditCurrentPage(),
+    canEditRightPage: canEditRightPage()
+  });
+}
+
+function getNavigableSidebarItems(): SidebarListItem[] {
+  const visibleItems = state.sidebarItems.filter((item) => item.type === 'zip' || item.type === 'image');
+  const currentPath = getCurrentOpenedPathForBookNavigation();
+  const sourceItems =
+    currentPath && visibleItems.some((item) => isSamePath(item.path, currentPath))
+      ? visibleItems
+      : state.bookNavItems.filter((item) => item.type === 'zip' || item.type === 'image');
+
+  if (!currentPath) {
+    return sourceItems;
+  }
+
+  const currentItem = sourceItems.find((item) => isSamePath(item.path, currentPath));
+  if (!currentItem) {
+    return sourceItems;
+  }
+
+  const currentSeriesKey = getSeriesKeyFromName(currentItem.name);
+  return sourceItems.filter((item) => item.type === currentItem.type && getSeriesKeyFromName(item.name) === currentSeriesKey);
+}
+
+function getSeriesKeyFromName(fileName: string): string {
+  const normalized = fileName.replace(/\.[^.]+$/, '').toLowerCase().trim();
+  const compacted = normalized.replace(/\s+/g, ' ').trim();
+  const withoutTrailingParens = compacted.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const withoutVolumeLike = withoutTrailingParens.replace(/[\s._-]*\d+[a-z가-힣]*$/, '').trim();
+  const withoutDecorators = withoutVolumeLike.replace(/[\s._-]+$/g, '').trim();
+  return withoutDecorators || withoutTrailingParens || compacted || normalized;
+}
+
+function getCurrentOpenedPathForBookNavigation(): string | null {
+  if (state.zipPath) {
+    return state.zipPath;
+  }
+
+  if (state.openedImage?.path) {
+    return state.openedImage.path;
+  }
+
+  return null;
+}
+
+function getCurrentOpenedBookIndex(): number {
+  const currentPath = getCurrentOpenedPathForBookNavigation();
+  if (!currentPath) {
+    return -1;
+  }
+
+  const items = getNavigableSidebarItems();
+  return items.findIndex((item) => isSamePath(item.path, currentPath));
+}
+
+function syncBookNavigationStateToMenu(): void {
+  const index = getCurrentOpenedBookIndex();
+  const items = getNavigableSidebarItems();
+  const hasNavigable = items.length > 0 && index >= 0;
+
+  window.appApi.updateBookNavState({
+    canOpenPrevBook: hasNavigable && index > 0,
+    canOpenNextBook: hasNavigable && index < items.length - 1
+  });
+}
+
+function canOpenNextBookFromCurrent(): boolean {
+  const index = getCurrentOpenedBookIndex();
+  const items = getNavigableSidebarItems();
+  return items.length > 0 && index >= 0 && index < items.length - 1;
+}
+
+function canOpenPrevBookFromCurrent(): boolean {
+  const index = getCurrentOpenedBookIndex();
+  const items = getNavigableSidebarItems();
+  return items.length > 0 && index > 0;
+}
+
+async function refreshBookNavigationItemsFromCurrentFile(): Promise<void> {
+  const currentPath = getCurrentOpenedPathForBookNavigation();
+  if (!currentPath) {
+    state.bookNavItems = [];
+    syncBookNavigationStateToMenu();
+    return;
+  }
+
+  const directoryPath = getDirectoryPath(currentPath);
+  const result = await window.appApi.listFolderItems(directoryPath);
+  if (!result.ok) {
+    return;
+  }
+
+  state.bookNavItems = result.data;
+  syncBookNavigationStateToMenu();
 }
 
 function setFileTransferClipboard(clipboard: FileTransferClipboard | null): void {
@@ -325,6 +509,31 @@ function setDragDebugText(text: string): void {
 
 function syncViewerStatusToMenu(statusText: string): void {
   window.appApi.updateViewerStatus(statusText);
+}
+
+function getCurrentOpenedFileName(): string {
+  if (state.openedImage?.name) {
+    return state.openedImage.name;
+  }
+
+  if (state.zipPath) {
+    return state.zipPath.split(/[/\\]/).pop() ?? '';
+  }
+
+  return '';
+}
+
+function composeViewerStatusText(statusText: string): string {
+  const fileName = getCurrentOpenedFileName();
+  if (!fileName) {
+    return statusText;
+  }
+
+  if (!statusText) {
+    return fileName;
+  }
+
+  return `${fileName} | ${statusText}`;
 }
 
 function syncRecentItemsToMenu(): void {
@@ -342,6 +551,7 @@ function persistViewerPreferences(): void {
       locale: getLocale(),
       pageViewMode: state.pageViewMode,
       imageFitMode: state.imageFitMode,
+      showSidebarList: state.showSidebarList,
       sidebarWidth: state.sidebarWidth
     })
     .catch((error) => {
@@ -351,6 +561,30 @@ function persistViewerPreferences(): void {
 
 function setDropOverlayVisible(visible: boolean): void {
   elements.dropOverlay().classList.toggle('hidden', !visible);
+}
+
+function showPageMoveToast(step: number): void {
+  if (!state.archive) {
+    return;
+  }
+
+  const toast = elements.pageMoveToast();
+  const delta = step > 0 ? `+${Math.abs(step)}` : `-${Math.abs(step)}`;
+  toast.textContent = t('viewer.toast.move', {
+    delta,
+    current: state.currentPageIndex + 1,
+    total: state.archive.meta.totalPages
+  });
+  toast.classList.remove('hidden');
+
+  if (pageMoveToastTimer !== null) {
+    window.clearTimeout(pageMoveToastTimer);
+  }
+
+  pageMoveToastTimer = window.setTimeout(() => {
+    toast.classList.add('hidden');
+    pageMoveToastTimer = null;
+  }, 900);
 }
 
 function setSidebarDragLayerActive(active: boolean): void {
@@ -363,6 +597,16 @@ function isZipPath(filePath: string): boolean {
 
 function isImagePath(filePath: string): boolean {
   return /\.(png|jpe?g|gif|bmp|webp)$/i.test(filePath);
+}
+
+function getDirectoryPath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/');
+  const index = normalized.lastIndexOf('/');
+  if (index <= 0) {
+    return filePath;
+  }
+  const directory = index === 2 && /^[A-Za-z]:/.test(normalized) ? normalized.slice(0, index + 1) : normalized.slice(0, index);
+  return directory.replace(/\//g, '\\');
 }
 
 function decodeDroppedFileUri(uri: string): string | null {
@@ -650,10 +894,21 @@ function resetOpenedContent(): void {
   state.openedImage = null;
   state.zipPath = null;
   state.currentPageIndex = 0;
+  state.bookNavItems = [];
   state.pageRenderToken += 1;
   state.queuedPageIndex = null;
   elements.viewerImage().innerHTML = '';
   syncViewerStatusToMenu('');
+  syncPageEditStateToMenu();
+  syncBookNavigationStateToMenu();
+}
+
+function clearSidebarListContext(): void {
+  state.currentFolderPath = null;
+  state.sidebarItems = [];
+  state.selectedSidebarItemPath = null;
+  syncFileSelectionStateToMenu();
+  syncBookNavigationStateToMenu();
 }
 
 function renderImageBytes(name: string, mimeType: string, bytes: number[]): void {
@@ -805,6 +1060,11 @@ async function resolveInitialPageIndex(fileId: string, totalPages: number): Prom
 }
 
 async function persistReadingState(): Promise<void> {
+  if (state.skipRecentSyncOnce) {
+    state.skipRecentSyncOnce = false;
+    return;
+  }
+
   const recentInput = buildRecentInput();
   if (!recentInput) {
     return;
@@ -830,7 +1090,7 @@ async function renderViewer(): Promise<void> {
   const viewerImage = elements.viewerImage();
 
   if (state.openedImage) {
-    syncViewerStatusToMenu(state.openedImage.name);
+    syncViewerStatusToMenu(composeViewerStatusText(''));
     clearError();
     renderImageBytes(state.openedImage.name, state.openedImage.mimeType, state.openedImage.bytes);
     return;
@@ -862,7 +1122,7 @@ async function renderViewer(): Promise<void> {
     total: state.archive.meta.totalPages,
     progress: Math.round(((state.currentPageIndex + pagesToRender.length) / state.archive.meta.totalPages) * 100)
   });
-  syncViewerStatusToMenu(statusText);
+  syncViewerStatusToMenu(composeViewerStatusText(statusText));
   viewerImage.textContent = t('viewer.loading');
 
   const renderToken = ++state.pageRenderToken;
@@ -902,23 +1162,39 @@ function requestViewerRender(): void {
   void flushViewerRenderQueue();
 }
 
-async function openZipPath(zipPath: string): Promise<void> {
+async function openZipPath(
+  zipPath: string,
+  options?: { preserveSidebarContext?: boolean; preferredPageIndex?: number; skipRecentUpdate?: boolean }
+): Promise<{ ok: true } | { ok: false; errorCode: string }> {
   clearError();
   resetOpenedContent();
   const result = await window.appApi.openZip(zipPath);
   if (!result.ok) {
     showError(result.error);
-    return;
+    return { ok: false, errorCode: result.error.code };
   }
 
   state.archive = result.data;
   state.zipPath = zipPath;
-  state.currentPageIndex = await resolveInitialPageIndex(result.data.meta.fileId, result.data.meta.totalPages);
+  setSelectedSidebarItem(zipPath);
+  if (typeof options?.preferredPageIndex === 'number') {
+    const lastPageIndex = Math.max(0, result.data.meta.totalPages - 1);
+    state.currentPageIndex = Math.max(0, Math.min(options.preferredPageIndex, lastPageIndex));
+  } else {
+    state.currentPageIndex = await resolveInitialPageIndex(result.data.meta.fileId, result.data.meta.totalPages);
+  }
+  if (!options?.preserveSidebarContext) {
+    clearSidebarListContext();
+  }
+  syncBookNavigationStateToMenu();
+  state.skipRecentSyncOnce = options?.skipRecentUpdate === true;
   switchView('viewer');
   requestViewerRender();
+  void refreshBookNavigationItemsFromCurrentFile();
+  return { ok: true };
 }
 
-async function openImagePath(imagePath: string): Promise<void> {
+async function openImagePath(imagePath: string, options?: { preserveSidebarContext?: boolean }): Promise<void> {
   clearError();
   resetOpenedContent();
   const result = await window.appApi.openImage(imagePath);
@@ -928,18 +1204,24 @@ async function openImagePath(imagePath: string): Promise<void> {
   }
 
   state.openedImage = result.data;
+  setSelectedSidebarItem(imagePath);
+  if (!options?.preserveSidebarContext) {
+    clearSidebarListContext();
+  }
+  syncBookNavigationStateToMenu();
   switchView('viewer');
   requestViewerRender();
+  void refreshBookNavigationItemsFromCurrentFile();
 }
 
-async function openFilePath(filePath: string): Promise<void> {
+async function openFilePath(filePath: string, options?: { preserveSidebarContext?: boolean }): Promise<void> {
   if (isZipPath(filePath)) {
-    await openZipPath(filePath);
+    await openZipPath(filePath, options);
     return;
   }
 
   if (isImagePath(filePath)) {
-    await openImagePath(filePath);
+    await openImagePath(filePath, options);
     return;
   }
 
@@ -970,7 +1252,7 @@ function renderSidebarItems(): void {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'sidebar-list-item';
-    button.classList.toggle('selected', state.selectedSidebarItemPath === item.path);
+    button.classList.toggle('selected', !!state.selectedSidebarItemPath && isSamePath(state.selectedSidebarItemPath, item.path));
     button.title = item.name;
     button.innerHTML = `<span class="sidebar-list-name">${item.name}</span>`;
     button.addEventListener('click', () => {
@@ -979,7 +1261,7 @@ function renderSidebarItems(): void {
     button.addEventListener('dblclick', () => {
       setSelectedSidebarItem(item.path);
       if (item.type === 'zip' || item.type === 'image') {
-        void openFilePath(item.path);
+        void openFilePath(item.path, { preserveSidebarContext: true });
         return;
       }
 
@@ -1010,8 +1292,11 @@ async function openFolderPath(folderPath: string): Promise<void> {
 
   state.currentFolderPath = folderPath;
   state.sidebarItems = result.data;
-  state.selectedSidebarItemPath = null;
-  renderSidebarItems();
+  state.bookNavItems = result.data;
+  setSelectedSidebarItem(null);
+  syncBookNavigationStateToMenu();
+  state.showSidebarList = true;
+  persistViewerPreferences();
   switchView('launcher');
 }
 
@@ -1027,17 +1312,325 @@ async function refreshCurrentFolderItems(): Promise<void> {
   }
 
   state.sidebarItems = result.data;
-  if (state.selectedSidebarItemPath && !state.sidebarItems.some((item) => item.path === state.selectedSidebarItemPath)) {
-    state.selectedSidebarItemPath = null;
+  state.bookNavItems = result.data;
+  if (state.selectedSidebarItemPath && !state.sidebarItems.some((item) => isSamePath(item.path, state.selectedSidebarItemPath as string))) {
+    setSelectedSidebarItem(null);
+    syncBookNavigationStateToMenu();
+    return;
   }
+  syncBookNavigationStateToMenu();
   renderSidebarItems();
 }
 
-function handleFileCopyOrCut(mode: FileTransferMode): void {
+function confirmAction(message: string): boolean {
+  return window.confirm(message);
+}
+
+function notifyAction(message: string): void {
+  window.alert(message);
+}
+
+async function readImageDimensions(name: string, mimeType: string, bytes: number[]): Promise<ImageDimensions> {
+  const blob = new Blob([Uint8Array.from(bytes)], { type: mimeType });
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = objectUrl;
+    await image.decode();
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function resizeImageBytesToTarget(
+  source: OpenedImageFile,
+  target: ImageDimensions
+): Promise<{ mimeType: string; bytes: number[] }> {
+  const blob = new Blob([Uint8Array.from(source.bytes)], { type: source.mimeType });
+  const objectUrl = URL.createObjectURL(blob);
+
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = objectUrl;
+    await image.decode();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = target.width;
+    canvas.height = target.height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Canvas 2D context unavailable');
+    }
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, target.width, target.height);
+
+    const outputMime = source.mimeType || 'image/png';
+    const resizedBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((value) => {
+        if (!value) {
+          reject(new Error('Failed to create resized image blob'));
+          return;
+        }
+        resolve(value);
+      }, outputMime);
+    });
+    const buffer = await resizedBlob.arrayBuffer();
+    return {
+      mimeType: outputMime,
+      bytes: Array.from(new Uint8Array(buffer))
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function showSizeAdjustModal(payload: {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  originalLabel: string;
+  cancelLabel: string;
+}): Promise<'cancel' | 'original' | 'confirm'> {
+  elements.sizeAdjustTitle().textContent = payload.title;
+  elements.sizeAdjustMessage().textContent = payload.message;
+  elements.sizeAdjustConfirm().textContent = payload.confirmLabel;
+  elements.sizeAdjustOriginal().textContent = payload.originalLabel;
+  elements.sizeAdjustCancel().textContent = payload.cancelLabel;
+  elements.sizeAdjustModal().classList.remove('hidden');
+
+  return new Promise((resolve) => {
+    sizeAdjustChoiceResolver = resolve;
+  });
+}
+
+function resolveSizeAdjustModal(choice: 'cancel' | 'original' | 'confirm'): void {
+  const resolver = sizeAdjustChoiceResolver;
+  if (!resolver) {
+    return;
+  }
+
+  sizeAdjustChoiceResolver = null;
+  elements.sizeAdjustModal().classList.add('hidden');
+  resolver(choice);
+}
+
+function getCurrentArchivePage(): ArchivePage | null {
+  if (!state.archive) {
+    return null;
+  }
+
+  return state.archive.pages[state.currentPageIndex] ?? null;
+}
+
+async function handleEditedZipCreated(sourceZipPath: string, editedZipPath: string, preferredPageIndex: number): Promise<void> {
+  state.currentFolderPath = getDirectoryPath(sourceZipPath);
+  state.showSidebarList = true;
+  persistViewerPreferences();
+  applySidebarVisibility();
+  await refreshCurrentFolderItems();
+
+  if (sourceZipPath === editedZipPath) {
+    await openZipPath(editedZipPath, {
+      preserveSidebarContext: true,
+      preferredPageIndex,
+      skipRecentUpdate: true
+    });
+  }
+}
+
+async function handleDeletePageRequest(target: 'left' | 'right'): Promise<void> {
+  if (!state.archive || !state.zipPath) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.page.noPage') });
+    return;
+  }
+
+  if (target === 'right' && !canEditRightPage()) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.page.noPage') });
+    return;
+  }
+
+  const pageIndex = target === 'right' ? state.currentPageIndex + 1 : state.currentPageIndex;
+  const currentPage = state.archive.pages[pageIndex];
+  if (!currentPage) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.page.noPage') });
+    return;
+  }
+
+  const confirmed = confirmAction(
+    t('dialog.confirm.pageDelete', {
+      name: currentPage.displayName,
+      page: pageIndex + 1
+    })
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  const preferredPageIndex = state.currentPageIndex;
+  const editResult = await window.appApi.editZipPages(state.zipPath, {
+    kind: 'delete',
+    targetEntryName: currentPage.entryName
+  });
+  if (!editResult.ok) {
+    const failureMessage = t('dialog.error.pageEditFailed', { reason: editResult.error.message });
+    showError({
+      code: 'DROP_DEBUG',
+      message: failureMessage
+    });
+    notifyAction(failureMessage);
+    return;
+  }
+
+  const isEditedZipUpdated = state.zipPath === editResult.data.editedZipPath;
+  notifyAction(
+    t(isEditedZipUpdated ? 'dialog.info.pageEditUpdated' : 'dialog.info.pageEditCompleted', {
+      path: editResult.data.editedZipPath
+    })
+  );
+  await handleEditedZipCreated(state.zipPath, editResult.data.editedZipPath, preferredPageIndex);
+}
+
+async function handleInsertAfterCurrentPageRequest(): Promise<void> {
+  const currentPage = getCurrentArchivePage();
+  if (!currentPage || !state.zipPath) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.page.noPage') });
+    return;
+  }
+
+  const insertPath = await window.appApi.openFileDialog({
+    title: t('dialog.insertPage.title'),
+    zipFilterName: '',
+    imageFilterName: t('dialog.openImage.filterImage'),
+    defaultPath: getDirectoryPath(state.zipPath)
+  });
+  if (!insertPath) {
+    return;
+  }
+
+  if (!isImagePath(insertPath)) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.page.onlyImage') });
+    return;
+  }
+
+  const currentPageDataResult = await window.appApi.getPage(state.zipPath, currentPage.entryName);
+  if (!currentPageDataResult.ok) {
+    showError(currentPageDataResult.error);
+    return;
+  }
+
+  const insertImageResult = await window.appApi.openImage(insertPath);
+  if (!insertImageResult.ok) {
+    showError(insertImageResult.error);
+    return;
+  }
+
+  const currentPageDimensions = await readImageDimensions(
+    currentPage.displayName,
+    currentPageDataResult.data.mimeType,
+    currentPageDataResult.data.bytes
+  );
+  const insertImageDimensions = await readImageDimensions(
+    insertImageResult.data.name,
+    insertImageResult.data.mimeType,
+    insertImageResult.data.bytes
+  );
+
+  let adjustedInsert = {
+    name: insertImageResult.data.name,
+    mimeType: insertImageResult.data.mimeType,
+    bytes: insertImageResult.data.bytes
+  };
+
+  const isSizeDifferent =
+    currentPageDimensions.width !== insertImageDimensions.width ||
+    currentPageDimensions.height !== insertImageDimensions.height;
+
+  if (isSizeDifferent) {
+    const resized = await resizeImageBytesToTarget(insertImageResult.data, currentPageDimensions);
+    const choice = await showSizeAdjustModal({
+      title: t('dialog.sizeAdjust.title'),
+      message: t('dialog.sizeAdjust.message', {
+        currentSize: `${currentPageDimensions.width}x${currentPageDimensions.height}`,
+        insertSize: `${insertImageDimensions.width}x${insertImageDimensions.height}`
+      }),
+      confirmLabel: t('common.confirm'),
+      originalLabel: t('dialog.sizeAdjust.keepOriginal'),
+      cancelLabel: t('common.cancel')
+    });
+
+    if (choice === 'cancel') {
+      return;
+    }
+
+    if (choice === 'confirm') {
+      adjustedInsert = {
+        name: insertImageResult.data.name,
+        mimeType: resized.mimeType,
+        bytes: resized.bytes
+      };
+    }
+  }
+
+  const insertName = insertPath.split(/[/\\]/).pop() ?? insertPath;
+  const confirmed = confirmAction(
+    t('dialog.confirm.pageInsertAfter', {
+      currentName: currentPage.displayName,
+      insertName
+    })
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  const preferredPageIndex = state.currentPageIndex;
+  const editResult = await window.appApi.editZipPages(state.zipPath, {
+    kind: 'insert-after',
+    afterEntryName: currentPage.entryName,
+    insertFileName: adjustedInsert.name,
+    insertMimeType: adjustedInsert.mimeType,
+    insertBytes: adjustedInsert.bytes
+  });
+  if (!editResult.ok) {
+    const failureMessage = t('dialog.error.pageEditFailed', { reason: editResult.error.message });
+    showError({
+      code: 'DROP_DEBUG',
+      message: failureMessage
+    });
+    notifyAction(failureMessage);
+    return;
+  }
+
+  const isEditedZipUpdated = state.zipPath === editResult.data.editedZipPath;
+  notifyAction(
+    t(isEditedZipUpdated ? 'dialog.info.pageEditUpdatedWithSize' : 'dialog.info.pageEditCompletedWithSize', {
+      mode: isSizeDifferent && adjustedInsert.bytes !== insertImageResult.data.bytes ? t('dialog.sizeAdjust.applied') : t('dialog.sizeAdjust.notApplied'),
+      path: editResult.data.editedZipPath
+    })
+  );
+  await handleEditedZipCreated(state.zipPath, editResult.data.editedZipPath, preferredPageIndex);
+}
+
+async function handleFileCopyOrCut(mode: FileTransferMode): Promise<void> {
   const sourcePath = getCurrentFilePathForTransfer();
   if (!sourcePath) {
     showError({ code: 'DROP_DEBUG', message: t('edit.file.noSelection') });
     return;
+  }
+
+  if (mode === 'cut') {
+    const selectedName = getSelectedSidebarItem()?.name ?? sourcePath.split(/[/\\]/).pop() ?? sourcePath;
+    const confirmed = confirmAction(t('dialog.confirm.fileCut', { name: selectedName }));
+    if (!confirmed) {
+      return;
+    }
   }
 
   const selected = getSelectedSidebarItem();
@@ -1061,6 +1654,15 @@ async function handleFilePaste(): Promise<void> {
     return;
   }
 
+  const confirmMessage =
+    state.fileTransferClipboard.mode === 'cut'
+      ? t('dialog.confirm.fileMoveApply', { name: state.fileTransferClipboard.sourceName })
+      : t('dialog.confirm.fileCopyApply', { name: state.fileTransferClipboard.sourceName });
+  const confirmed = confirmAction(confirmMessage);
+  if (!confirmed) {
+    return;
+  }
+
   const destinationDirectory = await window.appApi.openFolderDialog(t('dialog.selectPasteTarget.title'));
   if (!destinationDirectory) {
     return;
@@ -1080,6 +1682,38 @@ async function handleFilePaste(): Promise<void> {
     setFileTransferClipboard(null);
   }
   await refreshCurrentFolderItems();
+}
+
+async function handleFileDelete(): Promise<void> {
+  const selected = getSelectedSidebarItem();
+  if (!selected) {
+    showError({ code: 'DROP_DEBUG', message: t('edit.file.noSelection') });
+    return;
+  }
+
+  const confirmed = confirmAction(t('dialog.confirm.fileDelete', { name: selected.name }));
+  if (!confirmed) {
+    return;
+  }
+
+  const result = await window.appApi.deleteFile(selected.path);
+  if (!result.ok) {
+    showError(result.error);
+    return;
+  }
+
+  if (state.fileTransferClipboard?.sourcePath === selected.path) {
+    setFileTransferClipboard(null);
+  }
+
+  if (isOpenedFilePath(selected.path)) {
+    resetOpenedContent();
+    switchView('launcher');
+  }
+
+  setSelectedSidebarItem(null);
+  await refreshCurrentFolderItems();
+  clearError();
 }
 
 async function handleOpenFileClick(): Promise<void> {
@@ -1124,7 +1758,7 @@ function handleMenuAction(action: MenuAction): void {
   }
 
   if (action === 'show-viewer') {
-    switchView('viewer');
+    switchView(state.currentView === 'launcher' ? 'viewer' : 'launcher');
     return;
   }
 
@@ -1133,13 +1767,34 @@ function handleMenuAction(action: MenuAction): void {
     return;
   }
 
+  if (action === 'toggle-folder-list') {
+    state.showSidebarList = !state.showSidebarList;
+    applySidebarVisibility();
+    persistViewerPreferences();
+    return;
+  }
+
+  if (action === 'open-prev-book') {
+    void openAdjacentBook(-1);
+    return;
+  }
+
+  if (action === 'open-next-book') {
+    void openAdjacentBook(1);
+    return;
+  }
+
+  if (handleViewerNavigationAction(action)) {
+    return;
+  }
+
   if (action === 'file-copy') {
-    handleFileCopyOrCut('copy');
+    void handleFileCopyOrCut('copy');
     return;
   }
 
   if (action === 'file-cut') {
-    handleFileCopyOrCut('cut');
+    void handleFileCopyOrCut('cut');
     return;
   }
 
@@ -1148,13 +1803,34 @@ function handleMenuAction(action: MenuAction): void {
     return;
   }
 
+  if (action === 'file-delete') {
+    void handleFileDelete();
+    return;
+  }
+
   if (action === 'file-cancel-transfer') {
     handleFileTransferCancel();
     return;
   }
 
+  if (action === 'edit-delete-left-page') {
+    void handleDeletePageRequest('left');
+    return;
+  }
+
+  if (action === 'edit-delete-right-page') {
+    void handleDeletePageRequest('right');
+    return;
+  }
+
+  if (action === 'edit-insert-after-current-page') {
+    void handleInsertAfterCurrentPageRequest();
+    return;
+  }
+
   if (action === 'view-single-page') {
     state.pageViewMode = 'single';
+    syncPageEditStateToMenu();
     persistViewerPreferences();
     requestViewerRender();
     return;
@@ -1162,6 +1838,7 @@ function handleMenuAction(action: MenuAction): void {
 
   if (action === 'view-double-page') {
     state.pageViewMode = 'double';
+    syncPageEditStateToMenu();
     persistViewerPreferences();
     requestViewerRender();
     return;
@@ -1195,19 +1872,134 @@ function handleMenuAction(action: MenuAction): void {
   }
 }
 
-function movePage(step: number): void {
+function setPageIndex(nextIndex: number): boolean {
   if (!state.archive) {
-    return;
+    return false;
   }
 
-  const stepSize = state.pageViewMode === 'double' ? 2 : 1;
-  const nextIndex = state.currentPageIndex + (step * stepSize);
   if (nextIndex < 0 || nextIndex >= state.archive.meta.totalPages) {
-    return;
+    return false;
+  }
+
+  const previousIndex = state.currentPageIndex;
+  if (previousIndex === nextIndex) {
+    return false;
   }
 
   state.currentPageIndex = nextIndex;
   requestViewerRender();
+  showPageMoveToast(nextIndex - previousIndex);
+  syncPageEditStateToMenu();
+  return true;
+}
+
+function movePage(step: number): boolean {
+  if (!state.archive) {
+    return false;
+  }
+
+  const stepSize = state.pageViewMode === 'double' ? 2 : 1;
+  const nextIndex = state.currentPageIndex + (step * stepSize);
+  const moved = setPageIndex(nextIndex);
+  if (!moved && step > 0 && nextIndex >= state.archive.meta.totalPages) {
+    void handleAdvanceBeyondLastPage();
+  }
+  if (!moved && step < 0 && nextIndex < 0) {
+    void handleRetreatBeforeFirstPage();
+  }
+  return moved;
+}
+
+function moveToFirstPage(): boolean {
+  return setPageIndex(0);
+}
+
+function moveToLastPage(): boolean {
+  if (!state.archive) {
+    return false;
+  }
+
+  return setPageIndex(state.archive.meta.totalPages - 1);
+}
+
+function isViewerPageNavigationAvailable(): boolean {
+  return state.currentView === 'viewer' && !!state.archive;
+}
+
+async function openAdjacentBook(step: -1 | 1): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  const index = getCurrentOpenedBookIndex();
+  const items = getNavigableSidebarItems();
+  if (index < 0) {
+    return;
+  }
+
+  const nextIndex = index + step;
+  if (nextIndex < 0 || nextIndex >= items.length) {
+    return;
+  }
+
+  const next = items[nextIndex];
+  setSelectedSidebarItem(next.path);
+  await openFilePath(next.path, { preserveSidebarContext: true });
+}
+
+async function handleAdvanceBeyondLastPage(): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  if (canOpenNextBookFromCurrent()) {
+    const confirmed = confirmAction(t('dialog.confirm.openNextBook'));
+    if (confirmed) {
+      void openAdjacentBook(1);
+    }
+    return;
+  }
+
+  notifyAction(t('dialog.info.noNextBook'));
+}
+
+async function handleRetreatBeforeFirstPage(): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  if (canOpenPrevBookFromCurrent()) {
+    const confirmed = confirmAction(t('dialog.confirm.openPrevBook'));
+    if (confirmed) {
+      void openAdjacentBook(-1);
+    }
+    return;
+  }
+
+  notifyAction(t('dialog.info.atDocumentStart'));
+}
+
+function handleViewerNavigationAction(action: MenuAction): boolean {
+  if (!isViewerPageNavigationAvailable()) {
+    return false;
+  }
+
+  if (action === 'move-prev-page') {
+    return movePage(-1);
+  }
+
+  if (action === 'move-next-page') {
+    return movePage(1);
+  }
+
+  if (action === 'move-prev-10-pages') {
+    return movePage(-10);
+  }
+
+  if (action === 'move-next-10-pages') {
+    return movePage(10);
+  }
+
+  if (action === 'move-first-page') {
+    return moveToFirstPage();
+  }
+
+  if (action === 'move-last-page') {
+    return moveToLastPage();
+  }
+
+  return false;
 }
 
 async function handleEsc(): Promise<void> {
@@ -1221,6 +2013,18 @@ async function handleEsc(): Promise<void> {
 }
 
 async function handleKeyDown(event: KeyboardEvent): Promise<void> {
+  if (event.shiftKey && event.key === 'PageUp') {
+    event.preventDefault();
+    await openAdjacentBook(-1);
+    return;
+  }
+
+  if (event.shiftKey && event.key === 'PageDown') {
+    event.preventDefault();
+    await openAdjacentBook(1);
+    return;
+  }
+
   if (event.key === 'Escape') {
     event.preventDefault();
     if (state.fileTransferClipboard) {
@@ -1235,12 +2039,12 @@ async function handleKeyDown(event: KeyboardEvent): Promise<void> {
     const normalizedKey = event.key.toLowerCase();
     if (normalizedKey === 'c') {
       event.preventDefault();
-      handleFileCopyOrCut('copy');
+      void handleFileCopyOrCut('copy');
       return;
     }
     if (normalizedKey === 'x') {
       event.preventDefault();
-      handleFileCopyOrCut('cut');
+      void handleFileCopyOrCut('cut');
       return;
     }
     if (normalizedKey === 'v') {
@@ -1267,6 +2071,31 @@ async function handleKeyDown(event: KeyboardEvent): Promise<void> {
   if (event.key === 'ArrowLeft') {
     event.preventDefault();
     movePage(-1);
+    return;
+  }
+
+  if (event.key === 'PageDown') {
+    event.preventDefault();
+    movePage(10);
+    return;
+  }
+
+  if (event.key === 'PageUp') {
+    event.preventDefault();
+    movePage(-10);
+    return;
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault();
+    moveToFirstPage();
+    return;
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault();
+    moveToLastPage();
+    return;
   }
 }
 
@@ -1289,6 +2118,9 @@ function renderAll(): void {
   renderStaticText();
   applySidebarWidth();
   syncFileEditStateToMenu();
+  syncFileSelectionStateToMenu();
+  syncPageEditStateToMenu();
+  syncBookNavigationStateToMenu();
   renderGlobalError();
   renderSidebarItems();
   requestViewerRender();
@@ -1300,7 +2132,24 @@ function bindEvents(): void {
     handleMenuAction(action);
   });
   const unsubscribeOpenRecent = window.appApi.onOpenRecent((zipPath) => {
-    void openZipPath(zipPath);
+    void (async () => {
+      const openResult = await openZipPath(zipPath);
+      if (openResult.ok || openResult.errorCode !== 'FILE_NOT_FOUND') {
+        return;
+      }
+
+      const name = zipPath.split(/[/\\]/).pop() ?? zipPath;
+      notifyAction(t('recent.missingRemoved', { name }));
+
+      const removeResult = await window.appApi.removeRecentByPath(zipPath);
+      if (!removeResult.ok) {
+        showError(removeResult.error);
+        return;
+      }
+
+      state.recentItems = removeResult.data;
+      syncRecentItemsToMenu();
+    })();
   });
   const unsubscribeLocaleSelected = window.appApi.onLocaleSelected((locale) => {
     applyLocaleFromMenu(locale);
@@ -1326,6 +2175,26 @@ function bindEvents(): void {
   elements.sidebar().addEventListener('contextmenu', (event) => {
     event.preventDefault();
     openFileEditContextMenu();
+  });
+
+  elements.viewerImage().addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    void window.appApi.showImageContextMenu().catch((error) => {
+      showError({
+        code: 'DROP_DEBUG',
+        message: `${t('error.unknown')} (${String(error)})`
+      });
+    });
+  });
+
+  elements.sizeAdjustCancel().addEventListener('click', () => {
+    resolveSizeAdjustModal('cancel');
+  });
+  elements.sizeAdjustOriginal().addEventListener('click', () => {
+    resolveSizeAdjustModal('original');
+  });
+  elements.sizeAdjustConfirm().addEventListener('click', () => {
+    resolveSizeAdjustModal('confirm');
   });
 
   elements.splitter().addEventListener('pointerdown', (event) => {
@@ -1422,6 +2291,13 @@ function bindEvents(): void {
   }
 
   window.addEventListener('beforeunload', () => {
+    if (sizeAdjustChoiceResolver) {
+      resolveSizeAdjustModal('cancel');
+    }
+    if (pageMoveToastTimer !== null) {
+      window.clearTimeout(pageMoveToastTimer);
+      pageMoveToastTimer = null;
+    }
     revokePageObjectUrl();
     unsubscribeMenuAction();
     unsubscribeOpenRecent();
@@ -1436,7 +2312,9 @@ async function init(): Promise<void> {
   currentLocale = appSettings.locale;
   state.pageViewMode = appSettings.pageViewMode;
   state.imageFitMode = appSettings.imageFitMode;
+  state.showSidebarList = appSettings.showSidebarList;
   state.sidebarWidth = appSettings.sidebarWidth;
+  applySidebarVisibility();
   switchView('launcher');
   bindEvents();
   renderAll();

@@ -14,6 +14,7 @@ export interface AppSettings {
   locale: Locale;
   pageViewMode: PageViewMode;
   imageFitMode: ImageFitMode;
+  showSidebarList: boolean;
   sidebarWidth: number;
   windowBounds: WindowBounds;
   isMaximized: boolean;
@@ -23,6 +24,7 @@ export const defaultAppSettings: AppSettings = {
   locale: 'ko',
   pageViewMode: 'single',
   imageFitMode: 'auto',
+  showSidebarList: false,
   sidebarWidth: 260,
   windowBounds: {
     width: 1200,
