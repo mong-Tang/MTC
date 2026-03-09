@@ -1,5 +1,6 @@
 export type AppErrorCode =
   | 'ZIP_OPEN_FAILED'
+  | 'ZIP_INVALID_FORMAT'
   | 'ZIP_CORRUPTED'
   | 'ZIP_ENCRYPTED'
   | 'ZIP_NO_IMAGE'

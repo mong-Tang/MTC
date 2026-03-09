@@ -10,6 +10,7 @@ import { getAppSettings, saveAppSettings } from './stores/app-settings-store';
 
 let mainWindow: BrowserWindow | null = null;
 let converterWindow: BrowserWindow | null = null;
+let helpWindow: BrowserWindow | null = null;
 type MenuAction =
   | 'open-file'
   | 'open-folder'
@@ -39,6 +40,7 @@ type MenuAction =
   | 'image-fit-actual'
   | 'image-fit-width'
   | 'image-fit-height';
+type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy';
 
 let currentSettings: AppSettings = defaultAppSettings;
 let currentPageViewMode: PageViewMode = currentSettings.pageViewMode;
@@ -95,6 +97,7 @@ function createConverterWindow(): BrowserWindow {
     minHeight: 520,
     parent: mainWindow ?? undefined,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -113,8 +116,8 @@ function buildConverterWindowMenu(window: BrowserWindow): Menu {
     {
       label: t('menu.file'),
       submenu: [
-        { label: t('menu.converter.selectSource'), enabled: false },
-        { label: t('menu.converter.selectOutput'), enabled: false },
+        { label: t('menu.converter.selectSource'), click: () => sendConverterMenuAction('select-source') },
+        { label: t('menu.converter.selectOutput'), click: () => sendConverterMenuAction('select-output') },
         { type: 'separator' },
         {
           label: t('menu.window.close'),
@@ -126,19 +129,26 @@ function buildConverterWindowMenu(window: BrowserWindow): Menu {
     {
       label: t('menu.converter'),
       submenu: [
-        { label: t('menu.converter.start'), accelerator: 'F5', enabled: false },
-        { label: t('menu.converter.cancel'), enabled: false },
+        { label: t('menu.converter.start'), accelerator: 'F5', click: () => sendConverterMenuAction('start-conversion') },
         { type: 'separator' },
-        { label: t('menu.converter.showLog'), type: 'checkbox', checked: true, enabled: false }
+        { label: t('menu.converter.showLog'), type: 'checkbox', checked: true, click: () => sendConverterMenuAction('toggle-log') }
       ]
     },
     {
       label: t('menu.help'),
-      submenu: [{ label: t('menu.converter.policy'), enabled: false }]
+      submenu: [{ label: t('menu.converter.policy'), click: () => sendConverterMenuAction('show-policy') }]
     }
   ];
 
   return Menu.buildFromTemplate(template);
+}
+
+function sendConverterMenuAction(action: ConverterMenuAction): void {
+  if (!converterWindow || converterWindow.isDestroyed()) {
+    return;
+  }
+
+  converterWindow.webContents.send('converter:menu-action', action);
 }
 
 function openConverterWindow(): void {
@@ -151,6 +161,58 @@ function openConverterWindow(): void {
   }
 
   converterWindow = createConverterWindow();
+}
+
+function createHelpWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 1080,
+    height: 760,
+    minWidth: 900,
+    minHeight: 620,
+    parent: mainWindow ?? undefined,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  window.setMenuBarVisibility(false);
+  window.setMenu(null);
+  window.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  window.on('closed', () => {
+    helpWindow = null;
+  });
+  return window;
+}
+
+function enforceHelpWindowMenuHidden(): void {
+  if (!helpWindow || helpWindow.isDestroyed()) {
+    return;
+  }
+  helpWindow.setMenuBarVisibility(false);
+  helpWindow.setMenu(null);
+}
+
+function openHelpWindow(): void {
+  if (helpWindow && !helpWindow.isDestroyed()) {
+    helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+    enforceHelpWindowMenuHidden();
+    if (helpWindow.isMinimized()) {
+      helpWindow.restore();
+    }
+    helpWindow.focus();
+    return;
+  }
+
+  helpWindow = createHelpWindow();
+}
+
+function reloadHelpWindowForLocale(): void {
+  if (!helpWindow || helpWindow.isDestroyed()) {
+    return;
+  }
+  helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  enforceHelpWindowMenuHidden();
 }
 
 let persistWindowStateTimer: NodeJS.Timeout | null = null;
@@ -199,6 +261,18 @@ function sendLocaleSelected(locale: Locale): void {
   }
 
   targetWindow.webContents.send('menu:set-locale', locale);
+}
+
+function withShortcutLabel(label: string, shortcut: string): string {
+  return label;
+}
+
+function acceleratorForLocale(shortcut: string): string | undefined {
+  return shortcut;
+}
+
+function withHomeEndHint(label: string, key: 'Home' | 'End'): string {
+  return `${label} (${key})`;
 }
 
 function buildFileEditMenuItems(): MenuItemConstructorOptions[] {
@@ -284,12 +358,7 @@ function buildFileContextMenuItems(): MenuItemConstructorOptions[] {
       click: () => sendMenuAction('open-folder')
     },
     { type: 'separator' },
-    ...buildFileTransferMenuItems(),
-    { type: 'separator' },
-    {
-      label: t('tree.settings'),
-      click: () => sendMenuAction('show-settings')
-    }
+    ...buildFileTransferMenuItems()
   ];
 }
 
@@ -331,51 +400,51 @@ function buildViewContextMenuItems(): MenuItemConstructorOptions[] {
       label: t('menu.view.move'),
       submenu: [
         {
-          label: t('menu.view.movePrevPage'),
-          accelerator: 'Left',
+          label: withShortcutLabel(t('menu.view.movePrevPage'), 'Left'),
+          accelerator: acceleratorForLocale('Left'),
           click: () => sendMenuAction('move-prev-page')
         },
         {
-          label: t('menu.view.moveNextPage'),
-          accelerator: 'Right',
+          label: withShortcutLabel(t('menu.view.moveNextPage'), 'Right'),
+          accelerator: acceleratorForLocale('Right'),
           click: () => sendMenuAction('move-next-page')
         },
         { type: 'separator' },
         {
-          label: t('menu.view.moveFirstPage'),
-          accelerator: 'Home',
+          label: withHomeEndHint(withShortcutLabel(t('menu.view.moveFirstPage'), 'Home'), 'Home'),
+          accelerator: acceleratorForLocale('Home'),
           click: () => sendMenuAction('move-first-page')
         },
         {
-          label: t('menu.view.moveLastPage'),
-          accelerator: 'End',
+          label: withHomeEndHint(withShortcutLabel(t('menu.view.moveLastPage'), 'End'), 'End'),
+          accelerator: acceleratorForLocale('End'),
           click: () => sendMenuAction('move-last-page')
         },
         { type: 'separator' },
         {
-          label: t('menu.view.movePrev10'),
-          accelerator: 'PageUp',
+          label: withShortcutLabel(t('menu.view.movePrev10'), 'PageUp'),
+          accelerator: acceleratorForLocale('PageUp'),
           click: () => sendMenuAction('move-prev-10-pages')
         },
         {
-          label: t('menu.view.moveNext10'),
-          accelerator: 'PageDown',
+          label: withShortcutLabel(t('menu.view.moveNext10'), 'PageDown'),
+          accelerator: acceleratorForLocale('PageDown'),
           click: () => sendMenuAction('move-next-10-pages')
+        },
+        { type: 'separator' },
+        {
+          label: withShortcutLabel(t('menu.view.openPrevBook'), 'Shift+PageUp'),
+          accelerator: acceleratorForLocale('Shift+PageUp'),
+          enabled: currentCanOpenPrevBook,
+          click: () => sendMenuAction('open-prev-book')
+        },
+        {
+          label: withShortcutLabel(t('menu.view.openNextBook'), 'Shift+PageDown'),
+          accelerator: acceleratorForLocale('Shift+PageDown'),
+          enabled: currentCanOpenNextBook,
+          click: () => sendMenuAction('open-next-book')
         }
       ]
-    },
-    { type: 'separator' },
-    {
-      label: t('menu.view.openPrevBook'),
-      accelerator: 'Shift+PageUp',
-      enabled: currentCanOpenPrevBook,
-      click: () => sendMenuAction('open-prev-book')
-    },
-    {
-      label: t('menu.view.openNextBook'),
-      accelerator: 'Shift+PageDown',
-      enabled: currentCanOpenNextBook,
-      click: () => sendMenuAction('open-next-book')
     },
     { type: 'separator' },
     {
@@ -452,6 +521,7 @@ function buildLocaleContextMenuItems(): MenuItemConstructorOptions[] {
         currentLocale = 'ko';
         setLocale('ko');
         persistAppSettings({ locale: 'ko' }, 'context-locale-ko');
+        reloadHelpWindowForLocale();
         applyApplicationMenu();
         sendLocaleSelected('ko');
       }
@@ -464,6 +534,7 @@ function buildLocaleContextMenuItems(): MenuItemConstructorOptions[] {
         currentLocale = 'en';
         setLocale('en');
         persistAppSettings({ locale: 'en' }, 'context-locale-en');
+        reloadHelpWindowForLocale();
         applyApplicationMenu();
         sendLocaleSelected('en');
       }
@@ -523,11 +594,6 @@ function applyApplicationMenu(): void {
         ...buildFileTransferMenuItems(),
         { type: 'separator' },
         {
-          label: t('tree.settings'),
-          click: () => sendMenuAction('show-settings')
-        },
-        { type: 'separator' },
-        {
           label: t('menu.exit'),
           role: process.platform === 'darwin' ? 'close' : 'quit'
         }
@@ -576,51 +642,51 @@ function applyApplicationMenu(): void {
           label: t('menu.view.move'),
           submenu: [
             {
-              label: t('menu.view.movePrevPage'),
-              accelerator: 'Left',
+              label: withShortcutLabel(t('menu.view.movePrevPage'), 'Left'),
+              accelerator: acceleratorForLocale('Left'),
               click: () => sendMenuAction('move-prev-page')
             },
             {
-              label: t('menu.view.moveNextPage'),
-              accelerator: 'Right',
+              label: withShortcutLabel(t('menu.view.moveNextPage'), 'Right'),
+              accelerator: acceleratorForLocale('Right'),
               click: () => sendMenuAction('move-next-page')
             },
             { type: 'separator' },
             {
-              label: t('menu.view.moveFirstPage'),
-              accelerator: 'Home',
+              label: withHomeEndHint(withShortcutLabel(t('menu.view.moveFirstPage'), 'Home'), 'Home'),
+              accelerator: acceleratorForLocale('Home'),
               click: () => sendMenuAction('move-first-page')
             },
             {
-              label: t('menu.view.moveLastPage'),
-              accelerator: 'End',
+              label: withHomeEndHint(withShortcutLabel(t('menu.view.moveLastPage'), 'End'), 'End'),
+              accelerator: acceleratorForLocale('End'),
               click: () => sendMenuAction('move-last-page')
             },
             { type: 'separator' },
             {
-              label: t('menu.view.movePrev10'),
-              accelerator: 'PageUp',
+              label: withShortcutLabel(t('menu.view.movePrev10'), 'PageUp'),
+              accelerator: acceleratorForLocale('PageUp'),
               click: () => sendMenuAction('move-prev-10-pages')
             },
             {
-              label: t('menu.view.moveNext10'),
-              accelerator: 'PageDown',
+              label: withShortcutLabel(t('menu.view.moveNext10'), 'PageDown'),
+              accelerator: acceleratorForLocale('PageDown'),
               click: () => sendMenuAction('move-next-10-pages')
+            },
+            { type: 'separator' },
+            {
+              label: withShortcutLabel(t('menu.view.openPrevBook'), 'Shift+PageUp'),
+              accelerator: acceleratorForLocale('Shift+PageUp'),
+              enabled: currentCanOpenPrevBook,
+              click: () => sendMenuAction('open-prev-book')
+            },
+            {
+              label: withShortcutLabel(t('menu.view.openNextBook'), 'Shift+PageDown'),
+              accelerator: acceleratorForLocale('Shift+PageDown'),
+              enabled: currentCanOpenNextBook,
+              click: () => sendMenuAction('open-next-book')
             }
           ]
-        },
-        { type: 'separator' },
-        {
-          label: t('menu.view.openPrevBook'),
-          accelerator: 'Shift+PageUp',
-          enabled: currentCanOpenPrevBook,
-          click: () => sendMenuAction('open-prev-book')
-        },
-        {
-          label: t('menu.view.openNextBook'),
-          accelerator: 'Shift+PageDown',
-          enabled: currentCanOpenNextBook,
-          click: () => sendMenuAction('open-next-book')
         },
         { type: 'separator' },
         {
@@ -698,6 +764,7 @@ function applyApplicationMenu(): void {
             currentLocale = 'ko';
             setLocale('ko');
             persistAppSettings({ locale: 'ko' }, 'locale-ko');
+            reloadHelpWindowForLocale();
             applyApplicationMenu();
             sendLocaleSelected('ko');
           }
@@ -710,6 +777,7 @@ function applyApplicationMenu(): void {
             currentLocale = 'en';
             setLocale('en');
             persistAppSettings({ locale: 'en' }, 'locale-en');
+            reloadHelpWindowForLocale();
             applyApplicationMenu();
             sendLocaleSelected('en');
           }
@@ -727,7 +795,14 @@ function applyApplicationMenu(): void {
     },
     {
       label: t('menu.help'),
-      submenu: [{ label: t('menu.about'), role: 'about' }]
+      submenu: [
+        {
+          label: t('menu.help.userGuide'),
+          click: () => openHelpWindow()
+        },
+        { type: 'separator' },
+        { label: t('menu.about'), role: 'about' }
+      ]
     },
     ...quickViewMenus,
     {
@@ -737,6 +812,7 @@ function applyApplicationMenu(): void {
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  enforceHelpWindowMenuHidden();
 }
 
 if (!gotSingleInstanceLock) {
@@ -771,6 +847,7 @@ app.whenReady().then(async () => {
     currentImageFitMode = currentSettings.imageFitMode;
     currentShowSidebarList = currentSettings.showSidebarList;
     setLocale(currentLocale);
+    reloadHelpWindowForLocale();
     applyApplicationMenu();
     return currentSettings;
   });
@@ -783,6 +860,7 @@ app.whenReady().then(async () => {
     currentLocale = locale;
     setLocale(locale);
     persistAppSettings({ locale }, 'ipc-set-locale');
+    reloadHelpWindowForLocale();
     applyApplicationMenu();
     return true;
   });

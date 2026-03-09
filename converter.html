@@ -1,9 +1,13 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>컨버터</title>
+    <title>Converter</title>
     <style>
       :root {
         color-scheme: dark;
@@ -20,10 +24,10 @@
         padding: 24px;
       }
       h1 {
-        margin: 0 0 10px;
+        margin: 0 0 8px;
         font-size: 22px;
       }
-      p {
+      .subtitle {
         margin: 0 0 16px;
         color: #cbd5e1;
       }
@@ -34,43 +38,103 @@
         padding: 16px;
         margin-bottom: 12px;
       }
-      ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
+      .field {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
       }
-      li {
-        margin: 6px 0;
+      .field label {
+        width: 110px;
+        color: #cbd5e1;
       }
-      .muted {
+      .field input[type='text'] {
+        flex: 1;
+        min-width: 0;
+        background: #0b1220;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 8px 10px;
+      }
+      button {
+        border: 1px solid #475569;
+        background: #1e293b;
+        color: #e2e8f0;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #334155;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .status {
+        color: #93c5fd;
+      }
+      .log {
+        margin-top: 8px;
+        padding: 10px;
+        background: #020617;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        min-height: 120px;
+        white-space: pre-wrap;
+      }
+      .hidden {
+        display: none;
+      }
+      .policy {
+        margin-top: 8px;
         color: #94a3b8;
       }
     </style>
   </head>
   <body>
     <main class="wrap">
-      <h1>컨버터 (준비 중)</h1>
-      <p>압축 포맷 변환 기능은 이 창에서 분리 개발합니다.</p>
+      <h1 id="title">컨버터</h1>
+      <p id="subtitle" class="subtitle"></p>
 
       <section class="card">
-        <strong>예정 범위</strong>
-        <ul>
-          <li>지원 포맷 판별</li>
-          <li>임시폴더 해제 → 변환 → ZIP 재압축</li>
-          <li>변환 로그 및 실패 원인 표시</li>
-        </ul>
+        <div class="field">
+          <label id="source-label" for="source-path">원본 파일</label>
+          <input id="source-path" type="text" readonly />
+          <button id="select-source" type="button">원본 선택...</button>
+        </div>
+
+        <div class="field">
+          <label id="output-label" for="output-path">출력 폴더</label>
+          <input id="output-path" type="text" readonly />
+          <button id="select-output" type="button">출력 폴더 선택...</button>
+        </div>
+
+        <div class="row">
+          <button id="start-convert" type="button">변환 시작</button>
+          <span id="status" class="status"></span>
+        </div>
+
+        <div class="row">
+          <input id="policy-agree" type="checkbox" />
+          <label id="policy-label" for="policy-agree"></label>
+        </div>
       </section>
 
       <section class="card">
-        <strong>사용 고지</strong>
-        <ul>
-          <li>본 도구는 사용자에게 이용 권한이 있는 파일에 한해 사용해야 합니다.</li>
-          <li>저작권 보호 콘텐츠의 무단 변환·배포는 금지됩니다.</li>
-          <li>DRM 등 기술적 보호조치를 우회하는 용도로 사용할 수 없습니다.</li>
-        </ul>
+        <strong id="log-title">로그</strong>
+        <pre id="log-view" class="log"></pre>
       </section>
 
-      <p class="muted">※ 현재 버전은 창 골격만 제공하며, 실제 변환 실행 UI/로직은 다음 단계에서 연결합니다.</p>
+      <section class="card" id="policy-card">
+        <strong id="policy-title"></strong>
+        <p id="policy-body" class="policy"></p>
+      </section>
     </main>
+
+    <script src="./dist/renderer/converter.js"></script>
   </body>
 </html>
-

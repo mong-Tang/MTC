@@ -16,6 +16,7 @@ interface OpenFileDialogOptions {
   title: string;
   zipFilterName: string;
   imageFilterName: string;
+  archiveFilterName?: string;
   defaultPath?: string;
 }
 
@@ -120,6 +121,13 @@ async function moveFileWithFallback(sourcePath: string, destinationPath: string)
   await fs.unlink(sourcePath);
 }
 
+async function ensureDirectoryExists(targetPath: string): Promise<void> {
+  const stat = await fs.stat(targetPath);
+  if (!stat.isDirectory()) {
+    throw new AppError('UNKNOWN', `Output path is not a directory: ${targetPath}`);
+  }
+}
+
 export function registerIpcHandlers(): void {
   ipcMain.handle('i18n:get-dictionaries', () => {
     return { ko, en } as const;
@@ -129,9 +137,13 @@ export function registerIpcHandlers(): void {
     const title = options?.title ?? '';
     const zipFilterName = options?.zipFilterName ?? '';
     const imageFilterName = options?.imageFilterName ?? '';
+    const archiveFilterName = options?.archiveFilterName ?? '';
     const filters = [];
     if (zipFilterName.trim()) {
-      filters.push({ name: zipFilterName, extensions: ['zip'] });
+      filters.push({ name: zipFilterName, extensions: ['zip', 'cbz'] });
+    }
+    if (archiveFilterName.trim()) {
+      filters.push({ name: archiveFilterName, extensions: ['zip', 'cbz', '7z', 'rar', 'tar', 'gz', 'tgz', 'bz2', 'xz'] });
     }
     if (imageFilterName.trim()) {
       filters.push({ name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] });
@@ -320,6 +332,48 @@ export function registerIpcHandlers(): void {
     try {
       await setProgress(fileId, pageIndex);
       return { ok: true, data: true } as const;
+    } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
+  ipcMain.handle('converter:to-zip', async (_event, sourcePath: string, outputDirectory: string) => {
+    try {
+      const sourceStat = await fs.stat(sourcePath);
+      if (!sourceStat.isFile()) {
+        throw new AppError('UNKNOWN', `Source is not a file: ${sourcePath}`);
+      }
+
+      await ensureDirectoryExists(outputDirectory);
+
+      const sourceExtension = path.extname(sourcePath).toLowerCase();
+      if (!ARCHIVE_EXTENSIONS.has(sourceExtension)) {
+        throw new AppError('UNKNOWN', `Unsupported archive extension: ${sourceExtension}`);
+      }
+
+      const sourceBaseName = path.basename(sourcePath, path.extname(sourcePath));
+      const destinationPath = await resolveUniquePath(outputDirectory, `${sourceBaseName}.zip`);
+      const logs: string[] = [`source: ${sourcePath}`, `output: ${destinationPath}`];
+
+      if (sourceExtension !== '.zip' && sourceExtension !== '.cbz') {
+        throw new AppError(
+          'ZIP_OPEN_FAILED',
+          `현재 버전은 ZIP/CBZ만 변환할 수 있습니다. (${sourceExtension})`
+        );
+      }
+
+      await openZip(sourcePath);
+
+      await fs.copyFile(sourcePath, destinationPath);
+      logs.push('done: copied as .zip');
+
+      return {
+        ok: true,
+        data: {
+          outputPath: destinationPath,
+          logs
+        }
+      } as const;
     } catch (error) {
       return { ok: false, error: toSerializableError(error) } as const;
     }

@@ -8,7 +8,8 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.json",
     "dev": "npm run build && node scripts/run-electron.js",
-    "start": "node scripts/run-electron.js"
+    "start": "node scripts/run-electron.js",
+    "dist:win": "npm run build && electron-builder --win"
   },
   "dependencies": {
     "yauzl": "^3.2.0"
@@ -17,6 +18,35 @@
     "@types/node": "^24.0.0",
     "@types/yauzl": "^2.10.3",
     "electron": "^37.0.0",
+    "electron-builder": "^26.0.12",
     "typescript": "^5.8.2"
+  },
+  "build": {
+    "appId": "com.mongtang.zipbookviewer",
+    "productName": "ZIP 이미지 뷰어",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "index.html",
+      "converter.html",
+      "help.html",
+      "styles.css",
+      "assets/**/*",
+      "package.json",
+      "!PLAN.MD",
+      "!RULES.MD"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }

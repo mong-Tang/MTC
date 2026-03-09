@@ -40,7 +40,7 @@ function resolveMimeType(entryName: string): string {
 
 export class ZipArchiveProvider implements IArchiveProvider {
   canOpen(filePath: string): boolean {
-    return filePath.toLowerCase().endsWith('.zip');
+    return /\.(zip|cbz)$/i.test(filePath);
   }
 
   async open(filePath: string): Promise<ArchiveOpenResult> {

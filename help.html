@@ -1,0 +1,232 @@
+﻿<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Guide</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+        background: #0b1220;
+        color: #e2e8f0;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        min-height: 100vh;
+      }
+      .toc {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow: auto;
+        border-right: 1px solid #334155;
+        background: #0f172a;
+        padding: 18px 14px;
+      }
+      .toc h1 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      .toc a {
+        display: block;
+        color: #cbd5e1;
+        text-decoration: none;
+        padding: 8px 10px;
+        border-radius: 8px;
+        margin-bottom: 4px;
+      }
+      .toc a.only-ko,
+      .toc a.only-en {
+        display: none;
+      }
+      .toc a:hover {
+        background: #1e293b;
+      }
+      main {
+        padding: 24px;
+        max-width: 980px;
+      }
+      section {
+        margin-bottom: 34px;
+        scroll-margin-top: 12px;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      .card {
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+        background: #111827;
+      }
+      ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      li {
+        margin: 6px 0;
+      }
+      kbd {
+        border: 1px solid #64748b;
+        border-bottom-width: 2px;
+        border-radius: 6px;
+        padding: 1px 6px;
+        font-family: Consolas, monospace;
+        font-size: 12px;
+      }
+      .muted {
+        color: #94a3b8;
+      }
+      .only-ko,
+      .only-en {
+        display: none;
+      }
+      body.lang-ko .only-ko {
+        display: block;
+      }
+      body.lang-en .only-en {
+        display: block;
+      }
+      body.lang-ko .toc a.only-ko,
+      body.lang-en .toc a.only-en {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="toc">
+        <h1 class="only-ko">사용 가이드</h1>
+        <h1 class="only-en">User Guide</h1>
+        <a href="#quick" class="only-ko">빠른 시작</a>
+        <a href="#quick" class="only-en">Quick Start</a>
+        <a href="#shortcuts" class="only-ko">단축키</a>
+        <a href="#shortcuts" class="only-en">Shortcuts</a>
+        <a href="#edit" class="only-ko">페이지 편집</a>
+        <a href="#edit" class="only-en">Page Editing</a>
+        <a href="#cbz" class="only-ko">CBZ 처리 방식</a>
+        <a href="#cbz" class="only-en">CBZ Handling</a>
+        <a href="#trouble" class="only-ko">문제 해결</a>
+        <a href="#trouble" class="only-en">Troubleshooting</a>
+      </aside>
+
+      <main>
+        <section id="quick">
+          <h2 class="only-ko">빠른 시작</h2>
+          <h2 class="only-en">Quick Start</h2>
+          <div class="card only-ko">
+            <ul>
+              <li><b>파일 &gt; 파일 열기</b>로 ZIP/CBZ를 선택합니다.</li>
+              <li>CBZ는 변환 후 열기 여부를 물어봅니다. 아니오를 누르면 그대로 엽니다.</li>
+              <li><b>보기 &gt; 이동</b>에서 페이지 이동/권 이동을 사용할 수 있습니다.</li>
+            </ul>
+          </div>
+          <div class="card only-en">
+            <ul>
+              <li>Open a ZIP/CBZ from <b>File &gt; Open File</b>.</li>
+              <li>For CBZ, the app asks whether to convert first. Choose No to open as-is.</li>
+              <li>Use <b>View &gt; Navigate</b> for page/book navigation.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="shortcuts">
+          <h2 class="only-ko">단축키</h2>
+          <h2 class="only-en">Shortcuts</h2>
+          <div class="card only-ko">
+            <ul>
+              <li>이전/다음 페이지: <kbd>←</kbd> / <kbd>→</kbd></li>
+              <li>10페이지 이동: <kbd>PageUp</kbd> / <kbd>PageDown</kbd></li>
+              <li>처음/마지막 페이지: <kbd>Home</kbd> / <kbd>End</kbd></li>
+              <li>이전권/다음권: <kbd>Shift+PageUp</kbd> / <kbd>Shift+PageDown</kbd></li>
+              <li>목록 패널 토글: <kbd>Ctrl+B</kbd></li>
+            </ul>
+          </div>
+          <div class="card only-en">
+            <ul>
+              <li>Previous/Next Page: <kbd>Left</kbd> / <kbd>Right</kbd></li>
+              <li>Jump 10 pages: <kbd>PageUp</kbd> / <kbd>PageDown</kbd></li>
+              <li>First/Last Page: <kbd>Home</kbd> / <kbd>End</kbd></li>
+              <li>Previous/Next Book: <kbd>Shift+PageUp</kbd> / <kbd>Shift+PageDown</kbd></li>
+              <li>Toggle List Panel: <kbd>Ctrl+B</kbd></li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="edit">
+          <h2 class="only-ko">페이지 편집</h2>
+          <h2 class="only-en">Page Editing</h2>
+          <div class="card only-ko">
+            <ul>
+              <li>편집은 원본을 직접 덮어쓰지 않습니다.</li>
+              <li>원본 ZIP이면 <code>_edited_YYYYMMDD_HHMMSS.zip</code> 새 파일을 만듭니다.</li>
+              <li>이미 편집본이면 같은 파일을 갱신하고 즉시 리로드합니다.</li>
+            </ul>
+          </div>
+          <div class="card only-en">
+            <ul>
+              <li>Editing never overwrites original source ZIP directly.</li>
+              <li>For original ZIPs, a new <code>_edited_YYYYMMDD_HHMMSS.zip</code> is created.</li>
+              <li>For edited ZIPs, the same file is updated and reloaded immediately.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="cbz">
+          <h2 class="only-ko">CBZ 처리 방식</h2>
+          <h2 class="only-en">CBZ Handling</h2>
+          <div class="card only-ko">
+            <ul>
+              <li>앱은 ZIP을 우선 권장하며, CBZ 열기 시 변환 여부를 확인합니다.</li>
+              <li>CBZ가 유효한 ZIP 구조면 변환 없이도 바로 열 수 있습니다.</li>
+              <li>가짜 확장자/손상 파일은 검사 단계에서 안내 메시지를 확인하세요.</li>
+            </ul>
+          </div>
+          <div class="card only-en">
+            <ul>
+              <li>The app prefers ZIP and asks before converting CBZ.</li>
+              <li>If CBZ is a valid ZIP container, it can be opened without conversion.</li>
+              <li>For fake extensions or corrupted files, check the guidance message shown during validation.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="trouble">
+          <h2 class="only-ko">문제 해결</h2>
+          <h2 class="only-en">Troubleshooting</h2>
+          <div class="card only-ko">
+            <ul>
+              <li><b>ZIP(CBZ) 형식 아님</b>: 확장자만 바뀐 파일일 수 있습니다.</li>
+              <li><b>손상</b>: 파일을 다시 다운로드/복사해 보세요.</li>
+              <li><b>권한 없음</b>: 다른 앱 점유 여부 또는 폴더 권한을 확인하세요.</li>
+            </ul>
+          </div>
+          <div class="card only-en">
+            <ul>
+              <li><b>Not a valid ZIP(CBZ)</b>: The file may only be renamed.</li>
+              <li><b>Corrupted</b>: Re-download or re-copy the file.</li>
+              <li><b>Access denied</b>: Check file lock and folder permissions.</li>
+            </ul>
+          </div>
+          <p class="muted only-ko">※ 이 도움말은 v0.1 기준입니다.</p>
+          <p class="muted only-en">※ This guide is based on v0.1.</p>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const lang = new URLSearchParams(location.search).get('lang');
+      document.body.classList.add(lang === 'en' ? 'lang-en' : 'lang-ko');
+    </script>
+  </body>
+</html>

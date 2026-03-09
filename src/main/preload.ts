@@ -9,6 +9,7 @@ interface OpenFileDialogOptions {
   title: string;
   zipFilterName: string;
   imageFilterName: string;
+  archiveFilterName?: string;
   defaultPath?: string;
 }
 
@@ -52,6 +53,7 @@ type MenuAction =
   | 'image-fit-actual'
   | 'image-fit-width'
   | 'image-fit-height';
+type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy';
 
 type SidebarItemType = 'zip' | 'image' | 'archive';
 
@@ -67,6 +69,11 @@ interface ImageOpenResult {
   name: string;
   mimeType: string;
   bytes: number[];
+}
+
+interface ConverterResult {
+  outputPath: string;
+  logs: string[];
 }
 
 type ZipEditRequest =
@@ -138,6 +145,16 @@ const api = {
       ipcRenderer.removeListener(channel, handler);
     };
   },
+  onConverterMenuAction: (listener: (action: ConverterMenuAction) => void) => {
+    const channel = 'converter:menu-action';
+    const handler = (_event: Electron.IpcRendererEvent, action: ConverterMenuAction) => listener(action);
+    ipcRenderer.on(channel, handler);
+    return () => {
+      ipcRenderer.removeListener(channel, handler);
+    };
+  },
+  convertArchiveToZip: (sourcePath: string, outputDirectory: string) =>
+    ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory) as Promise<IpcResult<ConverterResult>>,
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,

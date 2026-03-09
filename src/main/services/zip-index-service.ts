@@ -25,6 +25,33 @@ function mapFsError(error: unknown): AppError {
   return new AppError('UNKNOWN', fsError.message);
 }
 
+async function validateZipSignature(filePath: string): Promise<void> {
+  let handle: fs.FileHandle | null = null;
+  try {
+    handle = await fs.open(filePath, 'r');
+    const header = Buffer.alloc(4);
+    const { bytesRead } = await handle.read(header, 0, 4, 0);
+    if (bytesRead < 4) {
+      throw new AppError('ZIP_INVALID_FORMAT', 'The file is too small to be a valid ZIP/CBZ.');
+    }
+
+    const signature = header.toString('binary');
+    const validSignatures = new Set(['PK\x03\x04', 'PK\x05\x06', 'PK\x07\x08']);
+    if (!validSignatures.has(signature)) {
+      throw new AppError('ZIP_INVALID_FORMAT', 'The file does not have a valid ZIP signature.');
+    }
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw mapFsError(error);
+  } finally {
+    await handle?.close().catch(() => {
+      // ignore close errors
+    });
+  }
+}
+
 export async function openZip(filePath: string): Promise<ArchiveOpenResult> {
   const normalizedPath = path.resolve(filePath);
   let stats: Awaited<ReturnType<typeof fs.stat>>;
@@ -37,8 +64,10 @@ export async function openZip(filePath: string): Promise<ArchiveOpenResult> {
   }
 
   if (!zipProvider.canOpen(normalizedPath)) {
-    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip is supported in v0.1.');
+    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz is supported in v0.1.');
   }
+
+  await validateZipSignature(normalizedPath);
 
   const result = await zipProvider.open(normalizedPath);
 
@@ -70,8 +99,10 @@ export async function getZipPage(filePath: string, entryName: string): Promise<A
   }
 
   if (!zipProvider.canOpen(normalizedPath)) {
-    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip is supported in v0.1.');
+    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz is supported in v0.1.');
   }
+
+  await validateZipSignature(normalizedPath);
 
   return zipProvider.getPage(normalizedPath, entryName);
 }

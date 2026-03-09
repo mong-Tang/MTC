@@ -235,6 +235,7 @@ function getErrorMessage(error: SerializableAppError): string {
   const mapping: Record<string, string> = {
     FILE_NOT_FOUND: 'error.fileNotFound',
     FILE_ACCESS_DENIED: 'error.fileAccessDenied',
+    ZIP_INVALID_FORMAT: 'error.zip.invalidFormat',
     ZIP_CORRUPTED: 'error.zip.corrupted',
     ZIP_ENCRYPTED: 'error.zip.encrypted',
     ZIP_NO_IMAGE: 'error.zip.noImage',
@@ -246,6 +247,22 @@ function getErrorMessage(error: SerializableAppError): string {
 
   const key = mapping[error.code] ?? 'error.unknown';
   return t(key);
+}
+
+function isArchiveValidationError(errorCode: string): boolean {
+  return (
+    errorCode === 'ZIP_CORRUPTED' ||
+    errorCode === 'ZIP_INVALID_FORMAT' ||
+    errorCode === 'ZIP_ENCRYPTED' ||
+    errorCode === 'ZIP_NO_IMAGE' ||
+    errorCode === 'ZIP_OPEN_FAILED' ||
+    errorCode === 'FILE_NOT_FOUND' ||
+    errorCode === 'FILE_ACCESS_DENIED'
+  );
+}
+
+function showArchiveValidationModal(error: SerializableAppError): void {
+  window.alert(getErrorMessage(error));
 }
 
 function byId<T extends HTMLElement>(id: string): T {
@@ -457,6 +474,31 @@ function getCurrentOpenedBookIndex(): number {
   return items.findIndex((item) => isSamePath(item.path, currentPath));
 }
 
+function getBookNavigationStatusHint(): string {
+  const currentPath = getCurrentOpenedPathForBookNavigation();
+  if (!currentPath) {
+    return '';
+  }
+
+  const items = getNavigableSidebarItems();
+  const index = items.findIndex((item) => isSamePath(item.path, currentPath));
+  if (items.length <= 1 || index < 0) {
+    return t('viewer.status.bookNav.noSeries');
+  }
+
+  const canOpenPrevBook = index > 0;
+  const canOpenNextBook = index < items.length - 1;
+  if (!canOpenPrevBook && canOpenNextBook) {
+    return t('viewer.status.bookNav.first');
+  }
+
+  if (canOpenPrevBook && !canOpenNextBook) {
+    return t('viewer.status.bookNav.last');
+  }
+
+  return '';
+}
+
 function syncBookNavigationStateToMenu(): void {
   const index = getCurrentOpenedBookIndex();
   const items = getNavigableSidebarItems();
@@ -525,15 +567,16 @@ function getCurrentOpenedFileName(): string {
 
 function composeViewerStatusText(statusText: string): string {
   const fileName = getCurrentOpenedFileName();
+  const bookNavigationHint = getBookNavigationStatusHint();
   if (!fileName) {
     return statusText;
   }
 
   if (!statusText) {
-    return fileName;
+    return bookNavigationHint ? `${fileName} | ${bookNavigationHint}` : fileName;
   }
 
-  return `${fileName} | ${statusText}`;
+  return bookNavigationHint ? `${fileName} | ${statusText} | ${bookNavigationHint}` : `${fileName} | ${statusText}`;
 }
 
 function syncRecentItemsToMenu(): void {
@@ -591,8 +634,19 @@ function setSidebarDragLayerActive(active: boolean): void {
   elements.sidebarDragLayer().classList.toggle('active', active);
 }
 
+let busyCursorDepth = 0;
+
+function setBusyCursor(active: boolean): void {
+  busyCursorDepth = Math.max(0, busyCursorDepth + (active ? 1 : -1));
+  document.body.style.cursor = busyCursorDepth > 0 ? 'wait' : '';
+}
+
 function isZipPath(filePath: string): boolean {
   return filePath.toLowerCase().endsWith('.zip');
+}
+
+function isCbzPath(filePath: string): boolean {
+  return filePath.toLowerCase().endsWith('.cbz');
 }
 
 function isImagePath(filePath: string): boolean {
@@ -1164,14 +1218,16 @@ function requestViewerRender(): void {
 
 async function openZipPath(
   zipPath: string,
-  options?: { preserveSidebarContext?: boolean; preferredPageIndex?: number; skipRecentUpdate?: boolean }
-): Promise<{ ok: true } | { ok: false; errorCode: string }> {
+  options?: { preserveSidebarContext?: boolean; preferredPageIndex?: number; skipRecentUpdate?: boolean; suppressError?: boolean }
+): Promise<{ ok: true } | { ok: false; error: SerializableAppError }> {
   clearError();
   resetOpenedContent();
   const result = await window.appApi.openZip(zipPath);
   if (!result.ok) {
-    showError(result.error);
-    return { ok: false, errorCode: result.error.code };
+    if (!options?.suppressError) {
+      showError(result.error);
+    }
+    return { ok: false, error: result.error };
   }
 
   state.archive = result.data;
@@ -1220,6 +1276,38 @@ async function openFilePath(filePath: string, options?: { preserveSidebarContext
     return;
   }
 
+  if (isCbzPath(filePath)) {
+    const convertFirst = confirmAction(t('dialog.confirm.cbzPreferZip', { name: filePath }));
+    if (convertFirst) {
+      setBusyCursor(true);
+      try {
+        const result = await window.appApi.convertArchiveToZip(filePath, getDirectoryPath(filePath));
+        if (!result.ok) {
+          if (isArchiveValidationError(result.error.code)) {
+            showArchiveValidationModal(result.error);
+          } else {
+            showError(result.error);
+          }
+          return;
+        }
+        await openZipPath(result.data.outputPath, options);
+      } finally {
+        setBusyCursor(false);
+      }
+      return;
+    }
+
+    const openResult = await openZipPath(filePath, { ...options, suppressError: true });
+    if (!openResult.ok) {
+      if (isArchiveValidationError(openResult.error.code)) {
+        showArchiveValidationModal(openResult.error);
+      } else {
+        showError(openResult.error);
+      }
+    }
+    return;
+  }
+
   if (isImagePath(filePath)) {
     await openImagePath(filePath, options);
     return;
@@ -1260,12 +1348,10 @@ function renderSidebarItems(): void {
     });
     button.addEventListener('dblclick', () => {
       setSelectedSidebarItem(item.path);
-      if (item.type === 'zip' || item.type === 'image') {
+      if (item.type === 'zip' || item.type === 'image' || item.type === 'archive') {
         void openFilePath(item.path, { preserveSidebarContext: true });
         return;
       }
-
-      showError({ code: 'CONVERTER_REQUIRED', message: t('error.archive.converterRequired', { name: item.name }) });
     });
     button.addEventListener('contextmenu', (event) => {
       event.preventDefault();
@@ -1475,10 +1561,15 @@ async function handleDeletePageRequest(target: 'left' | 'right'): Promise<void> 
   }
 
   const preferredPageIndex = state.currentPageIndex;
-  const editResult = await window.appApi.editZipPages(state.zipPath, {
-    kind: 'delete',
-    targetEntryName: currentPage.entryName
-  });
+  setBusyCursor(true);
+  const editResult = await window.appApi
+    .editZipPages(state.zipPath, {
+      kind: 'delete',
+      targetEntryName: currentPage.entryName
+    })
+    .finally(() => {
+      setBusyCursor(false);
+    });
   if (!editResult.ok) {
     const failureMessage = t('dialog.error.pageEditFailed', { reason: editResult.error.message });
     showError({
@@ -1591,13 +1682,18 @@ async function handleInsertAfterCurrentPageRequest(): Promise<void> {
   }
 
   const preferredPageIndex = state.currentPageIndex;
-  const editResult = await window.appApi.editZipPages(state.zipPath, {
-    kind: 'insert-after',
-    afterEntryName: currentPage.entryName,
-    insertFileName: adjustedInsert.name,
-    insertMimeType: adjustedInsert.mimeType,
-    insertBytes: adjustedInsert.bytes
-  });
+  setBusyCursor(true);
+  const editResult = await window.appApi
+    .editZipPages(state.zipPath, {
+      kind: 'insert-after',
+      afterEntryName: currentPage.entryName,
+      insertFileName: adjustedInsert.name,
+      insertMimeType: adjustedInsert.mimeType,
+      insertBytes: adjustedInsert.bytes
+    })
+    .finally(() => {
+      setBusyCursor(false);
+    });
   if (!editResult.ok) {
     const failureMessage = t('dialog.error.pageEditFailed', { reason: editResult.error.message });
     showError({
@@ -2134,7 +2230,7 @@ function bindEvents(): void {
   const unsubscribeOpenRecent = window.appApi.onOpenRecent((zipPath) => {
     void (async () => {
       const openResult = await openZipPath(zipPath);
-      if (openResult.ok || openResult.errorCode !== 'FILE_NOT_FOUND') {
+      if (openResult.ok || openResult.error.code !== 'FILE_NOT_FOUND') {
         return;
       }
 

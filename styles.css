@@ -293,6 +293,12 @@ body {
   height: 100%;
 }
 
+#view-launcher {
+  background:
+    linear-gradient(to bottom, rgba(12, 17, 25, 0.28), rgba(12, 17, 25, 0.62)),
+    url("./assets/startup-hero.jpg") center / auto 100% no-repeat;
+}
+
 .hidden {
   display: none;
 }
