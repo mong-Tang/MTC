@@ -1,301 +1,4 @@
-﻿interface ArchivePage {
-  index: number;
-  entryName: string;
-  displayName: string;
-}
-
-interface ArchiveMeta {
-  title: string;
-  totalPages: number;
-  hasEncryptedEntries: boolean;
-  fileId: string;
-}
-
-interface ArchiveOpenResult {
-  meta: ArchiveMeta;
-  pages: ArchivePage[];
-}
-
-interface ArchivePageData {
-  entryName: string;
-  mimeType: string;
-  bytes: number[];
-}
-
-interface SerializableAppError {
-  code: string;
-  message: string;
-}
-
-interface RecentItem {
-  fileId: string;
-  zipPath: string;
-  title: string;
-  lastPageIndex: number;
-  lastOpenedAt: string;
-}
-
-interface UpsertRecentInput {
-  fileId: string;
-  zipPath: string;
-  title: string;
-  lastPageIndex: number;
-}
-
-type SidebarItemType = 'zip' | 'image' | 'archive';
-type PageViewMode = 'single' | 'double';
-type ImageFitMode = 'auto' | 'actual' | 'width' | 'height';
-type FileTransferMode = 'copy' | 'cut';
-
-interface SidebarListItem {
-  name: string;
-  path: string;
-  type: SidebarItemType;
-  extension: string;
-}
-
-interface OpenedImageFile {
-  path: string;
-  name: string;
-  mimeType: string;
-  bytes: number[];
-}
-
-interface ImageDimensions {
-  width: number;
-  height: number;
-}
-
-interface FileTransferClipboard {
-  sourcePath: string;
-  sourceName: string;
-  mode: FileTransferMode;
-}
-
-type Locale = 'ko' | 'en';
-type I18nParams = Record<string, string | number>;
-type I18nDictionary = Record<string, string>;
-type I18nDictionaries = Record<Locale, I18nDictionary>;
-type MenuAction =
-  | 'open-file'
-  | 'open-folder'
-  | 'show-launcher'
-  | 'show-viewer'
-  | 'show-settings'
-  | 'toggle-folder-list'
-  | 'move-prev-page'
-  | 'move-next-page'
-  | 'move-prev-10-pages'
-  | 'move-next-10-pages'
-  | 'open-prev-book'
-  | 'open-next-book'
-  | 'move-first-page'
-  | 'move-last-page'
-  | 'file-copy'
-  | 'file-cut'
-  | 'file-delete'
-  | 'file-paste'
-  | 'file-cancel-transfer'
-  | 'edit-delete-left-page'
-  | 'edit-delete-right-page'
-  | 'edit-insert-after-current-page'
-  | 'view-single-page'
-  | 'view-double-page'
-  | 'image-fit-auto'
-  | 'image-fit-actual'
-  | 'image-fit-width'
-  | 'image-fit-height';
-type ViewMode = 'launcher' | 'viewer' | 'settings';
-
-const dictionaries: I18nDictionaries = {
-  ko: {},
-  en: {}
-};
-
-let currentLocale: Locale = 'ko';
-
-function t(key: string, params?: I18nParams): string {
-  const fallbackLocale: Locale = currentLocale === 'ko' ? 'en' : 'ko';
-  const source = dictionaries[currentLocale]?.[key] ?? dictionaries[fallbackLocale]?.[key] ?? key;
-
-  if (source === key) {
-    console.warn(`[i18n] missing key: ${key}`);
-  }
-
-  if (!params) {
-    return source;
-  }
-
-  return Object.entries(params).reduce((acc, [paramKey, value]) => acc.replaceAll(`{${paramKey}}`, String(value)), source);
-}
-
-function getLocale(): Locale {
-  return currentLocale;
-}
-
-function setLocale(locale: Locale): void {
-  currentLocale = locale;
-  void window.appApi.setAppLocale(locale).catch((error) => {
-    console.warn('[i18n] failed to sync app locale:', error);
-  });
-  void window.appApi.updateAppSettings({ locale }).catch((error) => {
-    console.warn('[settings] failed to persist locale:', error);
-  });
-}
-
-function applyLocaleFromMenu(locale: Locale): void {
-  currentLocale = locale;
-}
-
-function isDictionary(candidate: unknown): candidate is I18nDictionary {
-  return !!candidate && typeof candidate === 'object' && Object.values(candidate as Record<string, unknown>).every((value) => typeof value === 'string');
-}
-
-function isI18nDictionaries(candidate: unknown): candidate is I18nDictionaries {
-  if (!candidate || typeof candidate !== 'object') {
-    return false;
-  }
-
-  const value = candidate as Record<string, unknown>;
-  return isDictionary(value.ko) && isDictionary(value.en);
-}
-
-async function loadI18nDictionaries(): Promise<void> {
-  try {
-    const loaded = await window.appApi.getI18nDictionaries();
-    if (!isI18nDictionaries(loaded)) {
-      throw new Error('Invalid i18n payload.');
-    }
-
-    dictionaries.ko = loaded.ko;
-    dictionaries.en = loaded.en;
-  } catch (error) {
-    console.warn('[i18n] failed to load dictionaries:', error);
-  }
-}
-
-interface AppState {
-  currentView: ViewMode;
-  archive: ArchiveOpenResult | null;
-  openedImage: OpenedImageFile | null;
-  zipPath: string | null;
-  currentPageIndex: number;
-  recentItems: RecentItem[];
-  pageObjectUrl: string | null;
-  pageRenderToken: number;
-  activeError: SerializableAppError | null;
-  viewerRenderInFlight: boolean;
-  queuedPageIndex: number | null;
-  sidebarWidth: number;
-  currentFolderPath: string | null;
-  sidebarItems: SidebarListItem[];
-  bookNavItems: SidebarListItem[];
-  selectedSidebarItemPath: string | null;
-  fileTransferClipboard: FileTransferClipboard | null;
-  pageViewMode: PageViewMode;
-  imageFitMode: ImageFitMode;
-  showSidebarList: boolean;
-  dragDebugText: string;
-  skipRecentSyncOnce: boolean;
-}
-
-const state: AppState = {
-  currentView: 'launcher',
-  archive: null,
-  openedImage: null,
-  zipPath: null,
-  currentPageIndex: 0,
-  recentItems: [],
-  pageObjectUrl: null,
-  pageRenderToken: 0,
-  activeError: null,
-  viewerRenderInFlight: false,
-  queuedPageIndex: null,
-  sidebarWidth: 260,
-  currentFolderPath: null,
-  sidebarItems: [],
-  bookNavItems: [],
-  selectedSidebarItemPath: null,
-  fileTransferClipboard: null,
-  pageViewMode: 'single',
-  imageFitMode: 'auto',
-  showSidebarList: false,
-  dragDebugText: 'drag: idle',
-  skipRecentSyncOnce: false
-};
-
-let dragDepth = 0;
-const boundDragTargets = new WeakSet<EventTarget>();
-
-function getErrorMessage(error: SerializableAppError): string {
-  if (error.code === 'DROP_DEBUG' || error.code === 'CONVERTER_REQUIRED') {
-    return error.message;
-  }
-
-  const mapping: Record<string, string> = {
-    FILE_NOT_FOUND: 'error.fileNotFound',
-    FILE_ACCESS_DENIED: 'error.fileAccessDenied',
-    ZIP_INVALID_FORMAT: 'error.zip.invalidFormat',
-    ZIP_CORRUPTED: 'error.zip.corrupted',
-    ZIP_ENCRYPTED: 'error.zip.encrypted',
-    ZIP_NO_IMAGE: 'error.zip.noImage',
-    ZIP_PAGE_NOT_FOUND: 'error.zip.pageNotFound',
-    UNSUPPORTED_FILE_TYPE: 'error.zip.onlyZip',
-    ZIP_OPEN_FAILED: 'error.zip.openFailed',
-    UNKNOWN: 'error.unknown'
-  };
-
-  const key = mapping[error.code] ?? 'error.unknown';
-  return t(key);
-}
-
-function isArchiveValidationError(errorCode: string): boolean {
-  return (
-    errorCode === 'ZIP_CORRUPTED' ||
-    errorCode === 'ZIP_INVALID_FORMAT' ||
-    errorCode === 'ZIP_ENCRYPTED' ||
-    errorCode === 'ZIP_NO_IMAGE' ||
-    errorCode === 'ZIP_OPEN_FAILED' ||
-    errorCode === 'FILE_NOT_FOUND' ||
-    errorCode === 'FILE_ACCESS_DENIED'
-  );
-}
-
-function showArchiveValidationModal(error: SerializableAppError): void {
-  window.alert(getErrorMessage(error));
-}
-
-function byId<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id);
-  if (!element) {
-    throw new Error(`Missing element: ${id}`);
-  }
-  return element as T;
-}
-
-const elements = {
-  sidebar: () => document.querySelector('.sidebar') as HTMLElement,
-  sidebarTitle: () => byId<HTMLDivElement>('sidebar-title'),
-  sidebarDragLayer: () => byId<HTMLDivElement>('sidebar-drag-layer'),
-  fileTree: () => byId<HTMLDivElement>('file-tree'),
-  workspace: () => byId<HTMLElement>('workspace'),
-  launcherView: () => byId<HTMLDivElement>('view-launcher'),
-  viewerView: () => byId<HTMLDivElement>('view-viewer'),
-  settingsView: () => byId<HTMLDivElement>('view-settings'),
-  viewerImage: () => byId<HTMLDivElement>('viewer-image'),
-  settingsPlaceholder: () => byId<HTMLDivElement>('settings-placeholder'),
-  globalError: () => byId<HTMLDivElement>('global-error'),
-  dropOverlay: () => byId<HTMLDivElement>('drop-overlay'),
-  splitter: () => byId<HTMLDivElement>('splitter'),
-  dropOverlayText: () => byId<HTMLDivElement>('drop-overlay-text'),
-  pageMoveToast: () => byId<HTMLDivElement>('page-move-toast'),
-  sizeAdjustModal: () => byId<HTMLDivElement>('size-adjust-modal'),
-  sizeAdjustTitle: () => byId<HTMLHeadingElement>('size-adjust-title'),
-  sizeAdjustMessage: () => byId<HTMLDivElement>('size-adjust-message'),
-  sizeAdjustCancel: () => byId<HTMLButtonElement>('size-adjust-cancel'),
-  sizeAdjustOriginal: () => byId<HTMLButtonElement>('size-adjust-original'),
-  sizeAdjustConfirm: () => byId<HTMLButtonElement>('size-adjust-confirm')
-};
+// All core interfaces, elements collection, state declarations, and i18n are now managed in state.ts for pure modular design.
 
 let pageMoveToastTimer: number | null = null;
 let sizeAdjustChoiceResolver: ((choice: 'cancel' | 'original' | 'confirm') => void) | null = null;
@@ -415,11 +118,54 @@ function canEditRightPage(): boolean {
   );
 }
 
+function updateMenuStates(): void {
+  const isFileOpen = state.zipPath !== null || state.openedImage !== null;
+
+  // Actions that strictly require a file to be open
+  const fileActions = [
+    'close-file', 'file-copy', 'file-cut', 'file-paste', 'file-delete', 'file-cancel-transfer',
+    'edit-delete-left-page', 'edit-delete-right-page', 'edit-insert-after-current-page',
+    'view-single-page', 'view-double-page',
+    'move-prev-page', 'move-next-page', 'move-first-page', 'move-last-page',
+    'move-prev-10-pages', 'move-next-10-pages', 'open-prev-book', 'open-next-book',
+    'image-fit-auto', 'image-fit-actual', 'image-fit-width', 'image-fit-height'
+  ];
+
+  document.querySelectorAll('.dropdown-item').forEach((el) => {
+    const btn = el as HTMLButtonElement;
+    const action = btn.getAttribute('data-action');
+    if (action && fileActions.includes(action)) {
+      btn.disabled = !isFileOpen;
+    }
+
+    // Check submenu triggers
+    const text = btn.textContent || '';
+    if (text.includes('페이지 보기') || text.includes('이동') || text.includes('이미지 맞춤')) {
+      btn.disabled = !isFileOpen;
+      const parent = btn.closest('.dropdown-submenu-parent');
+      if (parent) {
+        parent.classList.toggle('disabled', !isFileOpen);
+      }
+    }
+  });
+}
+
 function syncPageEditStateToMenu(): void {
   window.appApi.updatePageEditState({
     canEditLeftPage: canEditCurrentPage(),
     canEditRightPage: canEditRightPage()
   });
+
+  // Sync direct header toggles on the right
+  const singleBtn = document.getElementById('header-btn-single');
+  const doubleBtn = document.getElementById('header-btn-double');
+  if (singleBtn && doubleBtn) {
+    singleBtn.classList.toggle('active', state.pageViewMode === 'single');
+    doubleBtn.classList.toggle('active', state.pageViewMode === 'double');
+  }
+
+  // Update dynamic menu active/inactive states based on file loaded state
+  updateMenuStates();
 }
 
 function getNavigableSidebarItems(): SidebarListItem[] {
@@ -929,33 +675,7 @@ function bindDragListeners(target: EventTarget): void {
   boundDragTargets.add(target);
 }
 
-function revokePageObjectUrl(): void {
-  if (!state.pageObjectUrl) {
-    return;
-  }
-
-  for (const objectUrl of state.pageObjectUrl.split('\n')) {
-    if (objectUrl) {
-      URL.revokeObjectURL(objectUrl);
-    }
-  }
-  state.pageObjectUrl = null;
-}
-
-function resetOpenedContent(): void {
-  revokePageObjectUrl();
-  state.archive = null;
-  state.openedImage = null;
-  state.zipPath = null;
-  state.currentPageIndex = 0;
-  state.bookNavItems = [];
-  state.pageRenderToken += 1;
-  state.queuedPageIndex = null;
-  elements.viewerImage().innerHTML = '';
-  syncViewerStatusToMenu('');
-  syncPageEditStateToMenu();
-  syncBookNavigationStateToMenu();
-}
+// Image decoding, double-buffering image preloading, sizing calculations, and rendering schedules are now entirely managed in viewer.ts
 
 function clearSidebarListContext(): void {
   state.currentFolderPath = null;
@@ -963,257 +683,6 @@ function clearSidebarListContext(): void {
   state.selectedSidebarItemPath = null;
   syncFileSelectionStateToMenu();
   syncBookNavigationStateToMenu();
-}
-
-function renderImageBytes(name: string, mimeType: string, bytes: number[]): void {
-  const viewerImage = elements.viewerImage();
-  const imageElement = document.createElement('img');
-  const blob = new Blob([Uint8Array.from(bytes)], { type: mimeType });
-  const objectUrl = URL.createObjectURL(blob);
-
-  imageElement.src = objectUrl;
-  imageElement.alt = name;
-  imageElement.className = `viewer-image-content fit-${state.imageFitMode}`;
-  imageElement.draggable = false;
-  applyViewerImageSizing(imageElement, state.pageViewMode === 'double');
-
-  revokePageObjectUrl();
-  state.pageObjectUrl = objectUrl;
-
-  viewerImage.innerHTML = '';
-  viewerImage.appendChild(imageElement);
-}
-
-function getViewerImageClassName(forDoublePage: boolean): string {
-  const fitMode = state.imageFitMode;
-  return `viewer-image-content fit-${fitMode}${forDoublePage ? ' viewer-image-double' : ''}`;
-}
-
-function applyViewerImageSizing(imageElement: HTMLImageElement, forDoublePage: boolean): void {
-  imageElement.style.height = '';
-  imageElement.style.maxHeight = '';
-  imageElement.style.width = '';
-  imageElement.style.maxWidth = '';
-
-  const viewerContainer = elements.viewerImage();
-  const viewerHeight = Math.max(0, Math.floor(viewerContainer.clientHeight || elements.viewerView().clientHeight));
-  const viewerWidth = Math.max(0, Math.floor(viewerContainer.clientWidth || elements.viewerView().clientWidth));
-  const heightValue = `${viewerHeight}px`;
-  const widthValue = `${forDoublePage ? Math.max(0, Math.floor((viewerWidth - 12) / 2)) : viewerWidth}px`;
-
-  if (state.imageFitMode === 'height') {
-    imageElement.style.height = heightValue;
-    imageElement.style.maxHeight = 'none';
-    imageElement.style.width = 'auto';
-    imageElement.style.maxWidth = 'none';
-    return;
-  }
-
-  if (state.imageFitMode === 'width') {
-    imageElement.style.width = widthValue;
-    imageElement.style.maxWidth = 'none';
-    imageElement.style.height = 'auto';
-    imageElement.style.maxHeight = 'none';
-    return;
-  }
-}
-
-function reflowRenderedViewerImages(): void {
-  if (state.currentView !== 'viewer') {
-    return;
-  }
-
-  const renderedImages = elements.viewerImage().querySelectorAll<HTMLImageElement>('img.viewer-image-content');
-  if (renderedImages.length === 0) {
-    return;
-  }
-
-  renderedImages.forEach((imageElement) => {
-    const isDoublePageImage = imageElement.classList.contains('viewer-image-double');
-    applyViewerImageSizing(imageElement, isDoublePageImage);
-  });
-}
-
-async function renderZipPages(pages: ArchivePage[]): Promise<void> {
-  const viewerImage = elements.viewerImage();
-  viewerImage.innerHTML = '';
-  const objectUrls: string[] = [];
-
-  for (const page of pages) {
-    const result = await window.appApi.getPage(state.zipPath as string, page.entryName);
-    if (!result.ok) {
-      showError(result.error);
-      viewerImage.textContent = t('viewer.placeholder.loadFailed', { name: page.displayName });
-      return;
-    }
-
-    const imageElement = document.createElement('img');
-    const blob = new Blob([Uint8Array.from(result.data.bytes)], { type: result.data.mimeType });
-    const objectUrl = URL.createObjectURL(blob);
-    imageElement.src = objectUrl;
-    imageElement.alt = page.displayName;
-    imageElement.className = getViewerImageClassName(state.pageViewMode === 'double');
-    imageElement.draggable = false;
-    applyViewerImageSizing(imageElement, state.pageViewMode === 'double');
-    viewerImage.appendChild(imageElement);
-    objectUrls.push(objectUrl);
-  }
-
-  state.pageObjectUrl = objectUrls.join('\n');
-}
-
-function clampPageIndex(pageIndex: number, totalPages: number): number {
-  if (totalPages <= 0) {
-    return 0;
-  }
-  if (pageIndex < 0) {
-    return 0;
-  }
-  if (pageIndex >= totalPages) {
-    return totalPages - 1;
-  }
-  return pageIndex;
-}
-
-function buildRecentInput(): UpsertRecentInput | null {
-  if (!state.archive || !state.zipPath) {
-    return null;
-  }
-
-  return {
-    fileId: state.archive.meta.fileId,
-    zipPath: state.zipPath,
-    title: state.archive.meta.title,
-    lastPageIndex: state.currentPageIndex
-  };
-}
-
-async function syncRecentItems(): Promise<void> {
-  const result = await window.appApi.getRecent();
-  if (!result.ok) {
-    showError(result.error);
-    return;
-  }
-
-  state.recentItems = result.data;
-  syncRecentItemsToMenu();
-}
-
-async function resolveInitialPageIndex(fileId: string, totalPages: number): Promise<number> {
-  const result = await window.appApi.getProgress(fileId);
-  if (!result.ok) {
-    showError(result.error);
-    return 0;
-  }
-
-  if (result.data === null) {
-    return 0;
-  }
-
-  return clampPageIndex(result.data, totalPages);
-}
-
-async function persistReadingState(): Promise<void> {
-  if (state.skipRecentSyncOnce) {
-    state.skipRecentSyncOnce = false;
-    return;
-  }
-
-  const recentInput = buildRecentInput();
-  if (!recentInput) {
-    return;
-  }
-
-  const progressResult = await window.appApi.setProgress(recentInput.fileId, recentInput.lastPageIndex);
-  if (!progressResult.ok) {
-    showError(progressResult.error);
-    return;
-  }
-
-  const recentResult = await window.appApi.upsertRecent(recentInput);
-  if (!recentResult.ok) {
-    showError(recentResult.error);
-    return;
-  }
-
-  state.recentItems = recentResult.data;
-  syncRecentItemsToMenu();
-}
-
-async function renderViewer(): Promise<void> {
-  const viewerImage = elements.viewerImage();
-
-  if (state.openedImage) {
-    syncViewerStatusToMenu(composeViewerStatusText(''));
-    clearError();
-    renderImageBytes(state.openedImage.name, state.openedImage.mimeType, state.openedImage.bytes);
-    return;
-  }
-
-  if (!state.archive || !state.zipPath) {
-    viewerImage.textContent = t('viewer.placeholder.empty');
-    syncViewerStatusToMenu('');
-    return;
-  }
-
-  const currentPage = state.archive.pages[state.currentPageIndex];
-  if (!currentPage) {
-    viewerImage.textContent = t('viewer.placeholder.empty');
-    syncViewerStatusToMenu('');
-    return;
-  }
-
-  const pagesToRender =
-    state.pageViewMode === 'double'
-      ? state.archive.pages.slice(state.currentPageIndex, state.currentPageIndex + 2)
-      : [currentPage];
-
-  const statusText = t('viewer.status.detail', {
-    current:
-      pagesToRender.length === 2
-        ? `${state.currentPageIndex + 1}-${state.currentPageIndex + pagesToRender.length}`
-        : state.currentPageIndex + 1,
-    total: state.archive.meta.totalPages,
-    progress: Math.round(((state.currentPageIndex + pagesToRender.length) / state.archive.meta.totalPages) * 100)
-  });
-  syncViewerStatusToMenu(composeViewerStatusText(statusText));
-  viewerImage.textContent = t('viewer.loading');
-
-  const renderToken = ++state.pageRenderToken;
-  clearError();
-  revokePageObjectUrl();
-  await renderZipPages(pagesToRender);
-  if (renderToken !== state.pageRenderToken) {
-    return;
-  }
-  void persistReadingState();
-}
-
-async function flushViewerRenderQueue(): Promise<void> {
-  try {
-    while (true) {
-      state.queuedPageIndex = null;
-      await renderViewer();
-
-      if (state.queuedPageIndex === null) {
-        return;
-      }
-
-      state.currentPageIndex = state.queuedPageIndex;
-    }
-  } finally {
-    state.viewerRenderInFlight = false;
-  }
-}
-
-function requestViewerRender(): void {
-  if (state.viewerRenderInFlight) {
-    state.queuedPageIndex = state.currentPageIndex;
-    return;
-  }
-
-  state.viewerRenderInFlight = true;
-  void flushViewerRenderQueue();
 }
 
 async function openZipPath(
@@ -1356,12 +825,6 @@ function renderSidebarItems(): void {
     button.addEventListener('contextmenu', (event) => {
       event.preventDefault();
       setSelectedSidebarItem(item.path);
-      void window.appApi.showFileEditContextMenu().catch((error) => {
-        showError({
-          code: 'DROP_DEBUG',
-          message: `${t('error.unknown')} (${String(error)})`
-        });
-      });
     });
     container.appendChild(button);
   });
@@ -1837,136 +1300,7 @@ async function handleOpenFolderClick(): Promise<void> {
   await openFolderPath(folderPath);
 }
 
-function handleMenuAction(action: MenuAction): void {
-  if (action === 'open-file') {
-    void handleOpenFileClick();
-    return;
-  }
-
-  if (action === 'open-folder') {
-    void handleOpenFolderClick();
-    return;
-  }
-
-  if (action === 'show-launcher') {
-    switchView('launcher');
-    return;
-  }
-
-  if (action === 'show-viewer') {
-    switchView(state.currentView === 'launcher' ? 'viewer' : 'launcher');
-    return;
-  }
-
-  if (action === 'show-settings') {
-    switchView('settings');
-    return;
-  }
-
-  if (action === 'toggle-folder-list') {
-    state.showSidebarList = !state.showSidebarList;
-    applySidebarVisibility();
-    persistViewerPreferences();
-    return;
-  }
-
-  if (action === 'open-prev-book') {
-    void openAdjacentBook(-1);
-    return;
-  }
-
-  if (action === 'open-next-book') {
-    void openAdjacentBook(1);
-    return;
-  }
-
-  if (handleViewerNavigationAction(action)) {
-    return;
-  }
-
-  if (action === 'file-copy') {
-    void handleFileCopyOrCut('copy');
-    return;
-  }
-
-  if (action === 'file-cut') {
-    void handleFileCopyOrCut('cut');
-    return;
-  }
-
-  if (action === 'file-paste') {
-    void handleFilePaste();
-    return;
-  }
-
-  if (action === 'file-delete') {
-    void handleFileDelete();
-    return;
-  }
-
-  if (action === 'file-cancel-transfer') {
-    handleFileTransferCancel();
-    return;
-  }
-
-  if (action === 'edit-delete-left-page') {
-    void handleDeletePageRequest('left');
-    return;
-  }
-
-  if (action === 'edit-delete-right-page') {
-    void handleDeletePageRequest('right');
-    return;
-  }
-
-  if (action === 'edit-insert-after-current-page') {
-    void handleInsertAfterCurrentPageRequest();
-    return;
-  }
-
-  if (action === 'view-single-page') {
-    state.pageViewMode = 'single';
-    syncPageEditStateToMenu();
-    persistViewerPreferences();
-    requestViewerRender();
-    return;
-  }
-
-  if (action === 'view-double-page') {
-    state.pageViewMode = 'double';
-    syncPageEditStateToMenu();
-    persistViewerPreferences();
-    requestViewerRender();
-    return;
-  }
-
-  if (action === 'image-fit-auto') {
-    state.imageFitMode = 'auto';
-    persistViewerPreferences();
-    requestViewerRender();
-    return;
-  }
-
-  if (action === 'image-fit-actual') {
-    state.imageFitMode = 'actual';
-    persistViewerPreferences();
-    requestViewerRender();
-    return;
-  }
-
-  if (action === 'image-fit-width') {
-    state.imageFitMode = 'width';
-    persistViewerPreferences();
-    requestViewerRender();
-    return;
-  }
-
-  if (action === 'image-fit-height') {
-    state.imageFitMode = 'height';
-    persistViewerPreferences();
-    requestViewerRender();
-  }
-}
+// handleMenuAction has been migrated to events.ts for cohesive event-action coupling
 
 function setPageIndex(nextIndex: number): boolean {
   if (!state.archive) {
@@ -2098,108 +1432,128 @@ function handleViewerNavigationAction(action: MenuAction): boolean {
   return false;
 }
 
-async function handleEsc(): Promise<void> {
-  const isFullscreen = await window.appApi.isFullscreen();
-  if (isFullscreen) {
-    await window.appApi.exitFullscreen();
-    return;
-  }
-
-  switchView('launcher');
-}
-
-async function handleKeyDown(event: KeyboardEvent): Promise<void> {
-  if (event.shiftKey && event.key === 'PageUp') {
-    event.preventDefault();
-    await openAdjacentBook(-1);
-    return;
-  }
-
-  if (event.shiftKey && event.key === 'PageDown') {
-    event.preventDefault();
-    await openAdjacentBook(1);
-    return;
-  }
-
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    if (state.fileTransferClipboard) {
-      handleFileTransferCancel();
-      return;
-    }
-    await handleEsc();
-    return;
-  }
-
-  if (event.ctrlKey || event.metaKey) {
-    const normalizedKey = event.key.toLowerCase();
-    if (normalizedKey === 'c') {
-      event.preventDefault();
-      void handleFileCopyOrCut('copy');
-      return;
-    }
-    if (normalizedKey === 'x') {
-      event.preventDefault();
-      void handleFileCopyOrCut('cut');
-      return;
-    }
-    if (normalizedKey === 'v') {
-      event.preventDefault();
-      await handleFilePaste();
-      return;
-    }
-  }
-
-  if (state.currentView !== 'viewer') {
-    return;
-  }
-
-  if (!state.archive) {
-    return;
-  }
-
-  if (event.key === 'ArrowRight' || event.key === ' ') {
-    event.preventDefault();
-    movePage(1);
-    return;
-  }
-
-  if (event.key === 'ArrowLeft') {
-    event.preventDefault();
-    movePage(-1);
-    return;
-  }
-
-  if (event.key === 'PageDown') {
-    event.preventDefault();
-    movePage(10);
-    return;
-  }
-
-  if (event.key === 'PageUp') {
-    event.preventDefault();
-    movePage(-10);
-    return;
-  }
-
-  if (event.key === 'Home') {
-    event.preventDefault();
-    moveToFirstPage();
-    return;
-  }
-
-  if (event.key === 'End') {
-    event.preventDefault();
-    moveToLastPage();
-    return;
-  }
-}
+// Keydown event bindings and escape behaviors are managed inside events.ts
 
 function renderStaticText(): void {
   document.title = t('app.title');
   elements.sidebarTitle().textContent = t('sidebar.title');
   elements.dropOverlayText().textContent = t('drop.openZip');
   elements.settingsPlaceholder().textContent = t('settings.placeholder');
+  const wordmark = elements.launcherWordmark();
+  if (wordmark) { wordmark.textContent = t('app.title'); }
+  const recentLabel = elements.launcherRecentLabel();
+  if (recentLabel) { recentLabel.textContent = t('launcher.recent.title'); }
+  const btnFile = elements.launcherBtnOpenFile();
+  if (btnFile) {
+    const icon = btnFile.querySelector('svg')?.outerHTML ?? '';
+    btnFile.innerHTML = `${icon} ${t('menu.openFile')}`;
+  }
+  const btnFolder = elements.launcherBtnOpenFolder();
+  if (btnFolder) {
+    const icon = btnFolder.querySelector('svg')?.outerHTML ?? '';
+    btnFolder.innerHTML = `${icon} ${t('menu.openFolder')}`;
+  }
+
+  // Translate custom HTML Menubar buttons & inner dropdown static items
+  const fileTrigger = document.querySelector('#menu-item-file .custom-menu-trigger');
+  if (fileTrigger) fileTrigger.textContent = t('menu.file');
+  const editTrigger = document.querySelector('#menu-item-edit .custom-menu-trigger');
+  if (editTrigger) editTrigger.textContent = t('menu.edit');
+  const viewTrigger = document.querySelector('#menu-item-view .custom-menu-trigger');
+  if (viewTrigger) viewTrigger.textContent = t('menu.view');
+  const localeTrigger = document.querySelector('#menu-item-locale .custom-menu-trigger');
+  if (localeTrigger) localeTrigger.textContent = t('common.locale');
+  const toolsTrigger = document.querySelector('#menu-item-tools .custom-menu-trigger');
+  if (toolsTrigger) toolsTrigger.textContent = t('menu.tools');
+  const helpTrigger = document.querySelector('#menu-item-help .custom-menu-trigger');
+  if (helpTrigger) helpTrigger.textContent = t('menu.help');
+
+  // Inner item translations
+  const itemOpenFile = document.querySelector('[data-action="open-file"] .dropdown-text');
+  if (itemOpenFile) itemOpenFile.textContent = t('menu.openFile');
+  const itemOpenFolder = document.querySelector('[data-action="open-folder"] .dropdown-text');
+  if (itemOpenFolder) itemOpenFolder.textContent = t('menu.openFolder');
+  const itemCloseFile = document.querySelector('[data-action="close-file"] .dropdown-text');
+  if (itemCloseFile) itemCloseFile.textContent = t('menu.closeFile') || '파일 닫기';
+  
+  // Recent items label
+  const recentParentTrigger = document.querySelector('#menu-item-file .dropdown-submenu-parent .submenu-trigger .dropdown-text');
+  if (recentParentTrigger) recentParentTrigger.textContent = t('launcher.recent.title');
+
+  // File Transfer Actions
+  const itemFileCopy = document.querySelector('[data-action="file-copy"] .dropdown-text');
+  if (itemFileCopy) itemFileCopy.textContent = t('menu.edit.copy');
+  const itemFileCut = document.querySelector('[data-action="file-cut"] .dropdown-text');
+  if (itemFileCut) itemFileCut.textContent = t('menu.edit.cut');
+  const itemFilePaste = document.querySelector('[data-action="file-paste"] .dropdown-text');
+  if (itemFilePaste) itemFilePaste.textContent = t('menu.edit.paste');
+  const itemFileDelete = document.querySelector('[data-action="file-delete"] .dropdown-text');
+  if (itemFileDelete) itemFileDelete.textContent = t('menu.edit.deleteFile');
+  const itemFileCancel = document.querySelector('[data-action="file-cancel-transfer"] .dropdown-text');
+  if (itemFileCancel) itemFileCancel.textContent = t('menu.edit.cancelTransfer');
+
+  // Page Editing
+  const itemDeleteLeft = document.querySelector('[data-action="edit-delete-left-page"] .dropdown-text');
+  if (itemDeleteLeft) {
+    itemDeleteLeft.textContent = state.pageViewMode === 'single' ? t('menu.edit.pageDelete') : t('menu.edit.pageDeleteLeft');
+  }
+  const itemDeleteRight = document.querySelector('[data-action="edit-delete-right-page"] .dropdown-text');
+  if (itemDeleteRight) itemDeleteRight.textContent = t('menu.edit.pageDeleteRight');
+  const itemInsertAfter = document.querySelector('[data-action="edit-insert-after-current-page"] .dropdown-text');
+  if (itemInsertAfter) itemInsertAfter.textContent = t('menu.edit.pageInsertAfter');
+
+  // View & Page mode
+  const pageModeTrigger = document.querySelector('#menu-item-view .dropdown-submenu-parent:first-of-type .submenu-trigger .dropdown-text');
+  if (pageModeTrigger) pageModeTrigger.textContent = t('menu.view.pageMode');
+  const itemSingle = document.querySelector('[data-action="view-single-page"] .dropdown-text');
+  if (itemSingle) itemSingle.textContent = t('menu.view.singlePage');
+  const itemDouble = document.querySelector('[data-action="view-double-page"] .dropdown-text');
+  if (itemDouble) itemDouble.textContent = t('menu.view.doublePage');
+  
+  const itemShowViewer = document.querySelector('[data-action="show-viewer"] .dropdown-text');
+  if (itemShowViewer) itemShowViewer.textContent = t('tree.viewer');
+
+  // Navigation (Move)
+  const moveTrigger = document.querySelector('#menu-item-view .dropdown-submenu-parent:nth-of-type(2) .submenu-trigger .dropdown-text');
+  if (moveTrigger) moveTrigger.textContent = t('menu.view.move');
+  const itemMovePrev = document.querySelector('[data-action="move-prev-page"] .dropdown-text');
+  if (itemMovePrev) itemMovePrev.textContent = t('menu.view.movePrevPage');
+  const itemMoveNext = document.querySelector('[data-action="move-next-page"] .dropdown-text');
+  if (itemMoveNext) itemMoveNext.textContent = t('menu.view.moveNextPage');
+  const itemMoveFirst = document.querySelector('[data-action="move-first-page"] .dropdown-text');
+  if (itemMoveFirst) itemMoveFirst.textContent = t('menu.view.moveFirstPage');
+  const itemMoveLast = document.querySelector('[data-action="move-last-page"] .dropdown-text');
+  if (itemMoveLast) itemMoveLast.textContent = t('menu.view.moveLastPage');
+  const itemMovePrev10 = document.querySelector('[data-action="move-prev-10-pages"] .dropdown-text');
+  if (itemMovePrev10) itemMovePrev10.textContent = t('menu.view.movePrev10');
+  const itemMoveNext10 = document.querySelector('[data-action="move-next-10-pages"] .dropdown-text');
+  if (itemMoveNext10) itemMoveNext10.textContent = t('menu.view.moveNext10');
+  const itemOpenPrevBook = document.querySelector('[data-action="open-prev-book"] .dropdown-text');
+  if (itemOpenPrevBook) itemOpenPrevBook.textContent = t('menu.view.openPrevBook');
+  const itemOpenNextBook = document.querySelector('[data-action="open-next-book"] .dropdown-text');
+  if (itemOpenNextBook) itemOpenNextBook.textContent = t('menu.view.openNextBook');
+
+  const itemToggleList = document.querySelector('[data-action="toggle-folder-list"] .dropdown-text');
+  if (itemToggleList) itemToggleList.textContent = t('menu.view.folderList');
+
+  // Image Fit
+  const fitParentTrigger = document.querySelector('#menu-item-view .dropdown-submenu-parent:last-of-type .submenu-trigger .dropdown-text');
+  if (fitParentTrigger) fitParentTrigger.textContent = t('menu.view.imageFit');
+  const itemFitAuto = document.querySelector('[data-action="image-fit-auto"] .dropdown-text');
+  if (itemFitAuto) itemFitAuto.textContent = t('menu.view.imageFitAuto');
+  const itemFitActual = document.querySelector('[data-action="image-fit-actual"] .dropdown-text');
+  if (itemFitActual) itemFitActual.textContent = t('menu.view.imageFitActual');
+  const itemFitWidth = document.querySelector('[data-action="image-fit-width"] .dropdown-text');
+  if (itemFitWidth) itemFitWidth.textContent = t('menu.view.imageFitWidth');
+  const itemFitHeight = document.querySelector('[data-action="image-fit-height"] .dropdown-text');
+  if (itemFitHeight) itemFitHeight.textContent = t('menu.view.imageFitHeight');
+
+  const itemToolConv = document.querySelector('[data-tool="converter"] .dropdown-text');
+  if (itemToolConv) itemToolConv.textContent = t('menu.tools.converter');
+  const itemHelpGuide = document.querySelector('[data-help="user-guide"] .dropdown-text');
+  if (itemHelpGuide) itemHelpGuide.textContent = t('menu.help.userGuide');
+  const itemHelpAbout = document.querySelector('[data-help="about"] .dropdown-text');
+  if (itemHelpAbout) itemHelpAbout.textContent = t('menu.about');
 }
 
 function clampSidebarWidth(width: number): number {
@@ -2208,6 +1562,70 @@ function clampSidebarWidth(width: number): number {
 
 function applySidebarWidth(): void {
   elements.workspace().style.setProperty('--sidebar-width', `${clampSidebarWidth(state.sidebarWidth)}px`);
+}
+
+function renderLauncherRecentList(): void {
+  const list = elements.launcherRecentList();
+  const emptyEl = elements.launcherRecentEmpty();
+  if (!list) { return; }
+
+  // Remove all items except the empty placeholder
+  Array.from(list.children).forEach((child) => {
+    if (child.id !== 'launcher-recent-empty') {
+      child.remove();
+    }
+  });
+
+  const items = state.recentItems.slice(0, 5);
+  if (items.length === 0) {
+    if (emptyEl) {
+      emptyEl.textContent = t('launcher.recent.empty');
+      emptyEl.classList.remove('hidden');
+    }
+    return;
+  }
+
+  if (emptyEl) { emptyEl.classList.add('hidden'); }
+
+  items.forEach((item) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'launcher-recent-item';
+    btn.title = item.zipPath;
+
+    const iconSvg = `<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 3.5A1.5 1.5 0 013.5 2h4.086a1.5 1.5 0 011.06.44l.915.914A1.5 1.5 0 0010.62 4H12.5A1.5 1.5 0 0114 5.5v7A1.5 1.5 0 0112.5 14h-9A1.5 1.5 0 012 12.5v-9z" stroke="currentColor" stroke-width="1.3"/></svg>`;
+    const dirParts = item.zipPath.replace(/\\/g, '/').split('/');
+    const dirName = dirParts.length > 2 ? dirParts[dirParts.length - 2] : '';
+
+    btn.innerHTML = [
+      `<span class="launcher-recent-icon">${iconSvg}</span>`,
+      `<span class="launcher-recent-info">`,
+      `  <span class="launcher-recent-name">${item.title}</span>`,
+      dirName ? `  <span class="launcher-recent-meta">${dirName}</span>` : '',
+      `</span>`,
+      item.lastPageIndex > 0
+        ? `<span class="launcher-recent-page">p.${item.lastPageIndex + 1}</span>`
+        : ''
+    ].join('');
+
+    btn.addEventListener('click', () => {
+      void (async () => {
+        const openResult = await openZipPath(item.zipPath, { suppressError: true });
+        if (!openResult.ok && openResult.error.code === 'FILE_NOT_FOUND') {
+          const removeResult = await window.appApi.removeRecentByPath(item.zipPath);
+          if (removeResult.ok) {
+            state.recentItems = removeResult.data;
+            syncRecentItemsToMenu();
+            renderLauncherRecentList();
+          }
+        }
+      })();
+    });
+
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
 }
 
 function renderAll(): void {
@@ -2219,204 +1637,9 @@ function renderAll(): void {
   syncBookNavigationStateToMenu();
   renderGlobalError();
   renderSidebarItems();
+  renderLauncherRecentList();
   requestViewerRender();
   switchView(state.currentView);
 }
 
-function bindEvents(): void {
-  const unsubscribeMenuAction = window.appApi.onMenuAction((action) => {
-    handleMenuAction(action);
-  });
-  const unsubscribeOpenRecent = window.appApi.onOpenRecent((zipPath) => {
-    void (async () => {
-      const openResult = await openZipPath(zipPath);
-      if (openResult.ok || openResult.error.code !== 'FILE_NOT_FOUND') {
-        return;
-      }
-
-      const name = zipPath.split(/[/\\]/).pop() ?? zipPath;
-      notifyAction(t('recent.missingRemoved', { name }));
-
-      const removeResult = await window.appApi.removeRecentByPath(zipPath);
-      if (!removeResult.ok) {
-        showError(removeResult.error);
-        return;
-      }
-
-      state.recentItems = removeResult.data;
-      syncRecentItemsToMenu();
-    })();
-  });
-  const unsubscribeLocaleSelected = window.appApi.onLocaleSelected((locale) => {
-    applyLocaleFromMenu(locale);
-    renderAll();
-  });
-  let splitterDragging = false;
-  let viewerResizeRafId: number | null = null;
-
-  const openFileEditContextMenu = (): void => {
-    void window.appApi.showFileEditContextMenu().catch((error) => {
-      showError({
-        code: 'DROP_DEBUG',
-        message: `${t('error.unknown')} (${String(error)})`
-      });
-    });
-  };
-
-  elements.fileTree().addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-    openFileEditContextMenu();
-  });
-
-  elements.sidebar().addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-    openFileEditContextMenu();
-  });
-
-  elements.viewerImage().addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-    void window.appApi.showImageContextMenu().catch((error) => {
-      showError({
-        code: 'DROP_DEBUG',
-        message: `${t('error.unknown')} (${String(error)})`
-      });
-    });
-  });
-
-  elements.sizeAdjustCancel().addEventListener('click', () => {
-    resolveSizeAdjustModal('cancel');
-  });
-  elements.sizeAdjustOriginal().addEventListener('click', () => {
-    resolveSizeAdjustModal('original');
-  });
-  elements.sizeAdjustConfirm().addEventListener('click', () => {
-    resolveSizeAdjustModal('confirm');
-  });
-
-  elements.splitter().addEventListener('pointerdown', (event) => {
-    splitterDragging = true;
-    elements.splitter().classList.add('dragging');
-    elements.splitter().setPointerCapture(event.pointerId);
-    event.preventDefault();
-  });
-
-  elements.splitter().addEventListener('pointermove', (event) => {
-    if (!splitterDragging) {
-      return;
-    }
-
-    state.sidebarWidth = clampSidebarWidth(event.clientX);
-    applySidebarWidth();
-    reflowRenderedViewerImages();
-  });
-
-  const stopSplitterDrag = (event?: PointerEvent): void => {
-    if (!splitterDragging) {
-      return;
-    }
-
-    splitterDragging = false;
-    elements.splitter().classList.remove('dragging');
-    if (event) {
-      elements.splitter().releasePointerCapture(event.pointerId);
-    }
-
-    persistViewerPreferences();
-  };
-
-  elements.splitter().addEventListener('pointerup', (event) => stopSplitterDrag(event));
-  elements.splitter().addEventListener('pointercancel', (event) => stopSplitterDrag(event));
-
-  elements.viewerView().addEventListener(
-    'wheel',
-    (event) => {
-      if (!event.shiftKey) {
-        return;
-      }
-
-      const container = document.querySelector('.content-pane') as HTMLElement | null;
-      if (!container) {
-        return;
-      }
-
-      const canScrollHorizontally = container.scrollWidth > container.clientWidth;
-      if (!canScrollHorizontally) {
-        return;
-      }
-
-      container.scrollLeft += event.deltaY !== 0 ? event.deltaY : event.deltaX;
-      event.preventDefault();
-    },
-    { passive: false }
-  );
-
-  document.addEventListener('keydown', (event) => {
-    void handleKeyDown(event);
-  });
-
-  window.addEventListener('resize', () => {
-    if (viewerResizeRafId !== null) {
-      window.cancelAnimationFrame(viewerResizeRafId);
-    }
-
-    viewerResizeRafId = window.requestAnimationFrame(() => {
-      viewerResizeRafId = null;
-      reflowRenderedViewerImages();
-    });
-  });
-
-  const dragTargets = new Set<EventTarget>([
-    window,
-    document,
-    document.documentElement,
-    document.body,
-    elements.workspace(),
-    document.querySelector('.sidebar') as HTMLElement,
-    document.querySelector('.content-pane') as HTMLElement,
-    elements.sidebarDragLayer(),
-    elements.fileTree(),
-    elements.launcherView(),
-    elements.viewerView(),
-    elements.settingsView()
-  ]);
-
-  for (const target of dragTargets) {
-    if (target) {
-      bindDragListeners(target);
-    }
-  }
-
-  window.addEventListener('beforeunload', () => {
-    if (sizeAdjustChoiceResolver) {
-      resolveSizeAdjustModal('cancel');
-    }
-    if (pageMoveToastTimer !== null) {
-      window.clearTimeout(pageMoveToastTimer);
-      pageMoveToastTimer = null;
-    }
-    revokePageObjectUrl();
-    unsubscribeMenuAction();
-    unsubscribeOpenRecent();
-    unsubscribeLocaleSelected();
-  });
-}
-
-async function init(): Promise<void> {
-  document.getElementById('sidebar-subtitle')?.remove();
-  await loadI18nDictionaries();
-  const appSettings = await window.appApi.getAppSettings();
-  currentLocale = appSettings.locale;
-  state.pageViewMode = appSettings.pageViewMode;
-  state.imageFitMode = appSettings.imageFitMode;
-  state.showSidebarList = appSettings.showSidebarList;
-  state.sidebarWidth = appSettings.sidebarWidth;
-  applySidebarVisibility();
-  switchView('launcher');
-  bindEvents();
-  renderAll();
-  void syncRecentItems();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  void init();
-});
+// All dropdown interactions, window listeners, pointer splitters, and application init() logic are now managed inside events.ts

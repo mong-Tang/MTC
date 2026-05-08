@@ -115,8 +115,7 @@ const api = {
     ipcRenderer.invoke('file:transfer', sourcePath, destinationDirectory, mode) as Promise<IpcResult<string>>,
   deleteFile: (targetPath: string) => ipcRenderer.invoke('file:delete', targetPath) as Promise<IpcResult<boolean>>,
   listFolderItems: (folderPath: string) => ipcRenderer.invoke('folder:list-items', folderPath) as Promise<IpcResult<SidebarListItem[]>>,
-  showFileEditContextMenu: () => ipcRenderer.invoke('menu:popup-file-edit') as Promise<boolean>,
-  showImageContextMenu: () => ipcRenderer.invoke('menu:popup-image-context') as Promise<boolean>,
+
   openZip: (zipPath: string) => ipcRenderer.invoke('zip:open', zipPath) as Promise<IpcResult<ArchiveOpenResult>>,
   openImage: (imagePath: string) => ipcRenderer.invoke('image:open', imagePath) as Promise<IpcResult<ImageOpenResult>>,
   editZipPages: (zipPath: string, request: ZipEditRequest) =>
@@ -158,7 +157,10 @@ const api = {
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,
-  getPathForDroppedFile: (file: File) => webUtils.getPathForFile(file)
+  getPathForDroppedFile: (file: File) => webUtils.getPathForFile(file),
+  minimizeWindow: () => ipcRenderer.send('window:minimize'),
+  maximizeWindow: () => ipcRenderer.send('window:maximize'),
+  closeWindow: () => ipcRenderer.send('window:close')
 };
 
 contextBridge.exposeInMainWorld('appApi', api);

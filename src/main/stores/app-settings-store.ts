@@ -98,7 +98,8 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
           ? Math.max(640, candidate.windowBounds.height)
           : defaultAppSettings.windowBounds.height
     },
-    isMaximized: candidate?.isMaximized === true
+    isMaximized: candidate?.isMaximized === true,
+    theme: candidate?.theme === 'light' || candidate?.theme === 'system' ? candidate.theme : 'dark'
   };
 }
 

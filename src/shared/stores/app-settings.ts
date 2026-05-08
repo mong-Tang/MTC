@@ -18,6 +18,7 @@ export interface AppSettings {
   sidebarWidth: number;
   windowBounds: WindowBounds;
   isMaximized: boolean;
+  theme: string;
 }
 
 export const defaultAppSettings: AppSettings = {
@@ -30,5 +31,6 @@ export const defaultAppSettings: AppSettings = {
     width: 1200,
     height: 820
   },
-  isMaximized: false
+  isMaximized: false,
+  theme: 'dark'
 };

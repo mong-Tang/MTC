@@ -75,6 +75,7 @@ function createMainWindow(): BrowserWindow {
     height: currentSettings.windowBounds.height,
     minWidth: 900,
     minHeight: 640,
+    frame: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -543,276 +544,7 @@ function buildLocaleContextMenuItems(): MenuItemConstructorOptions[] {
 }
 
 function applyApplicationMenu(): void {
-  const quickViewMenus: MenuItemConstructorOptions[] = [
-    {
-      label: currentPageViewMode === 'single' ? `✓ ${t('menu.view.singlePage')}` : t('menu.view.singlePage'),
-      click: () => {
-        currentPageViewMode = 'single';
-        persistAppSettings({ pageViewMode: 'single' }, 'quick-view-single');
-        applyApplicationMenu();
-        sendMenuAction('view-single-page');
-      }
-    },
-    {
-      label: currentPageViewMode === 'double' ? `✓ ${t('menu.view.doublePage')}` : t('menu.view.doublePage'),
-      click: () => {
-        currentPageViewMode = 'double';
-        persistAppSettings({ pageViewMode: 'double' }, 'quick-view-double');
-        applyApplicationMenu();
-        sendMenuAction('view-double-page');
-      }
-    }
-  ];
-
-  const recentMenus: MenuItemConstructorOptions[] =
-    currentRecentItems.length > 0
-      ? currentRecentItems.slice(0, 10).map((item) => ({
-          label: item.title || item.zipPath,
-          click: () => sendOpenRecent(item.zipPath)
-        }))
-      : [{ label: t('launcher.recent.empty'), enabled: false }];
-
-  const template: MenuItemConstructorOptions[] = [
-    {
-      label: t('menu.file'),
-      submenu: [
-        {
-          label: t('menu.openFile'),
-          accelerator: 'CmdOrCtrl+O',
-          click: () => sendMenuAction('open-file')
-        },
-        {
-          label: t('tree.recent'),
-          submenu: recentMenus
-        },
-        {
-          label: t('menu.openFolder'),
-          accelerator: 'CmdOrCtrl+Shift+O',
-          click: () => sendMenuAction('open-folder')
-        },
-        { type: 'separator' },
-        ...buildFileTransferMenuItems(),
-        { type: 'separator' },
-        {
-          label: t('menu.exit'),
-          role: process.platform === 'darwin' ? 'close' : 'quit'
-        }
-      ]
-    },
-    {
-      label: t('menu.edit'),
-      submenu: buildFileEditMenuItems()
-    },
-    {
-      label: t('menu.view'),
-      submenu: [
-        {
-          label: t('menu.view.pageMode'),
-          submenu: [
-            {
-              label: t('menu.view.singlePage'),
-              type: 'checkbox',
-              checked: currentPageViewMode === 'single',
-              click: () => {
-                currentPageViewMode = 'single';
-                persistAppSettings({ pageViewMode: 'single' }, 'view-menu-single');
-                applyApplicationMenu();
-                sendMenuAction('view-single-page');
-              }
-            },
-            {
-              label: t('menu.view.doublePage'),
-              type: 'checkbox',
-              checked: currentPageViewMode === 'double',
-              click: () => {
-                currentPageViewMode = 'double';
-                persistAppSettings({ pageViewMode: 'double' }, 'view-menu-double');
-                applyApplicationMenu();
-                sendMenuAction('view-double-page');
-              }
-            }
-          ]
-        },
-        {
-          label: t('tree.viewer'),
-          click: () => sendMenuAction('show-viewer')
-        },
-        { type: 'separator' },
-        {
-          label: t('menu.view.move'),
-          submenu: [
-            {
-              label: withShortcutLabel(t('menu.view.movePrevPage'), 'Left'),
-              accelerator: acceleratorForLocale('Left'),
-              click: () => sendMenuAction('move-prev-page')
-            },
-            {
-              label: withShortcutLabel(t('menu.view.moveNextPage'), 'Right'),
-              accelerator: acceleratorForLocale('Right'),
-              click: () => sendMenuAction('move-next-page')
-            },
-            { type: 'separator' },
-            {
-              label: withHomeEndHint(withShortcutLabel(t('menu.view.moveFirstPage'), 'Home'), 'Home'),
-              accelerator: acceleratorForLocale('Home'),
-              click: () => sendMenuAction('move-first-page')
-            },
-            {
-              label: withHomeEndHint(withShortcutLabel(t('menu.view.moveLastPage'), 'End'), 'End'),
-              accelerator: acceleratorForLocale('End'),
-              click: () => sendMenuAction('move-last-page')
-            },
-            { type: 'separator' },
-            {
-              label: withShortcutLabel(t('menu.view.movePrev10'), 'PageUp'),
-              accelerator: acceleratorForLocale('PageUp'),
-              click: () => sendMenuAction('move-prev-10-pages')
-            },
-            {
-              label: withShortcutLabel(t('menu.view.moveNext10'), 'PageDown'),
-              accelerator: acceleratorForLocale('PageDown'),
-              click: () => sendMenuAction('move-next-10-pages')
-            },
-            { type: 'separator' },
-            {
-              label: withShortcutLabel(t('menu.view.openPrevBook'), 'Shift+PageUp'),
-              accelerator: acceleratorForLocale('Shift+PageUp'),
-              enabled: currentCanOpenPrevBook,
-              click: () => sendMenuAction('open-prev-book')
-            },
-            {
-              label: withShortcutLabel(t('menu.view.openNextBook'), 'Shift+PageDown'),
-              accelerator: acceleratorForLocale('Shift+PageDown'),
-              enabled: currentCanOpenNextBook,
-              click: () => sendMenuAction('open-next-book')
-            }
-          ]
-        },
-        { type: 'separator' },
-        {
-          label: t('menu.view.imageFit'),
-          submenu: [
-            {
-              label: t('menu.view.imageFitAuto'),
-              type: 'checkbox',
-              checked: currentImageFitMode === 'auto',
-              click: () => {
-                currentImageFitMode = 'auto';
-                persistAppSettings({ imageFitMode: 'auto' }, 'image-fit-auto');
-                applyApplicationMenu();
-                sendMenuAction('image-fit-auto');
-              }
-            },
-            {
-              label: t('menu.view.imageFitActual'),
-              type: 'checkbox',
-              checked: currentImageFitMode === 'actual',
-              click: () => {
-                currentImageFitMode = 'actual';
-                persistAppSettings({ imageFitMode: 'actual' }, 'image-fit-actual');
-                applyApplicationMenu();
-                sendMenuAction('image-fit-actual');
-              }
-            },
-            {
-              label: t('menu.view.imageFitWidth'),
-              type: 'checkbox',
-              checked: currentImageFitMode === 'width',
-              click: () => {
-                currentImageFitMode = 'width';
-                persistAppSettings({ imageFitMode: 'width' }, 'image-fit-width');
-                applyApplicationMenu();
-                sendMenuAction('image-fit-width');
-              }
-            },
-            {
-              label: t('menu.view.imageFitHeight'),
-              type: 'checkbox',
-              checked: currentImageFitMode === 'height',
-              click: () => {
-                currentImageFitMode = 'height';
-                persistAppSettings({ imageFitMode: 'height' }, 'image-fit-height');
-                applyApplicationMenu();
-                sendMenuAction('image-fit-height');
-              }
-            }
-          ]
-        },
-        { type: 'separator' },
-        {
-          label: t('menu.view.folderList'),
-          type: 'checkbox',
-          accelerator: 'CmdOrCtrl+B',
-          checked: currentShowSidebarList,
-          click: () => {
-            currentShowSidebarList = !currentShowSidebarList;
-            persistAppSettings({ showSidebarList: currentShowSidebarList }, 'toggle-folder-list');
-            applyApplicationMenu();
-            sendMenuAction('toggle-folder-list');
-          }
-        }
-      ]
-    },
-    {
-      label: t('common.locale'),
-      submenu: [
-        {
-          label: 'ko',
-          type: 'radio',
-          checked: currentLocale === 'ko',
-          click: () => {
-            currentLocale = 'ko';
-            setLocale('ko');
-            persistAppSettings({ locale: 'ko' }, 'locale-ko');
-            reloadHelpWindowForLocale();
-            applyApplicationMenu();
-            sendLocaleSelected('ko');
-          }
-        },
-        {
-          label: 'en',
-          type: 'radio',
-          checked: currentLocale === 'en',
-          click: () => {
-            currentLocale = 'en';
-            setLocale('en');
-            persistAppSettings({ locale: 'en' }, 'locale-en');
-            reloadHelpWindowForLocale();
-            applyApplicationMenu();
-            sendLocaleSelected('en');
-          }
-        }
-      ]
-    },
-    {
-      label: t('menu.tools'),
-      submenu: [
-        {
-          label: t('menu.tools.converter'),
-          click: () => openConverterWindow()
-        }
-      ]
-    },
-    {
-      label: t('menu.help'),
-      submenu: [
-        {
-          label: t('menu.help.userGuide'),
-          click: () => openHelpWindow()
-        },
-        { type: 'separator' },
-        { label: t('menu.about'), role: 'about' }
-      ]
-    },
-    ...quickViewMenus,
-    {
-      label: currentViewerStatus || t('viewer.status.empty'),
-      enabled: false
-    }
-  ];
-
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-  enforceHelpWindowMenuHidden();
+  Menu.setApplicationMenu(null);
 }
 
 if (!gotSingleInstanceLock) {
@@ -863,49 +595,21 @@ app.whenReady().then(async () => {
     reloadHelpWindowForLocale();
     applyApplicationMenu();
     return true;
+  });  ipcMain.on('window:minimize', () => {
+    mainWindow?.minimize();
   });
 
-  ipcMain.handle('menu:popup-file-edit', (event) => {
-    try {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      if (!window) {
-        return false;
-      }
-
-      const menu = Menu.buildFromTemplate(buildFileTransferMenuItems());
-      menu.popup({ window });
-      return true;
-    } catch (error) {
-      console.warn('[menu] failed to popup file edit menu:', error);
-      return false;
+  ipcMain.on('window:maximize', () => {
+    if (mainWindow?.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow?.maximize();
     }
   });
 
-  ipcMain.handle('menu:popup-image-context', (event) => {
-    try {
-      const window = BrowserWindow.fromWebContents(event.sender);
-      if (!window) {
-        return false;
-      }
-
-      const menu = Menu.buildFromTemplate([
-        { label: t('menu.file'), submenu: buildFileContextMenuItems() },
-        { type: 'separator' },
-        ...buildFileEditMenuItems(),
-        { type: 'separator' },
-        ...buildImageFitContextMenuItems(),
-        { type: 'separator' },
-        { label: t('menu.view'), submenu: buildViewContextMenuItems() },
-        { label: t('common.locale'), submenu: buildLocaleContextMenuItems() }
-      ]);
-      menu.popup({ window });
-      return true;
-    } catch (error) {
-      console.warn('[menu] failed to popup image context menu:', error);
-      return false;
-    }
+  ipcMain.on('window:close', () => {
+    mainWindow?.close();
   });
-
   mainWindow = createMainWindow();
   mainWindow.on('move', () => queuePersistWindowState(mainWindow as BrowserWindow));
   mainWindow.on('resize', () => queuePersistWindowState(mainWindow as BrowserWindow));
