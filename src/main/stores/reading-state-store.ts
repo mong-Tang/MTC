@@ -15,7 +15,7 @@ type ProgressMap = Record<string, ProgressEntry>;
 
 const recentFileName = 'recent.json';
 const progressFileName = 'progress.json';
-const maxRecentItems = 10;
+const maxRecentItems = 100;
 
 function getUserDataDirectory(): string {
   return app.getPath('userData');

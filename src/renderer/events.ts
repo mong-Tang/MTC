@@ -124,6 +124,56 @@ function closeAllHtmlMenus(): void {
   isHtmlMenuOpen = false;
 }
 
+function showAllRecentsModal(): void {
+  const modal = document.getElementById('all-recents-modal');
+  const list = document.getElementById('all-recents-modal-list');
+  const closeBtn = document.getElementById('all-recents-modal-close');
+  if (!modal || !list || !closeBtn) return;
+
+  list.innerHTML = '';
+
+  state.recentItems.forEach((item) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'all-recents-modal-item';
+    
+    const dirParts = item.zipPath.replace(/\\/g, '/').split('/');
+    const dirName = dirParts.length > 2 ? dirParts[dirParts.length - 2] : '';
+    
+    btn.innerHTML = `
+      <span class="all-recents-modal-name">${item.title}</span>
+      ${dirName ? `<span class="all-recents-modal-meta">${dirName}</span>` : ''}
+    `;
+    
+    btn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      void (async () => {
+        const openResult = await openZipPath(item.zipPath, { suppressError: true });
+        if (!openResult.ok && openResult.error.code === 'FILE_NOT_FOUND') {
+          const removeResult = await window.appApi.removeRecentByPath(item.zipPath);
+          if (removeResult.ok) {
+            state.recentItems = removeResult.data;
+            syncRecentItemsToMenu();
+            renderLauncherRecentList();
+          }
+        }
+      })();
+    });
+    
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+
+  modal.classList.remove('hidden');
+
+  const handleClose = () => {
+    modal.classList.add('hidden');
+    closeBtn.removeEventListener('click', handleClose);
+  };
+  closeBtn.addEventListener('click', handleClose);
+}
+
 function renderHtmlRecentSubmenu(): void {
   const container = document.getElementById('html-recent-submenu');
   if (!container) return;
@@ -163,6 +213,26 @@ function renderHtmlRecentSubmenu(): void {
     });
     container.appendChild(btn);
   });
+
+  // If there are more than 10 recent items, append the "Show more..." button
+  if (state.recentItems.length > 10) {
+    const divider = document.createElement('div');
+    divider.className = 'dropdown-separator';
+    container.appendChild(divider);
+
+    const moreBtn = document.createElement('button');
+    moreBtn.type = 'button';
+    moreBtn.className = 'dropdown-item';
+    moreBtn.style.color = 'var(--accent)';
+    moreBtn.style.fontWeight = '700';
+    moreBtn.textContent = '⏱️ 더 보기...';
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllHtmlMenus();
+      showAllRecentsModal();
+    });
+    container.appendChild(moreBtn);
+  }
 }
 
 function setupHtmlDropdownEvents(): void {

@@ -1316,3 +1316,82 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   from { transform: scale(0.9); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* Premium All Recents Modal Style overrides */
+.all-recents-panel {
+  width: 440px !important;
+  max-width: 95%;
+  padding: 20px !important;
+}
+
+.all-recents-list-container {
+  max-height: 280px;
+  overflow-y: auto;
+  width: 100%;
+  margin: 15px 0;
+  padding-right: 4px;
+}
+
+/* Customized scrollbar for the all recents list container */
+.all-recents-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+.all-recents-list-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.all-recents-list-container::-webkit-scrollbar-thumb {
+  background: var(--border-hi);
+  border-radius: 4px;
+}
+.all-recents-list-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+.all-recents-modal-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.all-recents-modal-item {
+  width: 100%;
+  background: var(--surface-hi);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  cursor: pointer;
+  transition: all var(--t);
+  text-align: left;
+}
+
+.all-recents-modal-item:hover {
+  background: var(--accent-trans);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.all-recents-modal-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.all-recents-modal-meta {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  margin-top: 2px;
+}
