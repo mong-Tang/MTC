@@ -73,7 +73,7 @@ function applyViewerImageSizing(imageElement: HTMLImageElement, forDoublePage: b
   const widthValue = `${forDoublePage ? Math.max(0, Math.floor((viewerWidth - 12) / 2)) : viewerWidth}px`;
 
   if (state.imageFitMode === 'height') {
-    imageElement.style.height = heightValue;
+    imageElement.style.height = viewerHeight > 0 ? heightValue : '100%';
     imageElement.style.maxHeight = 'none';
     imageElement.style.width = 'auto';
     imageElement.style.maxWidth = 'none';
@@ -81,7 +81,7 @@ function applyViewerImageSizing(imageElement: HTMLImageElement, forDoublePage: b
   }
 
   if (state.imageFitMode === 'width') {
-    imageElement.style.width = widthValue;
+    imageElement.style.width = forDoublePage ? (viewerWidth > 0 ? widthValue : 'calc(50% - 8px)') : '100%';
     imageElement.style.maxWidth = 'none';
     imageElement.style.height = 'auto';
     imageElement.style.maxHeight = 'none';

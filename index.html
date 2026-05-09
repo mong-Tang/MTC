@@ -8,6 +8,7 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZIP Book Viewer</title>
+    <link rel="shortcut icon" href="./assets/mongTang_ico32X32.png" type="image/png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -15,9 +16,13 @@
       <!-- Premium Custom HTML Menubar with Sliding Hover Dropdowns -->
       <header class="custom-header">
         <div class="custom-menu-group">
+          <!-- App Logo -->
+          <div class="menu-app-logo">
+            <img src="./assets/mongTang_ico16X16.png" alt="logo" />
+          </div>
           <!-- File Menu -->
           <div class="custom-menu-item" id="menu-item-file">
-            <button class="custom-menu-trigger" type="button">파일</button>
+            <button class="custom-menu-trigger" type="button">📁 파일</button>
             <div class="custom-dropdown">
               <button class="dropdown-item" type="button" data-action="open-file">
                 <span class="dropdown-text">📄 파일 열기</span>
@@ -67,7 +72,7 @@
 
           <!-- Edit Menu -->
           <div class="custom-menu-item" id="menu-item-edit">
-            <button class="custom-menu-trigger" type="button">편집</button>
+            <button class="custom-menu-trigger" type="button">✏️ 편집</button>
             <div class="custom-dropdown">
               <button class="dropdown-item" type="button" data-action="edit-delete-left-page">
                 <span class="dropdown-text">◀️ 왼쪽 페이지 삭제</span>
@@ -83,7 +88,7 @@
  
           <!-- View Menu -->
           <div class="custom-menu-item" id="menu-item-view">
-            <button class="custom-menu-trigger" type="button">보기</button>
+            <button class="custom-menu-trigger" type="button">👁️ 보기</button>
             <div class="custom-dropdown">
               <div class="dropdown-submenu-parent">
                 <button class="dropdown-item submenu-trigger" type="button">
@@ -187,7 +192,7 @@
  
           <!-- Locale Menu -->
           <div class="custom-menu-item" id="menu-item-locale">
-            <button class="custom-menu-trigger" type="button">언어</button>
+            <button class="custom-menu-trigger" type="button">🌐 언어</button>
             <div class="custom-dropdown">
               <button class="dropdown-item" type="button" data-locale="ko">
                 <span class="dropdown-text">🇰🇷 한국어 (Korean)</span>
@@ -200,7 +205,7 @@
  
           <!-- Tools Menu -->
           <div class="custom-menu-item" id="menu-item-tools">
-            <button class="custom-menu-trigger" type="button">도구</button>
+            <button class="custom-menu-trigger" type="button">🔧 도구</button>
             <div class="custom-dropdown">
               <button class="dropdown-item" type="button" data-tool="converter">
                 <span class="dropdown-text">⚡ 컨버터</span>
@@ -211,7 +216,7 @@
  
           <!-- Help Menu -->
           <div class="custom-menu-item" id="menu-item-help">
-            <button class="custom-menu-trigger" type="button">도움말</button>
+            <button class="custom-menu-trigger" type="button">❓ 도움말</button>
             <div class="custom-dropdown">
               <button class="dropdown-item" type="button" data-help="user-guide">
                 <span class="dropdown-text">📖 사용 가이드</span>
@@ -297,10 +302,39 @@
         </section>
       </main>
 
-      <div id="drop-overlay" class="drop-overlay hidden">
-        <div id="drop-overlay-text" class="drop-overlay-text">ZIP 파일을 여기에 놓으세요.</div>
+      <!-- Elegant Status Bar at the bottom -->
+      <footer class="custom-status-bar" id="custom-status-bar">
+        <div class="status-left">
+          <span class="status-badge idle" id="status-badge">대기 중</span>
+          <span class="status-text" id="status-left-text">파일을 선택하거나 드롭해 주세요.</span>
+        </div>
+        <span class="status-right" id="status-right"></span>
+      </footer>
+
+      <!-- Premium Custom Confirm Modal -->
+      <div id="custom-confirm-modal" class="custom-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <div class="confirm-modal-panel">
+          <div class="confirm-modal-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 id="confirm-modal-title" class="confirm-modal-title">알림</h3>
+          <div id="confirm-modal-message" class="confirm-modal-message">다음 권을 보시겠습니까?</div>
+          <div class="confirm-modal-actions">
+            <button id="confirm-modal-cancel" type="button" class="secondary-button">취소</button>
+            <button id="confirm-modal-confirm" type="button" class="primary-button">확인</button>
+          </div>
+        </div>
       </div>
-      <div id="page-move-toast" class="page-move-toast hidden" aria-live="polite"></div>
+
+      <div id="notification-modal" class="notification-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="notification-modal-panel">
+          <div id="notification-modal-text" class="notification-modal-text"></div>
+          <div class="notification-modal-subtext">💡 이 안내문은 위치 이동이 가능합니다.</div>
+        </div>
+      </div>
       <div id="size-adjust-modal" class="size-adjust-modal hidden" role="dialog" aria-modal="true" aria-labelledby="size-adjust-title">
         <div class="size-adjust-panel">
           <h2 id="size-adjust-title" class="size-adjust-title"></h2>

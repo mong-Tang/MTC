@@ -160,7 +160,8 @@ const api = {
   getPathForDroppedFile: (file: File) => webUtils.getPathForFile(file),
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
-  closeWindow: () => ipcRenderer.send('window:close')
+  closeWindow: () => ipcRenderer.send('window:close'),
+  showViewerContextMenu: () => ipcRenderer.send('window:show-viewer-context-menu')
 };
 
 contextBridge.exposeInMainWorld('appApi', api);

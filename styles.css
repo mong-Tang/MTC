@@ -170,6 +170,22 @@ html, body {
 .custom-menu-group {
   display: flex;
   gap: 4px;
+  align-items: center;
+}
+
+.menu-app-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-right: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.menu-app-logo img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
 }
 
 .header-right-area {
@@ -185,6 +201,11 @@ html, body {
   gap: 8px;
   align-items: center;
   -webkit-app-region: no-drag;
+  transition: gap 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.window-controls:hover {
+  gap: 12px;
 }
 
 .win-btn {
@@ -201,8 +222,8 @@ html, body {
 #win-btn-minimize { background: #ffbd2e; }
 #win-btn-maximize { background: #27c93f; }
 
-.win-btn:hover {
-  transform: scale(1.25);
+.window-controls:hover .win-btn {
+  transform: scale(1.5);
 }
 
 #win-btn-close:hover {
@@ -419,7 +440,7 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   display: grid;
   grid-template-columns: minmax(180px, var(--sidebar-width)) 1px minmax(0, 1fr);
   min-height: 0;
-  height: 100%;
+  height: calc(100% - 56px);
   position: relative;
   z-index: 1;
 }
@@ -546,9 +567,10 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
 ───────────────────────────────────────── */
 .content-pane {
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: 0;
   display: flex;
+  flex-direction: column;
   height: 100%;
   background: var(--bg);
 }
@@ -818,7 +840,7 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   flex-wrap: nowrap;
   color: var(--muted);
   padding: 0;
-  overflow: visible;
+  overflow: auto;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -832,6 +854,7 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   object-fit: contain;
   display: block;
   flex: 0 0 auto;
+  margin: auto;
   user-select: none;
   -webkit-user-drag: none;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
@@ -911,27 +934,63 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* ─────────────────────────────────────────
-   Toast
-───────────────────────────────────────── */
-.page-move-toast {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 1001;
-  background: var(--surface);
-  border: 1px solid var(--border-hi);
-  color: var(--text);
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 11.5px;
-  font-weight: 600;
-  pointer-events: none;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+/* Status Badge Styling */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 8px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: all var(--t);
+  flex-shrink: 0;
+}
+
+/* Badge Types */
+.status-badge.idle {
+  background: rgba(161, 161, 170, 0.1);
+  color: var(--muted);
+  border: 1px solid rgba(161, 161, 170, 0.2);
+}
+
+.status-badge.loading {
+  background: rgba(39, 201, 63, 0.1);
+  color: #27c93f;
+  border: 1px solid rgba(39, 201, 63, 0.2);
+  box-shadow: 0 0 6px rgba(39, 201, 63, 0.15);
+  animation: badgeGlow 1.5s ease-in-out infinite alternate;
+}
+
+.status-badge.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.15);
+}
+
+.status-badge.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.warn {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+@keyframes badgeGlow {
+  from {
+    box-shadow: 0 0 4px rgba(39, 201, 63, 0.1);
+  }
+  to {
+    box-shadow: 0 0 10px rgba(39, 201, 63, 0.3);
+  }
 }
 
 /* ─────────────────────────────────────────
@@ -1058,4 +1117,202 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* ─────────────────────────────────────────
+   Notification Centered Modal
+───────────────────────────────────────── */
+.notification-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notification-modal.hidden {
+  display: none !important;
+}
+
+.notification-modal-panel {
+  position: relative;
+  left: 0;
+  top: 0;
+  background: rgba(18, 18, 24, 0.88);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-lg);
+  padding: 18px 36px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: scale(1);
+  animation: modalScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  cursor: move;
+}
+
+.notification-modal-text {
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+}
+
+.notification-modal-subtext {
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 500;
+  text-align: center;
+  margin-top: 8px;
+  letter-spacing: -0.01em;
+  opacity: 0.55;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────────
+   Premium Compact Status Bar
+───────────────────────────────────────── */
+.custom-status-bar {
+  height: 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--muted);
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 9999;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────
+   Premium Custom Confirm Modal
+───────────────────────────────────────── */
+.custom-confirm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+.custom-confirm-modal.hidden {
+  display: none !important;
+}
+
+.confirm-modal-panel {
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 12px;
+  padding: 18px 20px 20px 20px;
+  width: 290px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  transform: scale(1);
+  animation: panelScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirm-modal-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.confirm-modal-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.confirm-modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 6px 0;
+}
+
+.confirm-modal-message {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 18px;
+  white-space: pre-line;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  width: 100%;
+  gap: 10px;
+}
+
+.confirm-modal-actions button {
+  flex: 1;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--t);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes panelScaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

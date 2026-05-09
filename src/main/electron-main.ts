@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { app, BrowserWindow, ipcMain, Menu, type MenuItemConstructorOptions } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, type MenuItemConstructorOptions } from 'electron';
 
 import { registerIpcHandlers } from './ipc/ipc-handlers';
 import { setLocale, t, type Locale } from '../shared/i18n/i18n';
@@ -68,6 +68,9 @@ function persistAppSettings(partial: Partial<AppSettings>, context: string): voi
 }
 
 function createMainWindow(): BrowserWindow {
+  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const appIcon = nativeImage.createFromPath(iconPath);
+
   const window = new BrowserWindow({
     x: currentSettings.windowBounds.x,
     y: currentSettings.windowBounds.y,
@@ -76,6 +79,7 @@ function createMainWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 640,
     frame: false,
+    icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -91,12 +95,16 @@ function createMainWindow(): BrowserWindow {
 }
 
 function createConverterWindow(): BrowserWindow {
+  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const appIcon = nativeImage.createFromPath(iconPath);
+
   const window = new BrowserWindow({
     width: 960,
     height: 700,
     minWidth: 760,
     minHeight: 520,
     parent: mainWindow ?? undefined,
+    icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -165,12 +173,16 @@ function openConverterWindow(): void {
 }
 
 function createHelpWindow(): BrowserWindow {
+  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const appIcon = nativeImage.createFromPath(iconPath);
+
   const window = new BrowserWindow({
     width: 1080,
     height: 760,
     minWidth: 900,
     minHeight: 620,
     parent: mainWindow ?? undefined,
+    icon: appIcon,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false
@@ -459,7 +471,11 @@ function buildViewContextMenuItems(): MenuItemConstructorOptions[] {
         applyApplicationMenu();
         sendMenuAction('toggle-folder-list');
       }
-    }
+    },
+    { type: 'separator' },
+    ...buildImageFitContextMenuItems(),
+    { type: 'separator' },
+    ...buildFileEditMenuItems()
   ];
 }
 
@@ -564,6 +580,7 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(async () => {
+  app.setAppUserModelId('com.mongtang.zipbookviewer');
   currentSettings = await getAppSettings();
   currentLocale = currentSettings.locale;
   currentPageViewMode = currentSettings.pageViewMode;
@@ -609,6 +626,14 @@ app.whenReady().then(async () => {
 
   ipcMain.on('window:close', () => {
     mainWindow?.close();
+  });
+
+  ipcMain.on('window:show-viewer-context-menu', (event) => {
+    const menu = Menu.buildFromTemplate(buildViewContextMenuItems());
+    const targetWindow = BrowserWindow.fromWebContents(event.sender);
+    if (targetWindow) {
+      menu.popup({ window: targetWindow });
+    }
   });
   mainWindow = createMainWindow();
   mainWindow.on('move', () => queuePersistWindowState(mainWindow as BrowserWindow));

@@ -5,6 +5,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 760,
+    icon: path.join(__dirname, 'assets', 'mongTang_ico256X256.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

@@ -292,7 +292,8 @@ const elements = {
   dropOverlay: () => byId<HTMLDivElement>('drop-overlay'),
   splitter: () => byId<HTMLDivElement>('splitter'),
   dropOverlayText: () => byId<HTMLDivElement>('drop-overlay-text'),
-  pageMoveToast: () => byId<HTMLDivElement>('page-move-toast'),
+  notificationModal: () => byId<HTMLDivElement>('notification-modal'),
+  notificationModalText: () => byId<HTMLDivElement>('notification-modal-text'),
   sizeAdjustModal: () => byId<HTMLDivElement>('size-adjust-modal'),
   sizeAdjustTitle: () => byId<HTMLHeadingElement>('size-adjust-title'),
   sizeAdjustMessage: () => byId<HTMLDivElement>('size-adjust-message'),
@@ -306,5 +307,10 @@ const elements = {
   launcherBtnOpenFolder: () => document.getElementById('launcher-btn-open-folder') as HTMLButtonElement | null,
   launcherRecentLabel: () => document.getElementById('launcher-recent-label') as HTMLElement | null,
   launcherRecentList: () => document.getElementById('launcher-recent-list') as HTMLUListElement | null,
-  launcherRecentEmpty: () => document.getElementById('launcher-recent-empty') as HTMLElement | null
+  launcherRecentEmpty: () => document.getElementById('launcher-recent-empty') as HTMLElement | null,
+  // Status Bar
+  statusBar: () => document.getElementById('custom-status-bar') as HTMLElement | null,
+  statusLeft: () => document.getElementById('status-left-text') as HTMLElement | null,
+  statusBadge: () => document.getElementById('status-badge') as HTMLElement | null,
+  statusRight: () => document.getElementById('status-right') as HTMLElement | null
 };

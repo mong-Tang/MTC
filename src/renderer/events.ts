@@ -1,3 +1,16 @@
+declare function startNotificationTimer(): void;
+declare function stopNotificationTimer(): void;
+declare function setPageIndex(nextIndex: number): boolean;
+declare function refreshBookNavigationItemsFromCurrentFile(): Promise<void>;
+declare function getCurrentOpenedBookIndex(): number;
+declare function getNavigableSidebarItems(): any[];
+declare function setSelectedSidebarItem(path: string | null): void;
+declare function openFilePath(filePath: string, options?: any): Promise<any>;
+declare function canOpenNextBookFromCurrent(): boolean;
+declare function canOpenPrevBookFromCurrent(): boolean;
+declare function updateStatus(badgeText: string, statusText: string, type?: 'idle' | 'loading' | 'info' | 'success' | 'warn'): void;
+declare function notifyAction(message: string): void;
+
 // Keyboard & User Input Event Listeners
 async function handleEsc(): Promise<void> {
   const isFullscreen = await window.appApi.isFullscreen();
@@ -298,6 +311,83 @@ function bindEvents(): void {
 
   elements.viewerImage().addEventListener('contextmenu', (event) => {
     event.preventDefault();
+    window.appApi.showViewerContextMenu();
+  });
+
+  let notificationDragging = false;
+  let notificationIsHovered = false;
+  let notificationDragStartX = 0;
+  let notificationDragStartY = 0;
+  let notificationModalCurrentX = 0;
+  let notificationModalCurrentY = 0;
+
+  const notificationModalEl = elements.notificationModal();
+  const notificationPanelEl = notificationModalEl.querySelector('.notification-modal-panel') as HTMLDivElement;
+
+  const savedX = localStorage.getItem('notificationModalX');
+  const savedY = localStorage.getItem('notificationModalY');
+  if (savedX !== null && savedY !== null) {
+    notificationPanelEl.style.left = `${savedX}px`;
+    notificationPanelEl.style.top = `${savedY}px`;
+  }
+
+  notificationPanelEl.addEventListener('mouseenter', () => {
+    notificationIsHovered = true;
+    stopNotificationTimer();
+  });
+
+  notificationPanelEl.addEventListener('mouseleave', () => {
+    notificationIsHovered = false;
+    if (!notificationDragging) {
+      startNotificationTimer();
+    }
+  });
+
+  notificationPanelEl.addEventListener('mousedown', (event) => {
+    stopNotificationTimer();
+
+    notificationDragging = true;
+    notificationDragStartX = event.clientX;
+    notificationDragStartY = event.clientY;
+
+    notificationModalCurrentX = parseFloat(notificationPanelEl.style.left) || 0;
+    notificationModalCurrentY = parseFloat(notificationPanelEl.style.top) || 0;
+
+    notificationPanelEl.style.transition = 'none';
+    notificationPanelEl.style.cursor = 'grabbing';
+    event.preventDefault();
+  });
+
+  window.addEventListener('mousemove', (event) => {
+    if (!notificationDragging) {
+      return;
+    }
+
+    const deltaX = event.clientX - notificationDragStartX;
+    const deltaY = event.clientY - notificationDragStartY;
+
+    const targetX = notificationModalCurrentX + deltaX;
+    const targetY = notificationModalCurrentY + deltaY;
+
+    notificationPanelEl.style.left = `${targetX}px`;
+    notificationPanelEl.style.top = `${targetY}px`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!notificationDragging) {
+      return;
+    }
+
+    notificationDragging = false;
+    notificationPanelEl.style.transition = '';
+    notificationPanelEl.style.cursor = 'move';
+
+    localStorage.setItem('notificationModalX', notificationPanelEl.style.left.replace('px', ''));
+    localStorage.setItem('notificationModalY', notificationPanelEl.style.top.replace('px', ''));
+
+    if (!notificationIsHovered) {
+      startNotificationTimer();
+    }
   });
 
   elements.sizeAdjustCancel().addEventListener('click', () => {
@@ -344,25 +434,57 @@ function bindEvents(): void {
   elements.splitter().addEventListener('pointerup', (event) => stopSplitterDrag(event));
   elements.splitter().addEventListener('pointercancel', (event) => stopSplitterDrag(event));
 
+  let lastWheelPageFlipTime = 0;
+
   elements.viewerView().addEventListener(
     'wheel',
     (event) => {
-      if (!event.shiftKey) {
+      if (event.shiftKey) {
+        const container = document.querySelector('.content-pane') as HTMLElement | null;
+        if (!container) {
+          return;
+        }
+
+        const canScrollHorizontally = container.scrollWidth > container.clientWidth;
+        if (!canScrollHorizontally) {
+          return;
+        }
+
+        container.scrollLeft += event.deltaY !== 0 ? event.deltaY : event.deltaX;
+        event.preventDefault();
         return;
       }
 
-      const container = document.querySelector('.content-pane') as HTMLElement | null;
-      if (!container) {
+      // No shift key: Smart mouse wheel page navigation!
+      if (state.currentView !== 'viewer' || !state.archive) {
         return;
       }
 
-      const canScrollHorizontally = container.scrollWidth > container.clientWidth;
-      if (!canScrollHorizontally) {
-        return;
-      }
+      const container = elements.viewerImage();
+      const deltaY = event.deltaY;
+      const isScrollable = container.scrollHeight > container.clientHeight;
 
-      container.scrollLeft += event.deltaY !== 0 ? event.deltaY : event.deltaX;
-      event.preventDefault();
+      if (deltaY > 0) {
+        const isAtBottom = !isScrollable || (container.scrollTop + container.clientHeight >= container.scrollHeight - 12);
+        if (isAtBottom) {
+          const now = Date.now();
+          if (now - lastWheelPageFlipTime > 350) {
+            lastWheelPageFlipTime = now;
+            movePage(1);
+          }
+          event.preventDefault();
+        }
+      } else if (deltaY < 0) {
+        const isAtTop = !isScrollable || (container.scrollTop <= 12);
+        if (isAtTop) {
+          const now = Date.now();
+          if (now - lastWheelPageFlipTime > 350) {
+            lastWheelPageFlipTime = now;
+            movePage(-1);
+          }
+          event.preventDefault();
+        }
+      }
     },
     { passive: false }
   );
@@ -594,18 +716,156 @@ async function init(): Promise<void> {
   try {
     const testStyle = getComputedStyle(document.documentElement);
     if (!testStyle.getPropertyValue('--bg').trim() || testStyle.getPropertyValue('--bg').trim() === 'Canvas') {
-      const toast = elements.pageMoveToast();
-      if (toast) {
-        toast.textContent = "테마 정합성 오류로 인해 안전 다크모드 환경으로 복구 구동되었습니다.";
-        toast.classList.remove('hidden');
-        setTimeout(() => {
-          toast.classList.add('hidden');
-        }, 4000);
-      }
+      updateStatus('경고', '테마 정합성 오류로 인해 안전 다크모드 환경으로 구동되었습니다.', 'warn');
     }
   } catch (err) {
     console.warn('[Theme] Check bypassed:', err);
   }
+}
+
+function movePage(step: number): boolean {
+  if (!state.archive) {
+    return false;
+  }
+
+  const stepSize = state.pageViewMode === 'double' ? 2 : 1;
+  const nextIndex = state.currentPageIndex + (step * stepSize);
+  
+  // 끝 범위(마지막 페이지)를 넘어서 전진하려는 경우
+  if (step > 0 && nextIndex >= state.archive.meta.totalPages) {
+    const lastPage = state.archive.meta.totalPages - 1;
+    // 아직 마지막 페이지에 도달하지 않은 미완의 상태라면, 마지막 쪽으로 먼저 완벽 안착시킴
+    if (state.currentPageIndex < lastPage) {
+      return setPageIndex(lastPage);
+    } else {
+      void handleAdvanceBeyondLastPage();
+      return false;
+    }
+  }
+
+  // 시작 범위(첫 페이지)를 넘어서 후진하려는 경우
+  if (step < 0 && nextIndex < 0) {
+    // 아직 첫 페이지에 도달하지 않은 상태라면, 첫 쪽으로 먼저 완벽 복귀시킴
+    if (state.currentPageIndex > 0) {
+      return setPageIndex(0);
+    } else {
+      void handleRetreatBeforeFirstPage();
+      return false;
+    }
+  }
+
+  return setPageIndex(nextIndex);
+}
+
+function moveToFirstPage(): boolean {
+  if (!state.archive) {
+    return false;
+  }
+
+  if (state.currentPageIndex === 0) {
+    void handleRetreatBeforeFirstPage();
+    return false;
+  }
+
+  return setPageIndex(0);
+}
+
+function moveToLastPage(): boolean {
+  if (!state.archive) {
+    return false;
+  }
+
+  const lastPage = state.archive.meta.totalPages - 1;
+  if (state.currentPageIndex === lastPage) {
+    void handleAdvanceBeyondLastPage();
+    return false;
+  }
+
+  return setPageIndex(lastPage);
+}
+
+function isViewerPageNavigationAvailable(): boolean {
+  return state.currentView === 'viewer' && !!state.archive;
+}
+
+async function openAdjacentBook(step: -1 | 1): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  const index = getCurrentOpenedBookIndex();
+  const items = getNavigableSidebarItems();
+  if (index < 0) {
+    return;
+  }
+
+  const nextIndex = index + step;
+  if (nextIndex < 0 || nextIndex >= items.length) {
+    return;
+  }
+
+  const next = items[nextIndex];
+  setSelectedSidebarItem(next.path);
+  await openFilePath(next.path, { preserveSidebarContext: true });
+}
+
+async function handleAdvanceBeyondLastPage(): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  if (canOpenNextBookFromCurrent()) {
+    const confirmed = await confirmAction(t('dialog.confirm.openNextBook'));
+    if (confirmed) {
+      updateStatus('다음 권', '다음 권으로 이동합니다...', 'loading');
+      void openAdjacentBook(1);
+    }
+    return;
+  }
+
+  updateStatus('알림', '마지막 권입니다.', 'warn');
+  notifyAction(t('dialog.info.noNextBook'));
+}
+
+async function handleRetreatBeforeFirstPage(): Promise<void> {
+  await refreshBookNavigationItemsFromCurrentFile();
+  if (canOpenPrevBookFromCurrent()) {
+    const confirmed = await confirmAction(t('dialog.confirm.openPrevBook'));
+    if (confirmed) {
+      updateStatus('이전 권', '이전 권으로 이동합니다...', 'loading');
+      void openAdjacentBook(-1);
+    }
+    return;
+  }
+
+  updateStatus('알림', '첫 번째 권입니다.', 'warn');
+  notifyAction(t('dialog.info.atDocumentStart'));
+}
+
+function handleViewerNavigationAction(action: MenuAction): boolean {
+  if (!isViewerPageNavigationAvailable()) {
+    return false;
+  }
+
+  if (action === 'move-prev-page') {
+    return movePage(-1);
+  }
+
+  if (action === 'move-next-page') {
+    return movePage(1);
+  }
+
+  if (action === 'move-prev-10-pages') {
+    return movePage(-10);
+  }
+
+  if (action === 'move-next-10-pages') {
+    return movePage(10);
+  }
+
+  if (action === 'move-first-page') {
+    return moveToFirstPage();
+  }
+
+  if (action === 'move-last-page') {
+    return moveToLastPage();
+  }
+
+  return false;
 }
 
 document.addEventListener('DOMContentLoaded', () => {

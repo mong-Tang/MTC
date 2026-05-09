@@ -1,7 +1,10 @@
 // All core interfaces, elements collection, state declarations, and i18n are now managed in state.ts for pure modular design.
+declare function renderHtmlRecentSubmenu(): void;
 
 let pageMoveToastTimer: number | null = null;
+let notificationModalTimer: number | null = null;
 let sizeAdjustChoiceResolver: ((choice: 'cancel' | 'original' | 'confirm') => void) | null = null;
+let lastViewerStatusText = '';
 
 function setSidebarListVisible(visible: boolean): void {
   elements.workspace().classList.toggle('sidebar-collapsed', !visible);
@@ -35,6 +38,10 @@ function switchView(view: ViewMode): void {
   elements.settingsView().classList.toggle('hidden', view !== 'settings');
   applySidebarVisibility();
   syncPageEditStateToMenu();
+  syncViewerStatusToMenu('');
+  if (view === 'launcher') {
+    renderLauncherRecentList();
+  }
 }
 
 function renderGlobalError(): void {
@@ -295,8 +302,42 @@ function setDragDebugText(text: string): void {
   state.dragDebugText = text;
 }
 
+function updateStatus(badgeText: string, statusText: string, type: 'idle' | 'loading' | 'info' | 'success' | 'warn' = 'idle'): void {
+  const badge = elements.statusBadge();
+  const text = elements.statusLeft();
+  if (badge && text) {
+    badge.textContent = badgeText;
+    badge.className = `status-badge ${type}`;
+    text.textContent = statusText;
+  }
+}
+
 function syncViewerStatusToMenu(statusText: string): void {
   window.appApi.updateViewerStatus(statusText);
+
+  if (statusText) {
+    lastViewerStatusText = statusText;
+  }
+
+  const statusRight = elements.statusRight();
+  const activeStatusText = statusText || lastViewerStatusText;
+
+  if (state.currentView === 'viewer' && state.archive) {
+    updateStatus('열람 중', getCurrentOpenedFileName(), 'info');
+    if (statusRight) {
+      statusRight.textContent = `${state.currentPageIndex + 1} / ${state.archive.meta.totalPages} 쪽${activeStatusText ? ` | ${activeStatusText}` : ''}`;
+    }
+  } else if (state.currentView === 'viewer' && state.openedImage) {
+    updateStatus('이미지', getCurrentOpenedFileName(), 'info');
+    if (statusRight) {
+      statusRight.textContent = activeStatusText || '이미지 보기';
+    }
+  } else {
+    updateStatus('대기 중', '파일을 선택하거나 드롭해 주세요.', 'idle');
+    if (statusRight) {
+      statusRight.textContent = '';
+    }
+  }
 }
 
 function getCurrentOpenedFileName(): string {
@@ -332,6 +373,9 @@ function syncRecentItemsToMenu(): void {
       title: item.title
     }))
   );
+  if (typeof renderHtmlRecentSubmenu === 'function') {
+    renderHtmlRecentSubmenu();
+  }
 }
 
 function persistViewerPreferences(): void {
@@ -357,23 +401,23 @@ function showPageMoveToast(step: number): void {
     return;
   }
 
-  const toast = elements.pageMoveToast();
   const delta = step > 0 ? `+${Math.abs(step)}` : `-${Math.abs(step)}`;
-  toast.textContent = t('viewer.toast.move', {
+  const message = t('viewer.toast.move', {
     delta,
     current: state.currentPageIndex + 1,
     total: state.archive.meta.totalPages
   });
-  toast.classList.remove('hidden');
+
+  updateStatus('이동', message, 'loading');
 
   if (pageMoveToastTimer !== null) {
     window.clearTimeout(pageMoveToastTimer);
   }
 
   pageMoveToastTimer = window.setTimeout(() => {
-    toast.classList.add('hidden');
+    syncViewerStatusToMenu('');
     pageMoveToastTimer = null;
-  }, 900);
+  }, 1200);
 }
 
 function setSidebarDragLayerActive(active: boolean): void {
@@ -701,16 +745,26 @@ async function openZipPath(
 
   state.archive = result.data;
   state.zipPath = zipPath;
-  setSelectedSidebarItem(zipPath);
   if (typeof options?.preferredPageIndex === 'number') {
     const lastPageIndex = Math.max(0, result.data.meta.totalPages - 1);
     state.currentPageIndex = Math.max(0, Math.min(options.preferredPageIndex, lastPageIndex));
   } else {
     state.currentPageIndex = await resolveInitialPageIndex(result.data.meta.fileId, result.data.meta.totalPages);
   }
+
   if (!options?.preserveSidebarContext) {
-    clearSidebarListContext();
+    const folderPath = getDirectoryPath(zipPath);
+    const folderResult = await window.appApi.listFolderItems(folderPath);
+    if (folderResult.ok) {
+      state.currentFolderPath = folderPath;
+      state.sidebarItems = folderResult.data;
+      state.bookNavItems = folderResult.data;
+    } else {
+      clearSidebarListContext();
+    }
   }
+
+  setSelectedSidebarItem(zipPath);
   syncBookNavigationStateToMenu();
   state.skipRecentSyncOnce = options?.skipRecentUpdate === true;
   switchView('viewer');
@@ -729,10 +783,20 @@ async function openImagePath(imagePath: string, options?: { preserveSidebarConte
   }
 
   state.openedImage = result.data;
-  setSelectedSidebarItem(imagePath);
+
   if (!options?.preserveSidebarContext) {
-    clearSidebarListContext();
+    const folderPath = getDirectoryPath(imagePath);
+    const folderResult = await window.appApi.listFolderItems(folderPath);
+    if (folderResult.ok) {
+      state.currentFolderPath = folderPath;
+      state.sidebarItems = folderResult.data;
+      state.bookNavItems = folderResult.data;
+    } else {
+      clearSidebarListContext();
+    }
   }
+
+  setSelectedSidebarItem(imagePath);
   syncBookNavigationStateToMenu();
   switchView('viewer');
   requestViewerRender();
@@ -746,7 +810,7 @@ async function openFilePath(filePath: string, options?: { preserveSidebarContext
   }
 
   if (isCbzPath(filePath)) {
-    const convertFirst = confirmAction(t('dialog.confirm.cbzPreferZip', { name: filePath }));
+    const convertFirst = await confirmAction(t('dialog.confirm.cbzPreferZip', { name: filePath }));
     if (convertFirst) {
       setBusyCursor(true);
       try {
@@ -871,12 +935,72 @@ async function refreshCurrentFolderItems(): Promise<void> {
   renderSidebarItems();
 }
 
-function confirmAction(message: string): boolean {
-  return window.confirm(message);
+function confirmAction(message: string): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const modal = document.getElementById('custom-confirm-modal');
+    const msgEl = document.getElementById('confirm-modal-message');
+    const confirmBtn = document.getElementById('confirm-modal-confirm');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+    if (!modal || !msgEl || !confirmBtn || !cancelBtn) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    msgEl.textContent = message;
+    modal.classList.remove('hidden');
+
+    const handleConfirm = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener('click', handleConfirm);
+      cancelBtn.removeEventListener('click', handleCancel);
+      modal.classList.add('hidden');
+    };
+
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+  });
+}
+
+function startNotificationTimer(): void {
+  if (notificationModalTimer !== null) {
+    window.clearTimeout(notificationModalTimer);
+  }
+  notificationModalTimer = window.setTimeout(() => {
+    elements.notificationModal().classList.add('hidden');
+    notificationModalTimer = null;
+  }, 3000);
+}
+
+function stopNotificationTimer(): void {
+  if (notificationModalTimer !== null) {
+    window.clearTimeout(notificationModalTimer);
+    notificationModalTimer = null;
+  }
 }
 
 function notifyAction(message: string): void {
-  window.alert(message);
+  const modal = elements.notificationModal();
+  const textEl = elements.notificationModalText();
+  const panel = modal.querySelector('.notification-modal-panel') as HTMLDivElement;
+
+  stopNotificationTimer();
+
+
+
+  textEl.textContent = message;
+  modal.classList.remove('hidden');
+
+  startNotificationTimer();
 }
 
 async function readImageDimensions(name: string, mimeType: string, bytes: number[]): Promise<ImageDimensions> {
@@ -1013,7 +1137,7 @@ async function handleDeletePageRequest(target: 'left' | 'right'): Promise<void> 
     return;
   }
 
-  const confirmed = confirmAction(
+  const confirmed = await confirmAction(
     t('dialog.confirm.pageDelete', {
       name: currentPage.displayName,
       page: pageIndex + 1
@@ -1134,7 +1258,7 @@ async function handleInsertAfterCurrentPageRequest(): Promise<void> {
   }
 
   const insertName = insertPath.split(/[/\\]/).pop() ?? insertPath;
-  const confirmed = confirmAction(
+  const confirmed = await confirmAction(
     t('dialog.confirm.pageInsertAfter', {
       currentName: currentPage.displayName,
       insertName
@@ -1186,7 +1310,7 @@ async function handleFileCopyOrCut(mode: FileTransferMode): Promise<void> {
 
   if (mode === 'cut') {
     const selectedName = getSelectedSidebarItem()?.name ?? sourcePath.split(/[/\\]/).pop() ?? sourcePath;
-    const confirmed = confirmAction(t('dialog.confirm.fileCut', { name: selectedName }));
+    const confirmed = await confirmAction(t('dialog.confirm.fileCut', { name: selectedName }));
     if (!confirmed) {
       return;
     }
@@ -1217,7 +1341,7 @@ async function handleFilePaste(): Promise<void> {
     state.fileTransferClipboard.mode === 'cut'
       ? t('dialog.confirm.fileMoveApply', { name: state.fileTransferClipboard.sourceName })
       : t('dialog.confirm.fileCopyApply', { name: state.fileTransferClipboard.sourceName });
-  const confirmed = confirmAction(confirmMessage);
+  const confirmed = await confirmAction(confirmMessage);
   if (!confirmed) {
     return;
   }
@@ -1250,7 +1374,7 @@ async function handleFileDelete(): Promise<void> {
     return;
   }
 
-  const confirmed = confirmAction(t('dialog.confirm.fileDelete', { name: selected.name }));
+  const confirmed = await confirmAction(t('dialog.confirm.fileDelete', { name: selected.name }));
   if (!confirmed) {
     return;
   }
@@ -1321,115 +1445,6 @@ function setPageIndex(nextIndex: number): boolean {
   showPageMoveToast(nextIndex - previousIndex);
   syncPageEditStateToMenu();
   return true;
-}
-
-function movePage(step: number): boolean {
-  if (!state.archive) {
-    return false;
-  }
-
-  const stepSize = state.pageViewMode === 'double' ? 2 : 1;
-  const nextIndex = state.currentPageIndex + (step * stepSize);
-  const moved = setPageIndex(nextIndex);
-  if (!moved && step > 0 && nextIndex >= state.archive.meta.totalPages) {
-    void handleAdvanceBeyondLastPage();
-  }
-  if (!moved && step < 0 && nextIndex < 0) {
-    void handleRetreatBeforeFirstPage();
-  }
-  return moved;
-}
-
-function moveToFirstPage(): boolean {
-  return setPageIndex(0);
-}
-
-function moveToLastPage(): boolean {
-  if (!state.archive) {
-    return false;
-  }
-
-  return setPageIndex(state.archive.meta.totalPages - 1);
-}
-
-function isViewerPageNavigationAvailable(): boolean {
-  return state.currentView === 'viewer' && !!state.archive;
-}
-
-async function openAdjacentBook(step: -1 | 1): Promise<void> {
-  await refreshBookNavigationItemsFromCurrentFile();
-  const index = getCurrentOpenedBookIndex();
-  const items = getNavigableSidebarItems();
-  if (index < 0) {
-    return;
-  }
-
-  const nextIndex = index + step;
-  if (nextIndex < 0 || nextIndex >= items.length) {
-    return;
-  }
-
-  const next = items[nextIndex];
-  setSelectedSidebarItem(next.path);
-  await openFilePath(next.path, { preserveSidebarContext: true });
-}
-
-async function handleAdvanceBeyondLastPage(): Promise<void> {
-  await refreshBookNavigationItemsFromCurrentFile();
-  if (canOpenNextBookFromCurrent()) {
-    const confirmed = confirmAction(t('dialog.confirm.openNextBook'));
-    if (confirmed) {
-      void openAdjacentBook(1);
-    }
-    return;
-  }
-
-  notifyAction(t('dialog.info.noNextBook'));
-}
-
-async function handleRetreatBeforeFirstPage(): Promise<void> {
-  await refreshBookNavigationItemsFromCurrentFile();
-  if (canOpenPrevBookFromCurrent()) {
-    const confirmed = confirmAction(t('dialog.confirm.openPrevBook'));
-    if (confirmed) {
-      void openAdjacentBook(-1);
-    }
-    return;
-  }
-
-  notifyAction(t('dialog.info.atDocumentStart'));
-}
-
-function handleViewerNavigationAction(action: MenuAction): boolean {
-  if (!isViewerPageNavigationAvailable()) {
-    return false;
-  }
-
-  if (action === 'move-prev-page') {
-    return movePage(-1);
-  }
-
-  if (action === 'move-next-page') {
-    return movePage(1);
-  }
-
-  if (action === 'move-prev-10-pages') {
-    return movePage(-10);
-  }
-
-  if (action === 'move-next-10-pages') {
-    return movePage(10);
-  }
-
-  if (action === 'move-first-page') {
-    return moveToFirstPage();
-  }
-
-  if (action === 'move-last-page') {
-    return moveToLastPage();
-  }
-
-  return false;
 }
 
 // Keydown event bindings and escape behaviors are managed inside events.ts
