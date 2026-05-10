@@ -1320,12 +1320,16 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
 /* Premium All Recents Modal Style overrides */
 .all-recents-panel {
   width: 440px !important;
-  max-width: 95%;
+  max-width: 90vw;
+  max-height: 90vh; /* Limit modal panel to 90% of viewport height */
+  display: flex;
+  flex-direction: column;
   padding: 20px !important;
 }
 
 .all-recents-list-container {
-  max-height: 280px;
+  flex: 1;
+  max-height: calc(90vh - 130px); /* Dynamically limit scroll area height relative to window height */
   overflow-y: auto;
   width: 100%;
   margin: 15px 0;
@@ -1361,10 +1365,11 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   background: var(--surface-hi);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
   cursor: pointer;
   transition: all var(--t);
   text-align: left;
@@ -1384,14 +1389,16 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  display: flex;
+  align-items: baseline;
 }
 
 .all-recents-modal-meta {
   font-size: 11px;
   color: var(--muted);
+  margin-left: 8px;
+  font-weight: normal;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
-  margin-top: 2px;
 }

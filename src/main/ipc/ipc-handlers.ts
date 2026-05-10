@@ -8,7 +8,7 @@ import type { SerializableAppError } from '../../shared/ipc/ipc-result';
 import type { UpsertRecentInput } from '../../shared/stores/reading-state';
 import en from '../../locales/en.json';
 import ko from '../../locales/ko.json';
-import { applyZipEditInTemp, type ZipEditRequest } from '../services/archive-workflow';
+import { applyZipEditInTemp, convertArchiveToZipWorkflow, type ZipEditRequest } from '../services/archive-workflow';
 import { getZipPage, openZip } from '../services/zip-index-service';
 import { getProgress, getRecentItems, removeRecentItemByZipPath, setProgress, upsertRecentItem } from '../stores/reading-state-store';
 
@@ -18,6 +18,7 @@ interface OpenFileDialogOptions {
   imageFilterName: string;
   archiveFilterName?: string;
   defaultPath?: string;
+  excludeZip?: boolean;
 }
 
 interface SidebarListItem {
@@ -44,15 +45,9 @@ const IMAGE_EXTENSIONS = new Map([
   ['.webp', 'image/webp']
 ]);
 const ARCHIVE_EXTENSIONS = new Set([
-  '.zip',
-  '.7z',
-  '.rar',
-  '.tar',
-  '.gz',
-  '.tgz',
-  '.bz2',
-  '.xz',
-  '.cbz'
+  '.zip', '.7z', '.rar', '.tar', '.gz', '.tgz', '.bz2', '.tbz2', '.xz', '.txz', '.iso', '.cbz', '.cbr',
+  '.cab', '.wim', '.lzh', '.arj', '.chm', '.msi', '.dmg', '.z', '.cpio', '.xar', '.rpm', '.deb',
+  '.vhd', '.vhdx', '.vdi', '.vmdk', '.squashfs', '.ext', '.fat', '.ntfs'
 ]);
 
 function getSidebarItemType(filePath: string): SidebarListItem['type'] | null {
@@ -138,13 +133,27 @@ export function registerIpcHandlers(): void {
     const zipFilterName = options?.zipFilterName ?? '';
     const imageFilterName = options?.imageFilterName ?? '';
     const archiveFilterName = options?.archiveFilterName ?? '';
+    const excludeZip = options?.excludeZip === true;
+    
     const filters = [];
-    if (zipFilterName.trim()) {
+    
+    if (zipFilterName.trim() && !excludeZip) {
       filters.push({ name: zipFilterName, extensions: ['zip', 'cbz'] });
     }
+    
     if (archiveFilterName.trim()) {
-      filters.push({ name: archiveFilterName, extensions: ['zip', 'cbz', '7z', 'rar', 'tar', 'gz', 'tgz', 'bz2', 'xz'] });
+      let baseArchiveExts = [
+        'zip', 'cbz', 'cbr', 'rar', '7z', 'iso', 'tar', 'gz', // 주요 포맷 우선 배치
+        'arj', 'bz2', 'cab', 'chm', 'cpio', 'deb', 'dmg', 'ext', 'fat', 'lzh', 'msi', 'ntfs',
+        'rpm', 'squashfs', 'tbz2', 'tgz', 'txz', 'vdi', 'vhd', 'vhdx', 'vmdk', 'wim', 'xar', 'xz', 'z' // 나머지는 알파벳순 정렬
+      ];
+      if (excludeZip) {
+        // Forcibly excise 'zip' and 'cbz' from the candidate array as per brilliant user request
+        baseArchiveExts = baseArchiveExts.filter(ext => ext !== 'zip' && ext !== 'cbz');
+      }
+      filters.push({ name: archiveFilterName, extensions: baseArchiveExts });
     }
+    
     if (imageFilterName.trim()) {
       filters.push({ name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] });
     }
@@ -337,7 +346,7 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('converter:to-zip', async (_event, sourcePath: string, outputDirectory: string) => {
+  ipcMain.handle('converter:to-zip', async (_event, sourcePath: string, outputDirectory: string, targetExtension: string = '.zip', customFilename?: string) => {
     try {
       const sourceStat = await fs.stat(sourcePath);
       if (!sourceStat.isFile()) {
@@ -352,26 +361,20 @@ export function registerIpcHandlers(): void {
       }
 
       const sourceBaseName = path.basename(sourcePath, path.extname(sourcePath));
-      const destinationPath = await resolveUniquePath(outputDirectory, `${sourceBaseName}.zip`);
+      // [MAJOR UPGRADE] Utilize custom filename override if specified by the user!
+      const effectiveBaseName = (customFilename && customFilename.trim()) ? customFilename.trim() : sourceBaseName;
+      const destinationPath = await resolveUniquePath(outputDirectory, `${effectiveBaseName}${targetExtension}`);
       const logs: string[] = [`source: ${sourcePath}`, `output: ${destinationPath}`];
 
-      if (sourceExtension !== '.zip' && sourceExtension !== '.cbz') {
-        throw new AppError(
-          'ZIP_OPEN_FAILED',
-          `현재 버전은 ZIP/CBZ만 변환할 수 있습니다. (${sourceExtension})`
-        );
-      }
 
-      await openZip(sourcePath);
 
-      await fs.copyFile(sourcePath, destinationPath);
-      logs.push('done: copied as .zip');
+      const workflowResult = await convertArchiveToZipWorkflow(sourcePath, destinationPath);
 
       return {
         ok: true,
         data: {
           outputPath: destinationPath,
-          logs
+          logs: [...logs, ...workflowResult.logs]
         }
       } as const;
     } catch (error) {

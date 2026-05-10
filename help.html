@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -8,84 +8,111 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>User Guide</title>
+    <link rel="stylesheet" href="styles.css" />
     <style>
-      :root {
-        color-scheme: dark;
-      }
       body {
         margin: 0;
-        font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
-        background: #0b1220;
-        color: #e2e8f0;
+        font-family: 'Inter', 'Segoe UI', 'Noto Sans KR', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        transition: background var(--t), color var(--t);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .custom-header {
+        flex-shrink: 0;
+        height: 32px;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border-mid);
       }
       .layout {
         display: grid;
         grid-template-columns: 260px 1fr;
-        min-height: 100vh;
+        flex: 1;
+        min-height: 0; /* important for internal overflow scrolling */
       }
       .toc {
         position: sticky;
         top: 0;
-        height: 100vh;
-        overflow: auto;
-        border-right: 1px solid #334155;
-        background: #0f172a;
-        padding: 18px 14px;
+        height: 100%;
+        overflow-y: auto;
+        border-right: 1px solid var(--border-mid);
+        background: var(--surface);
+        padding: 24px 16px;
       }
       .toc h1 {
-        margin: 0 0 14px;
+        margin: 0 0 16px;
         font-size: 18px;
+        color: var(--text);
+        font-weight: 700;
       }
       .toc a {
         display: block;
-        color: #cbd5e1;
+        color: var(--muted);
         text-decoration: none;
-        padding: 8px 10px;
-        border-radius: 8px;
+        padding: 8px 12px;
+        border-radius: var(--r-sm);
         margin-bottom: 4px;
+        font-size: 13px;
+        transition: all var(--t);
       }
       .toc a.only-ko,
       .toc a.only-en {
         display: none;
       }
       .toc a:hover {
-        background: #1e293b;
+        background: var(--hover);
+        color: var(--text);
       }
       main {
-        padding: 24px;
+        padding: 32px;
         max-width: 980px;
+        overflow-y: auto;
       }
       section {
-        margin-bottom: 34px;
-        scroll-margin-top: 12px;
+        margin-bottom: 40px;
+        scroll-margin-top: 20px;
       }
       h2 {
-        margin: 0 0 12px;
+        margin: 0 0 16px;
         font-size: 22px;
+        color: var(--text);
+        border-bottom: 2px solid var(--border-mid);
+        padding-bottom: 8px;
+        display: inline-block;
       }
       .card {
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 14px;
-        background: #111827;
+        border: 1px solid var(--border-mid);
+        border-radius: var(--r-md);
+        padding: 20px;
+        background: var(--surface);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+        margin-top: 8px;
       }
       ul {
-        margin: 8px 0 0;
-        padding-left: 18px;
+        margin: 0;
+        padding-left: 20px;
+        font-size: 14px;
+        line-height: 1.6;
       }
       li {
-        margin: 6px 0;
+        margin: 8px 0;
       }
       kbd {
-        border: 1px solid #64748b;
+        border: 1px solid var(--border-hi);
         border-bottom-width: 2px;
-        border-radius: 6px;
-        padding: 1px 6px;
-        font-family: Consolas, monospace;
+        background: var(--overlay);
+        color: var(--text);
+        border-radius: var(--r-sm);
+        padding: 2px 6px;
+        font-family: 'Consolas', monospace;
         font-size: 12px;
       }
       .muted {
-        color: #94a3b8;
+        color: var(--subtle);
+        font-size: 12px;
+        margin-top: 20px;
       }
       .only-ko,
       .only-en {
@@ -104,6 +131,18 @@
     </style>
   </head>
   <body>
+    <header class="custom-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 12px;">
+      <div class="header-left" style="display: flex; align-items: center; user-select: none; -webkit-app-region: no-drag;">
+        <img src="./assets/mongTang_ico16X16.png" alt="logo" style="width:16px; height:16px;" />
+        <span style="font-size: 12px; font-weight: 600; color: var(--text); margin-left: 8px; opacity: 0.8;">Help Guide</span>
+      </div>
+      <div class="window-controls">
+        <button class="win-btn" id="win-btn-minimize" type="button" aria-label="Minimize"></button>
+        <button class="win-btn" id="win-btn-maximize" type="button" aria-label="Maximize"></button>
+        <button class="win-btn" id="win-btn-close" type="button" aria-label="Close"></button>
+      </div>
+    </header>
+
     <div class="layout">
       <aside class="toc">
         <h1 class="only-ko">사용 가이드</h1>
@@ -225,8 +264,24 @@
     </div>
 
     <script>
-      const lang = new URLSearchParams(location.search).get('lang');
-      document.body.classList.add(lang === 'en' ? 'lang-en' : 'lang-ko');
+      (async () => {
+        // 1. Handle Locales
+        const lang = new URLSearchParams(location.search).get('lang');
+        document.body.classList.add(lang === 'en' ? 'lang-en' : 'lang-ko');
+
+        // 2. Sync Theme if API available
+        if (window.appApi) {
+          try {
+            const settings = await window.appApi.getAppSettings();
+            document.body.setAttribute('data-theme', settings.theme || 'dark');
+          } catch(e) { console.error(e); }
+
+          // 3. Bind Traffic Lights
+          document.getElementById('win-btn-minimize').addEventListener('click', () => window.appApi.minimizeWindow());
+          document.getElementById('win-btn-maximize').addEventListener('click', () => window.appApi.maximizeWindow());
+          document.getElementById('win-btn-close').addEventListener('click', () => window.appApi.closeWindow());
+        }
+      })();
     </script>
   </body>
 </html>

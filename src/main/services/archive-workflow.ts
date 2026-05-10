@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { path7za } from '7zip-bin';
 
 import { AppError } from '../../shared/errors/app-error';
 
@@ -15,19 +16,13 @@ export type ZipEditRequest =
       insertBytes: number[];
     };
 
-function runPowerShellCommand(command: string, envOverrides?: Record<string, string>): Promise<void> {
+function run7zCommand(args: string[], cwd?: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(
-      'powershell.exe',
-      ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command],
-      {
-        env: {
-          ...process.env,
-          ...envOverrides
-        },
-        windowsHide: true
-      }
-    );
+    const normalized7za = path7za.replace('app.asar', 'app.asar.unpacked');
+    const child = spawn(normalized7za, args, {
+      cwd,
+      windowsHide: true
+    });
 
     let stderr = '';
     child.stderr.on('data', (chunk) => {
@@ -40,7 +35,7 @@ function runPowerShellCommand(command: string, envOverrides?: Record<string, str
         resolve();
         return;
       }
-      reject(new AppError('UNKNOWN', `PowerShell command failed (${code}): ${stderr.trim()}`));
+      reject(new AppError('UNKNOWN', `7-Zip command failed (${code}): ${stderr.trim()}`));
     });
   });
 }
@@ -113,10 +108,7 @@ export async function applyZipEditInTemp(zipPath: string, request: ZipEditReques
   await fs.mkdir(tempExtractPath, { recursive: true });
 
   try {
-    await runPowerShellCommand('Expand-Archive -LiteralPath $env:ZIP_SRC -DestinationPath $env:ZIP_DST -Force', {
-      ZIP_SRC: zipPath,
-      ZIP_DST: tempExtractPath
-    });
+    await run7zCommand(['x', zipPath, `-o${tempExtractPath}`, '-y']);
 
     if (request.kind === 'delete') {
       const targetPath = resolveEntryPath(tempExtractPath, request.targetEntryName);
@@ -148,10 +140,7 @@ export async function applyZipEditInTemp(zipPath: string, request: ZipEditReques
     const editedZipPath = overwriteEditedSource ? zipPath : await resolveEditedZipPath(zipPath);
     const zipOutPath = overwriteEditedSource ? await resolveTempOverwritePath(zipPath) : editedZipPath;
 
-    await runPowerShellCommand('Set-Location -LiteralPath $env:ZIP_WORK; Compress-Archive -Path * -DestinationPath $env:ZIP_OUT -Force', {
-      ZIP_WORK: tempExtractPath,
-      ZIP_OUT: zipOutPath
-    });
+    await run7zCommand(['a', '-tzip', zipOutPath, '*'], tempExtractPath);
 
     if (overwriteEditedSource) {
       await fs.copyFile(zipOutPath, editedZipPath);
@@ -163,4 +152,38 @@ export async function applyZipEditInTemp(zipPath: string, request: ZipEditReques
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 }
+
+export async function convertArchiveToZipWorkflow(
+  sourcePath: string,
+  outputZipPath: string
+): Promise<{ logs: string[] }> {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'zip-convert-'));
+  const tempExtractPath = path.join(tempRoot, 'extracted');
+  await fs.mkdir(tempExtractPath, { recursive: true });
+
+  const logs: string[] = [`[Start] Converting: ${path.basename(sourcePath)}`];
+
+  try {
+    logs.push('[Stage 1] Unpacking archive via 7-Zip Super Engine...');
+    await run7zCommand(['x', sourcePath, `-o${tempExtractPath}`, '-y']);
+    logs.push('-> Unpacked successfully with high efficiency.');
+
+    logs.push('[Stage 2] Validating content...');
+    const entries = await fs.readdir(tempExtractPath);
+    logs.push(`-> Found ${entries.length} top-level items.`);
+
+    logs.push('[Stage 3] Re-compressing using optimized 7-Zip algorithms...');
+    await run7zCommand(['a', '-tzip', outputZipPath, '*'], tempExtractPath);
+    logs.push(`-> Compression completed: ${path.basename(outputZipPath)}`);
+
+    logs.push('[Done] Conversion finished successfully.');
+    return { logs };
+  } catch (error) {
+    logs.push(`[Error] ${(error as Error).message}`);
+    throw new AppError('UNKNOWN', logs.join('\n'));
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+}
+
 

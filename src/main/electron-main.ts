@@ -40,7 +40,7 @@ type MenuAction =
   | 'image-fit-actual'
   | 'image-fit-width'
   | 'image-fit-height';
-type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy';
+type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy' | 'fmt-zip' | 'fmt-cbz';
 
 let currentSettings: AppSettings = defaultAppSettings;
 let currentPageViewMode: PageViewMode = currentSettings.pageViewMode;
@@ -101,9 +101,12 @@ function createConverterWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 960,
     height: 700,
-    minWidth: 760,
-    minHeight: 520,
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    frame: false,
     parent: mainWindow ?? undefined,
+    modal: true,
     icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -112,7 +115,7 @@ function createConverterWindow(): BrowserWindow {
     }
   });
 
-  window.setMenu(buildConverterWindowMenu(window));
+
   window.loadFile(path.join(app.getAppPath(), 'converter.html'));
   window.on('closed', () => {
     converterWindow = null;
@@ -125,8 +128,24 @@ function buildConverterWindowMenu(window: BrowserWindow): Menu {
     {
       label: t('menu.file'),
       submenu: [
-        { label: t('menu.converter.selectSource'), click: () => sendConverterMenuAction('select-source') },
-        { label: t('menu.converter.selectOutput'), click: () => sendConverterMenuAction('select-output') },
+        {
+          label: t('menu.converter.selectSource'),
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'select-source');
+            }
+          }
+        },
+        {
+          label: t('menu.converter.selectOutput'),
+          accelerator: 'CmdOrCtrl+Shift+O',
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'select-output');
+            }
+          }
+        },
         { type: 'separator' },
         {
           label: t('menu.window.close'),
@@ -136,16 +155,64 @@ function buildConverterWindowMenu(window: BrowserWindow): Menu {
       ]
     },
     {
+      label: t('menu.edit'),
+      submenu: [
+        { label: t('menu.edit.undo') || 'Undo', role: 'undo' },
+        { label: t('menu.edit.redo') || 'Redo', role: 'redo' },
+        { type: 'separator' },
+        { label: t('menu.edit.cut') || 'Cut', role: 'cut' },
+        { label: t('menu.edit.copy') || 'Copy', role: 'copy' },
+        { label: t('menu.edit.paste') || 'Paste', role: 'paste' },
+        { label: t('menu.edit.selectAll') || 'Select All', role: 'selectAll' }
+      ]
+    },
+    {
       label: t('menu.converter'),
       submenu: [
-        { label: t('menu.converter.start'), accelerator: 'F5', click: () => sendConverterMenuAction('start-conversion') },
+        {
+          label: t('menu.converter.start'),
+          accelerator: 'F5',
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'start-conversion');
+            }
+          }
+        },
+        {
+          label: t('menu.converter.start') + ' (Sub)',
+          accelerator: 'CmdOrCtrl+Enter',
+          visible: false,
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'start-conversion');
+            }
+          }
+        },
         { type: 'separator' },
-        { label: t('menu.converter.showLog'), type: 'checkbox', checked: true, click: () => sendConverterMenuAction('toggle-log') }
+        {
+          label: t('menu.converter.showLog'),
+          type: 'checkbox',
+          checked: true,
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'toggle-log');
+            }
+          }
+        }
       ]
     },
     {
       label: t('menu.help'),
-      submenu: [{ label: t('menu.converter.policy'), click: () => sendConverterMenuAction('show-policy') }]
+      submenu: [
+        {
+          label: t('menu.converter.policy'),
+          click: () => {
+            if (!window.isDestroyed()) {
+              window.webContents.send('converter:menu-action', 'show-policy');
+            }
+          }
+        }
+      ]
     }
   ];
 
@@ -181,9 +248,11 @@ function createHelpWindow(): BrowserWindow {
     height: 760,
     minWidth: 900,
     minHeight: 620,
+    frame: false,
     parent: mainWindow ?? undefined,
     icon: appIcon,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -612,20 +681,24 @@ app.whenReady().then(async () => {
     reloadHelpWindowForLocale();
     applyApplicationMenu();
     return true;
-  });  ipcMain.on('window:minimize', () => {
-    mainWindow?.minimize();
   });
 
-  ipcMain.on('window:maximize', () => {
-    if (mainWindow?.isMaximized()) {
-      mainWindow.unmaximize();
+  ipcMain.on('window:minimize', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.minimize();
+  });
+
+  ipcMain.on('window:maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+    if (win.isMaximized()) {
+      win.unmaximize();
     } else {
-      mainWindow?.maximize();
+      win.maximize();
     }
   });
 
-  ipcMain.on('window:close', () => {
-    mainWindow?.close();
+  ipcMain.on('window:close', (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
   });
 
   ipcMain.on('window:show-viewer-context-menu', (event) => {
@@ -635,6 +708,15 @@ app.whenReady().then(async () => {
       menu.popup({ window: targetWindow });
     }
   });
+
+  ipcMain.on('window:open-converter', () => {
+    openConverterWindow();
+  });
+
+  ipcMain.on('window:open-help', () => {
+    openHelpWindow();
+  });
+
   mainWindow = createMainWindow();
   mainWindow.on('move', () => queuePersistWindowState(mainWindow as BrowserWindow));
   mainWindow.on('resize', () => queuePersistWindowState(mainWindow as BrowserWindow));

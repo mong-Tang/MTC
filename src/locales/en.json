@@ -136,7 +136,7 @@
     "recent.missingRemoved":  "File not found. Removed from Recent.\n{name}",
     "viewer.toast.move":  "{delta} move • {current}/{total}",
     "converter.page.title":  "Converter",
-    "converter.page.subtitle":  "Convert archive files to ZIP. (Current build: ZIP/CBZ only)",
+    "converter.page.subtitle":  "Convert various archive formats into standard ZIP format.",
     "converter.page.source":  "Source File",
     "converter.page.output":  "Output Folder",
     "converter.page.selectSource":  "Select Source...",

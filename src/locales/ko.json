@@ -136,7 +136,7 @@
     "recent.missingRemoved":  "파일을 찾을 수 없어 최근 열람에서 제거했습니다.\n{name}",
     "viewer.toast.move":  "{delta} 이동 • {current}/{total}",
     "converter.page.title":  "컨버터",
-    "converter.page.subtitle":  "압축 파일을 ZIP으로 변환합니다. (현재 버전: ZIP/CBZ 지원)",
+    "converter.page.subtitle":  "다양한 형태의 압축파일을 표준 ZIP 포맷으로 치환합니다.",
     "converter.page.source":  "원본 파일",
     "converter.page.output":  "출력 폴더",
     "converter.page.selectSource":  "원본 선택...",

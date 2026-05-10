@@ -142,8 +142,9 @@ function showAllRecentsModal(): void {
     const dirName = dirParts.length > 2 ? dirParts[dirParts.length - 2] : '';
     
     btn.innerHTML = `
-      <span class="all-recents-modal-name">${item.title}</span>
-      ${dirName ? `<span class="all-recents-modal-meta">${dirName}</span>` : ''}
+      <span class="all-recents-modal-name">
+        ${item.title} ${dirName ? `<span class="all-recents-modal-meta">(${dirName})</span>` : ''}
+      </span>
     `;
     
     btn.addEventListener('click', () => {
@@ -292,16 +293,15 @@ function setupHtmlDropdownEvents(): void {
       } else if (tool === 'converter') {
         e.stopPropagation();
         closeAllHtmlMenus();
-        // Trigger converter window opening via preload API (using exist any hook safely)
-        void (window.appApi as any).showMenuTools?.();
+        window.appApi.openConverterWindow();
       } else if (help === 'user-guide') {
         e.stopPropagation();
         closeAllHtmlMenus();
-        void (window.appApi as any).showMenuHelp?.();
+        window.appApi.openHelpWindow();
       } else if (help === 'about') {
         e.stopPropagation();
         closeAllHtmlMenus();
-        void (window.appApi as any).showMenuHelp?.();
+        window.appApi.openHelpWindow();
       }
     });
   });

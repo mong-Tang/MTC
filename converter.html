@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -8,15 +8,14 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Converter</title>
+    <link rel="stylesheet" href="styles.css" />
     <style>
-      :root {
-        color-scheme: dark;
-      }
       body {
         margin: 0;
-        font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
+        font-family: 'Inter', 'Segoe UI', 'Noto Sans KR', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        transition: background var(--t), color var(--t);
       }
       .wrap {
         max-width: 920px;
@@ -26,47 +25,83 @@
       h1 {
         margin: 0 0 8px;
         font-size: 22px;
+        color: var(--text);
+        font-weight: 700;
       }
       .subtitle {
         margin: 0 0 16px;
-        color: #cbd5e1;
+        color: var(--muted);
+        font-size: 13px;
       }
       .card {
-        background: #111827;
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border-mid);
+        border-radius: var(--r-md);
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
       }
       .field {
         display: flex;
         gap: 10px;
         align-items: center;
-        margin-top: 10px;
+        margin-top: 12px;
       }
       .field label {
         width: 110px;
-        color: #cbd5e1;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 500;
       }
       .field input[type='text'] {
         flex: 1;
         min-width: 0;
-        background: #0b1220;
-        color: #e2e8f0;
-        border: 1px solid #334155;
-        border-radius: 6px;
-        padding: 8px 10px;
+        background: var(--overlay);
+        color: var(--text);
+        border: 1px solid var(--border-mid);
+        border-radius: var(--r-sm);
+        padding: 8px 12px;
+        font-family: inherit;
+        font-size: 13px;
+        transition: all var(--t);
+      }
+      .field input[type='text']:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent-glow);
+      }
+      .field button {
+        min-width: 125px;
+        justify-content: center;
+        text-align: center;
       }
       button {
-        border: 1px solid #475569;
-        background: #1e293b;
-        color: #e2e8f0;
-        border-radius: 6px;
-        padding: 8px 12px;
+        border: 1px solid var(--border-mid);
+        background: var(--surface);
+        color: var(--text);
+        border-radius: var(--r-sm);
+        padding: 8px 14px;
         cursor: pointer;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all var(--t);
       }
       button:hover {
-        background: #334155;
+        background: var(--hover);
+        border-color: var(--border-hi);
+      }
+      /* Targeting EXACTLY the content action buttons as requested */
+      .card button {
+        border: none;
+        background: var(--text);
+        color: var(--bg);
+      }
+      .card button:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        background: var(--text);
       }
       .row {
         display: flex;
@@ -75,28 +110,156 @@
         margin-top: 14px;
       }
       .status {
-        color: #93c5fd;
+        color: #3b82f6; /* Maintain a distinct informative blue across themes */
+        font-weight: 600;
+        font-size: 13px;
       }
       .log {
         margin-top: 8px;
-        padding: 10px;
-        background: #020617;
-        border: 1px solid #334155;
-        border-radius: 6px;
-        min-height: 120px;
+        padding: 12px;
+        background: var(--bg);
+        border: 1px solid var(--border-mid);
+        border-radius: var(--r-sm);
+        height: 140px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 12px;
+        color: var(--muted);
         white-space: pre-wrap;
+        overflow-y: auto;
+      }
+      .fmt-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all var(--t);
       }
       .hidden {
-        display: none;
+        display: none !important;
       }
       .policy {
         margin-top: 8px;
-        color: #94a3b8;
+        color: var(--text);
+        font-size: 12px;
+        line-height: 1.6;
       }
+      /* [FIX] Reset traffic light bloating */
+      .win-btn {
+        padding: 0 !important;
+        min-width: 12px !important;
+        min-height: 12px !important;
+        border-radius: 50% !important;
+        box-sizing: border-box !important;
+      }
+      /* [FEATURE] Enable hover-based HTML dropdown display for zero-lag UX */
+      .custom-menu-item {
+        position: relative;
+      }
+      /* [FEATURE] Pure click-based rigid display activation */
+      .custom-menu-item.active .custom-dropdown {
+        display: flex !important;
+        flex-direction: column;
+        animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      /* Ensure reliable layered render */
+      .custom-dropdown {
+        -webkit-app-region: no-drag !important;
+        z-index: 99999;
+      }
+      /* Premium Info Modal Styles */
+      .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(5px);
+        display: none; align-items: center; justify-content: center;
+        z-index: 200000; opacity: 0; transition: opacity 0.2s ease;
+      }
+      .modal-overlay.active { display: flex; opacity: 1; }
+      .modal-content {
+        background: var(--surface); width: 90%; max-width: 480px;
+        border-radius: var(--r-md); border: 1px solid var(--border-mid);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.3); padding: 24px;
+        position: relative; transform: translateY(20px); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .modal-overlay.active .modal-content { transform: translateY(0); }
+      .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-low); padding-bottom: 10px; }
+      .modal-header h3 { margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+      .modal-close-x { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; opacity: 0.6; }
+      .modal-close-x:hover { opacity: 1; }
+      .credit-box { background: var(--bg); border: 1px solid var(--border-low); border-radius: 8px; padding: 16px; margin-top: 12px; }
+      .credit-box h4 { margin: 0 0 6px; color: var(--accent); font-size: 14px; }
+      .fmt-tag-cloud { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+      .fmt-tag { font-size: 11px; background: var(--border-low); padding: 3px 7px; border-radius: 4px; color: var(--muted); border: 1px solid transparent; }
+      .fmt-tag:hover { border-color: var(--accent); color: var(--text); }
     </style>
   </head>
   <body>
-    <main class="wrap">
+    <header class="custom-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 12px; height: 32px; background: var(--surface); border-bottom: 1px solid var(--border-mid);">
+      <div class="header-left" style="display: flex; align-items: center; -webkit-app-region: drag; user-select: none;">
+        <img src="./assets/mongTang_ico16X16.png" alt="logo" style="width:16px; height:16px; -webkit-app-region: no-drag;" />
+        
+        <!-- Restored Premium Menubar (Excluding 'Help' per instructions) -->
+        <div class="custom-menu-group" style="display: flex; gap: 2px; margin-left: 10px; -webkit-app-region: no-drag;">
+          <div class="custom-menu-item">
+            <button class="custom-menu-trigger" type="button" style="font-size: 12px; padding: 4px 8px; background: transparent; border: none;">📁 파일</button>
+            <div class="custom-dropdown" style="top: 100%; left: 0;">
+              <button class="dropdown-item" type="button" data-menu="select-source"><span class="dropdown-text">📄 원본 파일 선택</span></button>
+              <button class="dropdown-item" type="button" data-menu="select-output"><span class="dropdown-text">📂 출력 폴더 선택</span></button>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-menu="close"><span class="dropdown-text">❌ 닫기</span></button>
+            </div>
+          </div>
+
+          <div class="custom-menu-item">
+            <button class="custom-menu-trigger" type="button" style="font-size: 12px; padding: 4px 8px; background: transparent; border: none;">✏️ 편집</button>
+            <div class="custom-dropdown" style="top: 100%; left: 0;">
+              <button class="dropdown-item" type="button" data-menu="copy"><span class="dropdown-text">📋 복사</span></button>
+              <button class="dropdown-item" type="button" data-menu="paste"><span class="dropdown-text">📥 붙여넣기</span></button>
+            </div>
+          </div>
+
+          <div class="custom-menu-item">
+            <button class="custom-menu-trigger" type="button" style="font-size: 12px; padding: 4px 8px; background: transparent; border: none;">🔄 변환</button>
+            <div class="custom-dropdown" style="top: 100%; left: 0;">
+              <button class="dropdown-item" type="button" data-menu="start-conversion"><span class="dropdown-text">⚡ 변환 시작</span><span class="dropdown-shortcut">F5</span></button>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-menu="fmt-zip">
+                <span class="dropdown-text" style="display: flex; align-items: center;">
+                  <span id="fmt-zip-mark" style="display: inline-block; width: 20px; flex-shrink: 0; text-align: center;"></span>
+                  <span id="fmt-zip-label">ZIP 포맷으로 변환</span>
+                </span>
+              </button>
+              <button class="dropdown-item" type="button" data-menu="fmt-cbz">
+                <span class="dropdown-text" style="display: flex; align-items: center;">
+                  <span id="fmt-cbz-mark" style="display: inline-block; width: 20px; flex-shrink: 0; text-align: center;"></span>
+                  <span id="fmt-cbz-label">CBZ 포맷으로 변환</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="custom-menu-item">
+            <!-- Submenu destroyed as ordered; directly active as a root command node now -->
+            <button id="btn-help-trigger" class="custom-menu-trigger" type="button" data-menu="show-about-modal" style="font-size: 12px; padding: 4px 8px; background: transparent; border: none;">❓ 도움말</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="window-controls">
+        <button class="win-btn" id="win-btn-minimize" type="button" aria-label="Minimize"></button>
+        <!-- Visually dormant to signal 'Fixed Geometry' to user, preserving aesthetic trio balance -->
+        <button class="win-btn" id="win-btn-maximize" type="button" aria-label="Maximize" style="opacity: 0.3; cursor: default; pointer-events: none;"></button>
+        <button class="win-btn" id="win-btn-close" type="button" aria-label="Close"></button>
+      </div>
+    </header>
+    <main class="wrap" style="padding-top: 20px;">
       <h1 id="title">컨버터</h1>
       <p id="subtitle" class="subtitle"></p>
 
@@ -112,9 +275,15 @@
           <input id="output-path" type="text" readonly />
           <button id="select-output" type="button">출력 폴더 선택...</button>
         </div>
+        
+        <div class="field">
+          <label id="filename-label" for="output-filename">결과 파일명</label>
+          <input id="output-filename" type="text" placeholder="기본 파일명 사용" />
+        </div>
 
         <div class="row">
-          <button id="start-convert" type="button">변환 시작</button>
+          <button id="start-convert" class="primary-btn" type="button">변환 시작</button>
+          <span id="current-format-badge" class="fmt-badge">ZIP</span>
           <span id="status" class="status"></span>
         </div>
 
@@ -124,16 +293,57 @@
         </div>
       </section>
 
-      <section class="card">
-        <strong id="log-title">로그</strong>
-        <pre id="log-view" class="log"></pre>
-      </section>
-
+      <!-- Phase 2: Legal Disclaimer (Raised to TOP priority for absolute legal immunity & visibility!) -->
       <section class="card" id="policy-card">
         <strong id="policy-title"></strong>
         <p id="policy-body" class="policy"></p>
       </section>
+
+      <!-- Phase 3: Transient Logs (Lowest priority, pushed to traditional bottom footer location) -->
+      <section class="card">
+        <strong id="log-title">로그</strong>
+        <pre id="log-view" class="log"></pre>
+      </section>
     </main>
+
+    <!-- The 7-Zip Tribute & Help Modal -->
+    <div id="help-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>❔ 컨버터 정보 & 도움말</h3>
+          <button id="help-modal-close" class="modal-close-x" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body" style="font-size: 13px; line-height: 1.6;">
+          <p>본 도구는 다양한 규격의 압축 파일을 세계 표준인 <strong>ZIP 및 CBZ 포맷으로 치환</strong>하여 주는 고성능 변환 솔루션입니다.</p>
+          
+          <div class="credit-box">
+            <h4>🚀 Powered by 7-Zip Engine</h4>
+            <p style="margin: 0 0 8px; font-weight: 500; color: var(--text);">"세계 최고 수준의 압축 기술에 경의를 표합니다."</p>
+            <p style="margin: 0; color: var(--muted); font-size: 12px;">
+              본 프로그램은 오픈소스계의 보배인 <strong>7-Zip</strong> 바이너리 엔진을 탑재하였습니다.
+              이로써 무적에 가까운 호환성과 무시무시한 속도를 달성할 수 있었습니다. 
+              훌륭한 코드를 세상에 공유해 주신 7-Zip 개발자분들께 진심으로 감사드립니다.
+            </p>
+            
+            <div style="margin-top: 12px; font-weight: 600; font-size: 12px;">🛡️ 우리가 삼켜낼 수 있는 거대한 포맷들:</div>
+            <div class="fmt-tag-cloud">
+              <span class="fmt-tag" style="font-weight:bold; color:var(--accent);">7Z</span>
+              <span class="fmt-tag" style="font-weight:bold; color:var(--accent);">ZIP</span>
+              <span class="fmt-tag" style="font-weight:bold; color:var(--accent);">RAR</span>
+              <span class="fmt-tag">ISO</span><span class="fmt-tag">CBZ</span><span class="fmt-tag">CBR</span>
+              <span class="fmt-tag">TAR</span><span class="fmt-tag">GZ</span><span class="fmt-tag">DMG</span>
+              <span class="fmt-tag">WIM</span><span class="fmt-tag">CAB</span><span class="fmt-tag">LZH</span>
+              <span class="fmt-tag">ARJ</span><span class="fmt-tag">MSI</span><span class="fmt-tag">VHD</span>
+              <span class="fmt-tag">DEB</span><span class="fmt-tag">RPM</span>
+              <span class="fmt-tag" style="opacity:0.7;">...etc</span>
+            </div>
+          </div>
+          <p style="text-align: center; margin-top: 16px; margin-bottom: 0;">
+            <button id="help-modal-close-btn" style="padding: 6px 16px; border-radius: 6px; background: var(--text); color: var(--bg); border: none; cursor: pointer; font-weight: 600; font-size: 12px;">확인</button>
+          </p>
+        </div>
+      </div>
+    </div>
 
     <script src="./dist/renderer/converter.js"></script>
   </body>

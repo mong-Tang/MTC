@@ -11,6 +11,7 @@ interface OpenFileDialogOptions {
   imageFilterName: string;
   archiveFilterName?: string;
   defaultPath?: string;
+  excludeZip?: boolean;
 }
 
 interface I18nDictionaries {
@@ -53,7 +54,7 @@ type MenuAction =
   | 'image-fit-actual'
   | 'image-fit-width'
   | 'image-fit-height';
-type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy';
+type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion' | 'toggle-log' | 'show-policy' | 'fmt-zip' | 'fmt-cbz';
 
 type SidebarItemType = 'zip' | 'image' | 'archive';
 
@@ -152,8 +153,8 @@ const api = {
       ipcRenderer.removeListener(channel, handler);
     };
   },
-  convertArchiveToZip: (sourcePath: string, outputDirectory: string) =>
-    ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory) as Promise<IpcResult<ConverterResult>>,
+  convertArchiveToZip: (sourcePath: string, outputDirectory: string, targetExtension?: string, customFilename?: string) =>
+    ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory, targetExtension, customFilename) as Promise<IpcResult<ConverterResult>>,
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,
@@ -161,7 +162,9 @@ const api = {
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
   closeWindow: () => ipcRenderer.send('window:close'),
-  showViewerContextMenu: () => ipcRenderer.send('window:show-viewer-context-menu')
+  showViewerContextMenu: () => ipcRenderer.send('window:show-viewer-context-menu'),
+  openConverterWindow: () => ipcRenderer.send('window:open-converter'),
+  openHelpWindow: () => ipcRenderer.send('window:open-help')
 };
 
 contextBridge.exposeInMainWorld('appApi', api);
