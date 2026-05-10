@@ -7,15 +7,18 @@ interface ContextMenuProps {
   onClose: () => void;
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
+  themeMode: 'default' | 'light' | 'dark' | 'system';
+  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
   imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
   onChangeImageFitMode: (mode: 'auto' | 'actual' | 'width' | 'height') => void; // ⚡ 스케일 변경 위임
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  x, y, show, onClose, viewMode, onChangeViewMode, imageFitMode, onChangeImageFitMode
+  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: y, left: x });
+  const [isThemeSubmenuOpen, setThemeSubmenuOpen] = useState(false);
 
   useLayoutEffect(() => {
     if (!show || !menuRef.current) return;
@@ -45,6 +48,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       document.removeEventListener('contextmenu', handleClickOutside);
     };
   }, [show, onClose]);
+
+  useEffect(() => {
+    if (!show) setThemeSubmenuOpen(false);
+  }, [show]);
 
   if (!show) return null;
 
@@ -145,6 +152,68 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
         </div>
       </button>
+
+      <div className="ribbon-divider" />
+      <div className="menu-section-title">테마</div>
+      <div
+        className="context-submenu-wrap"
+        onMouseEnter={() => setThemeSubmenuOpen(true)}
+        onMouseLeave={() => setThemeSubmenuOpen(false)}
+      >
+        <button
+          className="context-item"
+          onClick={(e) => {
+            e.stopPropagation();
+            setThemeSubmenuOpen((prev) => !prev);
+          }}
+        >
+          <span className="check-slot">{themeMode ? '✓' : ''}</span>
+          <div className="item-label-group">
+            <span>테마</span> <span className="shortcut">▶</span>
+          </div>
+        </button>
+
+        {isThemeSubmenuOpen && (
+          <div className="context-submenu-panel">
+            <button
+              className={`context-item ${themeMode === 'default' ? 'active-mode' : ''}`}
+              onClick={() => { onChangeThemeMode('default'); onClose(); }}
+            >
+              <span className="check-slot">✓</span>
+              <div className="item-label-group">
+                <span>기본설정</span>
+              </div>
+            </button>
+            <button
+              className={`context-item ${themeMode === 'light' ? 'active-mode' : ''}`}
+              onClick={() => { onChangeThemeMode('light'); onClose(); }}
+            >
+              <span className="check-slot">✓</span>
+              <div className="item-label-group">
+                <span>라이트</span>
+              </div>
+            </button>
+            <button
+              className={`context-item ${themeMode === 'dark' ? 'active-mode' : ''}`}
+              onClick={() => { onChangeThemeMode('dark'); onClose(); }}
+            >
+              <span className="check-slot">✓</span>
+              <div className="item-label-group">
+                <span>다크</span>
+              </div>
+            </button>
+            <button
+              className={`context-item ${themeMode === 'system' ? 'active-mode' : ''}`}
+              onClick={() => { onChangeThemeMode('system'); onClose(); }}
+            >
+              <span className="check-slot">✓</span>
+              <div className="item-label-group">
+                <span>시스템</span>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
       
       <div className="ribbon-divider" />
       

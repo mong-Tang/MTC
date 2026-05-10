@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // 📦 모듈화된 명품 부품들 소환
 import { FloatingAnchor } from './components/layout/FloatingAnchor';
@@ -40,6 +40,8 @@ interface ViewerPage {
 
 const VIEW_MODE_STORAGE_KEY = 'mtc:viewMode';
 const PAGE_MEMORY_STORAGE_KEY = 'mtc:lastPageByPath';
+const THEME_MODE_STORAGE_KEY = 'mtc:themeMode';
+type ThemeMode = 'default' | 'light' | 'dark' | 'system';
 
 function readSavedViewMode(): '1' | '2' {
   const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -58,16 +60,27 @@ function readSavedPageMemory(): Record<string, number> {
   }
 }
 
+function readSavedThemeMode(): ThemeMode {
+  const saved = localStorage.getItem(THEME_MODE_STORAGE_KEY);
+  if (saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'default') {
+    return saved;
+  }
+  return 'default';
+}
+
 function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMenuOpen, setSidebarMenuOpen] = useState(false);
   const [isConverterOpen, setConverterOpen] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(false); // 🛡️ [유저 고안] 철통 보안 마이크로 락 스테이트!
+  const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
+  const autoMoveNoticeTimerRef = useRef<number | null>(null);
   
   // 🎬 [신규] 콘텐츠 시연 모드 및 뷰 모드(1쪽/2쪽) 추적기 탑재!
   const [hasActiveFile, setHasActiveFile] = useState(false);
   const [viewMode, setViewMode] = useState<'1' | '2'>(() => readSavedViewMode()); // 기본값: 저장값 우선
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => readSavedThemeMode());
   const [imageFitMode, setImageFitMode] = useState<'auto' | 'actual' | 'width' | 'height'>('auto'); // 🔍 [신규] 스케일 추적기 탑재!
 
   // 🧬 [신규] 진짜 데이터 로딩을 위한 생명줄!
@@ -182,6 +195,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem(THEME_MODE_STORAGE_KEY, themeMode);
+    document.documentElement.setAttribute('data-theme', themeMode);
+  }, [themeMode]);
 
   useEffect(() => {
     localStorage.setItem(PAGE_MEMORY_STORAGE_KEY, JSON.stringify(pageMemoryByPath));
@@ -326,6 +344,13 @@ function App() {
       setCurrentIndex(prev => Math.max(0, prev - pageStep)); // 1. 내부 페이지 뒤로
     } else if (canGoPrevLibrary) {
       // 2. 이전 책으로 넘어가서 '마지막 페이지(-1)'에 소프트 랜딩!
+      setAutoMoveNotice('이전 권으로 이동합니다');
+      if (autoMoveNoticeTimerRef.current !== null) {
+        window.clearTimeout(autoMoveNoticeTimerRef.current);
+      }
+      autoMoveNoticeTimerRef.current = window.setTimeout(() => {
+        setAutoMoveNotice(null);
+      }, 3000);
       void loadZipIntoViewer(libraryItems[currentLibraryIndex - 1].path, -1);
     }
   }, [currentIndex, pageStep, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
@@ -338,9 +363,24 @@ function App() {
       setCurrentIndex(prev => Math.min(pages.length - 1, prev + pageStep)); // 1. 내부 페이지 앞으로
     } else if (canGoNextLibrary) {
       // 2. 다음 책으로 넘어가서 '첫 페이지(0)'부터 시작!
+      setAutoMoveNotice('다음 권으로 이동합니다');
+      if (autoMoveNoticeTimerRef.current !== null) {
+        window.clearTimeout(autoMoveNoticeTimerRef.current);
+      }
+      autoMoveNoticeTimerRef.current = window.setTimeout(() => {
+        setAutoMoveNotice(null);
+      }, 3000);
       void loadZipIntoViewer(libraryItems[currentLibraryIndex + 1].path, 0);
     }
   }, [currentIndex, pages.length, pageStep, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
+
+  useEffect(() => {
+    return () => {
+      if (autoMoveNoticeTimerRef.current !== null) {
+        window.clearTimeout(autoMoveNoticeTimerRef.current);
+      }
+    };
+  }, []);
 
   // 🏁 전역 내비게이션 가능 상태 최종 판독
   const canGlobalPrev = currentIndex > 0 || canGoPrevLibrary;
@@ -371,12 +411,35 @@ function App() {
           e.preventDefault();
           handleNavNext();
           break;
+        case 'PageUp':
+          e.preventDefault();
+          setCurrentIndex((prev) => Math.max(0, prev - 10));
+          break;
+        case 'PageDown':
+          e.preventDefault();
+          setCurrentIndex((prev) => Math.min(Math.max(0, pages.length - 1), prev + 10));
+          break;
+        case 'Home':
+          e.preventDefault();
+          setCurrentIndex(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          if (pages.length > 0) {
+            if (viewMode === '2') {
+              // 2쪽 보기에서는 마지막 펼침 기준으로 이동
+              setCurrentIndex(Math.max(0, pages.length - (pages.length % 2 === 0 ? 2 : 1)));
+            } else {
+              setCurrentIndex(pages.length - 1);
+            }
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasActiveFile, isConverterOpen, handleNavPrev, handleNavNext]);
+  }, [hasActiveFile, isConverterOpen, handleNavPrev, handleNavNext, pages.length, viewMode]);
 
   return (
     <div 
@@ -389,6 +452,8 @@ function App() {
       <TitleBarControls 
         viewMode={viewMode}
         onChangeViewMode={setViewMode}
+        themeMode={themeMode}
+        onChangeThemeMode={setThemeMode}
       />
       
       {/* ⚓ 관제탑 (앵커바) */}
@@ -474,6 +539,8 @@ function App() {
         show={contextMenu.show} 
         viewMode={viewMode}
         onChangeViewMode={setViewMode}
+        themeMode={themeMode}
+        onChangeThemeMode={setThemeMode}
         imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */
         onChangeImageFitMode={setImageFitMode} /* ⚡ [트리거] 스케일 스왑 엔진 */
         onClose={() => setContextMenu(prev => ({ ...prev, show: false }))} 
@@ -486,6 +553,30 @@ function App() {
           zIndex: 99999, cursor: 'wait',
           backgroundColor: 'rgba(0,0,0,0)' // 투명하게 존재하며 모든 클릭을 스펀지처럼 흡수!
         }} />
+      )}
+
+      {autoMoveNotice && (
+        <div
+          style={{
+            position: 'fixed',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 100000,
+            padding: '14px 20px',
+            borderRadius: '10px',
+            border: '1px solid rgba(var(--rgb-contrast), 0.18)',
+            background: 'var(--bg-floating-panel)',
+            color: 'var(--text-main)',
+            boxShadow: 'var(--shadow-popup)',
+            backdropFilter: 'blur(12px)',
+            pointerEvents: 'none',
+            fontSize: '0.95rem',
+            fontWeight: 600
+          }}
+        >
+          {autoMoveNotice}
+        </div>
       )}
 
       </div>

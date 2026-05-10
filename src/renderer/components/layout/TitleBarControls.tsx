@@ -7,9 +7,11 @@ import React, { useState, useEffect, useRef } from 'react';
 interface TitleBarProps {
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
+  themeMode: 'default' | 'light' | 'dark' | 'system';
+  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
 }
 
-export const TitleBarControls: React.FC<TitleBarProps> = ({ viewMode, onChangeViewMode }) => {
+export const TitleBarControls: React.FC<TitleBarProps> = ({ viewMode, onChangeViewMode, themeMode, onChangeThemeMode }) => {
   
   const [isExpanded, setExpanded] = useState(false);
   const [activeMenu, setActiveMenu] = useState<'view' | 'move' | 'edit' | null>(null);
@@ -171,6 +173,43 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({ viewMode, onChangeVi
                   <span className="check-slot">✓</span>
                   <div className="item-label-group">
                     <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+                  </div>
+                </button>
+                <div className="ribbon-divider" />
+                <button
+                  className={`ribbon-dropdown-item ${themeMode === 'default' ? 'active-mode' : ''}`}
+                  onClick={() => { onChangeThemeMode('default'); setActiveMenu(null); }}
+                >
+                  <span className="check-slot">✓</span>
+                  <div className="item-label-group">
+                    <span>기본설정</span>
+                  </div>
+                </button>
+                <button
+                  className={`ribbon-dropdown-item ${themeMode === 'light' ? 'active-mode' : ''}`}
+                  onClick={() => { onChangeThemeMode('light'); setActiveMenu(null); }}
+                >
+                  <span className="check-slot">✓</span>
+                  <div className="item-label-group">
+                    <span>라이트</span>
+                  </div>
+                </button>
+                <button
+                  className={`ribbon-dropdown-item ${themeMode === 'dark' ? 'active-mode' : ''}`}
+                  onClick={() => { onChangeThemeMode('dark'); setActiveMenu(null); }}
+                >
+                  <span className="check-slot">✓</span>
+                  <div className="item-label-group">
+                    <span>다크</span>
+                  </div>
+                </button>
+                <button
+                  className={`ribbon-dropdown-item ${themeMode === 'system' ? 'active-mode' : ''}`}
+                  onClick={() => { onChangeThemeMode('system'); setActiveMenu(null); }}
+                >
+                  <span className="check-slot">✓</span>
+                  <div className="item-label-group">
+                    <span>시스템</span>
                   </div>
                 </button>
               </div>

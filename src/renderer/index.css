@@ -11,9 +11,9 @@
    🌓 THEME ENGINE (테마 컨트롤 타워)
    ========================================================================== */
 
-/* 🌘 1. THEME: DARK (기본값 및 수동 다크 지정) -------------------------- */
-:root, 
-[data-theme='dark'] {
+/* 🌘 1. THEME: DEFAULT (초기 디자인 팔레트) -------------------------- */
+:root,
+[data-theme='default'] {
   /* 🏛️ Dan-a Deep Warm Chestnut Palette */
   --bg-base: #2F2A28;
   --bg-panel: rgba(47, 42, 40, 0.97);
@@ -40,7 +40,32 @@
   --theme-def-status-blur: 12px;
 }
 
-/* 🌅 2. THEME: LIGHT (준비된 고품격 라이트 베이지) ----------------------- */
+/* 🌑 2. THEME: DARK (OS 다크 스타일) ----------------------- */
+[data-theme='dark'] {
+  --bg-base: #121212;
+  --bg-panel: rgba(18, 18, 18, 0.96);
+  --bg-sidebar: #1b1b1d;
+  --text-sidebar: #e8e8e8;
+  --text-main: #e8e8e8;
+  --text-dim: #9a9a9a;
+  --accent: #4da3ff;
+  --accent-muted: rgba(77, 163, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+
+  --rgb-contrast: 255, 255, 255;
+  --bg-floating-bar: rgba(20, 20, 22, 0.66);
+  --bg-floating-panel: rgba(24, 24, 26, 0.96);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --modal-backdrop: rgba(0, 0, 0, 0.6);
+
+  --theme-def-sidebar-rgb: 27, 27, 29;
+  --theme-def-accent-rgb: 77, 163, 255;
+  --theme-def-list-badge-rgb: 130, 145, 160;
+  --theme-def-status-glass-opacity: 0.85;
+  --theme-def-status-blur: 12px;
+}
+
+/* 🌅 3. THEME: LIGHT (OS 라이트 스타일) ----------------------- */
 [data-theme='light'] {
   /* ☕ Warm Milk & Linen Palette */
   --bg-base: #F8F5F2;           /* 부드럽고 따뜻한 린넨 색상 */
@@ -95,8 +120,33 @@
   --theme-def-status-blur: 12px;
 }
 
-/* 💻 3. THEME: SYSTEM (사용자 OS 설정 자동 동기화) ----------------------- */
+/* 💻 5. THEME: SYSTEM (사용자 OS 설정 자동 동기화) ----------------------- */
 /* [data-theme='system'] 상태일 때만 OS 설정을 추종하도록 설계하여 유연성 확보 */
+[data-theme='system'] {
+  /* 시스템 다크일 때 기본값 */
+  --bg-base: #121212;
+  --bg-panel: rgba(18, 18, 18, 0.96);
+  --bg-sidebar: #1b1b1d;
+  --text-sidebar: #e8e8e8;
+  --text-main: #e8e8e8;
+  --text-dim: #9a9a9a;
+  --accent: #4da3ff;
+  --accent-muted: rgba(77, 163, 255, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+
+  --rgb-contrast: 255, 255, 255;
+  --bg-floating-bar: rgba(20, 20, 22, 0.66);
+  --bg-floating-panel: rgba(24, 24, 26, 0.96);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --modal-backdrop: rgba(0, 0, 0, 0.6);
+
+  --theme-def-sidebar-rgb: 27, 27, 29;
+  --theme-def-accent-rgb: 77, 163, 255;
+  --theme-def-list-badge-rgb: 130, 145, 160;
+  --theme-def-status-glass-opacity: 0.85;
+  --theme-def-status-blur: 12px;
+}
+
 @media (prefers-color-scheme: light) {
   :root[data-theme='system'] {
     /* 라이트 모드 변수들을 상속 적용 */
@@ -734,6 +784,24 @@ body {
 
 .context-item:hover {
   background: rgba(var(--rgb-contrast), 0.08);
+}
+
+.context-submenu-wrap {
+  position: relative;
+}
+
+.context-submenu-panel {
+  position: absolute;
+  top: 0;
+  left: calc(100% - 4px);
+  min-width: 150px;
+  background: var(--bg-floating-panel);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  border-radius: 10px;
+  box-shadow: var(--shadow-popup);
+  padding: 6px 0;
+  z-index: 3100;
 }
 
 .context-item.text-danger {
