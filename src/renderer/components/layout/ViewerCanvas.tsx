@@ -8,7 +8,8 @@ interface ViewerCanvasProps {
   
   // 🧬 전달된 생명줄
   zipPath?: string | null;
-  entryName?: string | null;
+  entryNames?: string[];
+  viewMode?: '1' | '2';
   imageFitMode?: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 보기 스케일 모드
   
   // 🧭 [유저 오더] 내비게이션 컨트롤 엔진 주입
@@ -20,18 +21,18 @@ interface ViewerCanvasProps {
 }
 
 export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({ 
-  onClick, onContextMenu, hasActiveFile, children, zipPath, entryName,
+  onClick, onContextMenu, hasActiveFile, children, zipPath, entryNames = [], viewMode = '1',
   imageFitMode = 'auto',
   showNavArrows = false, canGoPrev = false, canGoNext = false, onPrev, onNext
 }) => {
   
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [imgSrcList, setImgSrcList] = useState<string[]>([]);
   const [isLoading, setLoading] = useState(false);
 
   // 🔄 [이미지 로딩 마법]
   useEffect(() => {
-    if (!zipPath || !entryName) {
-      setImgSrc(null);
+    if (!zipPath || entryNames.length === 0) {
+      setImgSrcList([]);
       return;
     }
 
@@ -40,19 +41,20 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
       setLoading(true);
       try {
         const appApi = (window as any).appApi;
-        const result = await appApi.getPage(zipPath, entryName);
+        const results = await Promise.all(entryNames.map((entryName) => appApi.getPage(zipPath, entryName)));
 
         if (isCancelled) return;
 
-        if (result.ok) {
-          // 💎 [핵심] 백엔드에서 날아온 순수 Uint8Array를 변환 없이(Zero-copy) 즉시 URL로!
-          const blob = new Blob([result.data.bytes], { type: result.data.mimeType });
-          const objectUrl = URL.createObjectURL(blob);
-          
-          setImgSrc(objectUrl);
-        } else {
-          console.error("Page load fail:", result.error);
+        const nextSrcList: string[] = [];
+        for (const result of results) {
+          if (result.ok) {
+            const blob = new Blob([result.data.bytes], { type: result.data.mimeType });
+            nextSrcList.push(URL.createObjectURL(blob));
+          } else {
+            console.error("Page load fail:", result.error);
+          }
         }
+        setImgSrcList(nextSrcList);
       } catch (err) {
         console.error(err);
       } finally {
@@ -65,17 +67,15 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
     return () => {
       isCancelled = true; // 메모리 꼬임 방지
     };
-  }, [zipPath, entryName]);
+  }, [zipPath, entryNames]);
 
   // ♻️ [메모리 클린업] 이전 이미지 흔적 지우기
   useEffect(() => {
-    const prevSrc = imgSrc;
+    const prevSrcList = imgSrcList;
     return () => {
-      if (prevSrc) {
-        URL.revokeObjectURL(prevSrc); // 초정밀 메모리 청소!!
-      }
+      prevSrcList.forEach((src) => URL.revokeObjectURL(src));
     };
-  }, [imgSrc]);
+  }, [imgSrcList]);
 
   // 🛡️ 브라우저 기본 우클릭을 막고 우리의 커스텀 센서로 넘기기
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -106,30 +106,63 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center',
-          overflow: 'auto' /* 📜 [확장] 1:1 보기 등에서 이미지가 삐져나올 때 스크롤바 생성 허용! */
+          overflow: 'auto', /* 📜 [확장] 1:1 보기 등에서 이미지가 삐져나올 때 스크롤바 생성 허용! */
+          position: 'relative'
         }}>
-          {isLoading && !imgSrc && (
+          {isLoading && imgSrcList.length === 0 && (
             <div style={{ color: 'var(--accent)', fontWeight: 600 }}>📥 로딩 중...</div>
           )}
           
-          {imgSrc ? (
-            <img 
-              src={imgSrc} 
-              alt="Comic Page"
+          {imgSrcList.length > 0 ? (
+            <div
               style={{
-                // 💡 [유저 긴급 피드백 반영] '자동 맞춤' 시 1:1이 되지 않게 강제 Full Scale 유도!
-                maxWidth: (imageFitMode === 'auto' || imageFitMode === 'width') ? '100%' : 'none',
-                maxHeight: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : 'none',
-                width: (imageFitMode === 'auto' || imageFitMode === 'width') ? '100%' : (imageFitMode === 'height' ? 'auto' : undefined),
-                height: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : (imageFitMode === 'width' ? 'auto' : undefined),
-                objectFit: imageFitMode === 'actual' ? 'none' : 'contain', // actual 외에는 무조건 최적비율 핏팅
-                margin: 'auto', // 🚀 초월적 스크롤 중앙 정렬
-                boxShadow: '0 0 50px rgba(0,0,0,0.8)',
-                animation: 'fadeInImg 0.3s ease'
+                display: 'flex',
+                width: '100%',
+                height: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0'
               }}
-            />
+            >
+              {imgSrcList.map((imgSrc, idx) => (
+                <img
+                  key={`${imgSrc}-${idx}`}
+                  src={imgSrc}
+                  alt={`Comic Page ${idx + 1}`}
+                  style={{
+                    maxWidth: (imageFitMode === 'auto' || imageFitMode === 'width') ? (viewMode === '2' ? 'calc(50% - 5px)' : '100%') : 'none',
+                    maxHeight: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : 'none',
+                    width: (imageFitMode === 'auto' || imageFitMode === 'width') ? (viewMode === '2' ? 'calc(50% - 5px)' : '100%') : (imageFitMode === 'height' ? 'auto' : undefined),
+                    height: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : (imageFitMode === 'width' ? 'auto' : undefined),
+                    objectFit: imageFitMode === 'actual' ? 'none' : 'contain',
+                    objectPosition: viewMode === '2' ? (idx === 0 ? 'right center' : 'left center') : 'center center',
+                    margin: viewMode === '2' ? '0' : 'auto',
+                    paddingLeft: viewMode === '2' && idx === 1 ? '5px' : '0',
+                    paddingRight: viewMode === '2' && idx === 0 ? '5px' : '0',
+                    boxShadow: '0 0 50px rgba(0,0,0,0.8)',
+                    animation: 'fadeInImg 0.3s ease'
+                  }}
+                />
+              ))}
+            </div>
           ) : !isLoading && (
             <div style={{ color: 'rgba(255,255,255,0.4)' }}>⚠️ 이미지를 불러올 수 없습니다.</div>
+          )}
+
+          {/* 중앙 책등 느낌: 하드 라인 대신 부드러운 그라데이션 음영 */}
+          {viewMode === '2' && imgSrcList.length > 1 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: '50%',
+                width: '16px',
+                transform: 'translateX(-50%)',
+                pointerEvents: 'none',
+                background: 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 50%, rgba(0,0,0,0) 100%)'
+              }}
+            />
           )}
         </div>
       ) : (

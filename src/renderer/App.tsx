@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 // 📦 모듈화된 명품 부품들 소환
 import { FloatingAnchor } from './components/layout/FloatingAnchor';
@@ -38,6 +38,26 @@ interface ViewerPage {
   zipPath: string; // [핵심] 어느 파일 출신인지 각인!
 }
 
+const VIEW_MODE_STORAGE_KEY = 'mtc:viewMode';
+const PAGE_MEMORY_STORAGE_KEY = 'mtc:lastPageByPath';
+
+function readSavedViewMode(): '1' | '2' {
+  const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+  return saved === '2' ? '2' : '1';
+}
+
+function readSavedPageMemory(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(PAGE_MEMORY_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as Record<string, number>;
+  } catch {
+    return {};
+  }
+}
+
 function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -47,7 +67,7 @@ function App() {
   
   // 🎬 [신규] 콘텐츠 시연 모드 및 뷰 모드(1쪽/2쪽) 추적기 탑재!
   const [hasActiveFile, setHasActiveFile] = useState(false);
-  const [viewMode, setViewMode] = useState<'1' | '2'>('1'); // 기본값: 1쪽 보기
+  const [viewMode, setViewMode] = useState<'1' | '2'>(() => readSavedViewMode()); // 기본값: 저장값 우선
   const [imageFitMode, setImageFitMode] = useState<'auto' | 'actual' | 'width' | 'height'>('auto'); // 🔍 [신규] 스케일 추적기 탑재!
 
   // 🧬 [신규] 진짜 데이터 로딩을 위한 생명줄!
@@ -55,6 +75,7 @@ function App() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null); // 💡 [신규] 단순 시각적 선택용 하이라이트 상태 추가!
   const [pages, setPages] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [pageMemoryByPath, setPageMemoryByPath] = useState<Record<string, number>>(() => readSavedPageMemory());
 
   // 📚 [신규] (같은책) 묶음 로딩 모드 및 라이브러리 항목
   const [loadSameBook, setLoadSameBook] = useState(true);
@@ -118,7 +139,7 @@ function App() {
 
   // 📂 [핵심 헬퍼] 단일 압축파일을 통째로 뷰어 레일에 장전!
   // 🚀 [업그레이드] initialIndex를 받아 책 전환 시 특정 페이지(예: -1이면 마지막) 착륙 지원!
-  const loadZipIntoViewer = async (filePath: string, initialIndex: number = 0) => {
+  const loadZipIntoViewer = async (filePath: string, initialIndex?: number) => {
     setIsAppLoading(true); // 🚨 [방어선 구축] 로딩 시작 즉시 전방위 클릭 차단막 가동!
     
     // ⚡ 즉각적인 시각적 피드백 보장
@@ -132,8 +153,16 @@ function App() {
         const loadedPages = openResult.data.pages;
         setPages(loadedPages);
         
-        // 🎯 착륙 지점 보정: -1이면 정밀 유도하여 마지막 페이지에 안착!
-        const targetIdx = initialIndex === -1 ? Math.max(0, loadedPages.length - 1) : initialIndex;
+        // 🎯 착륙 지점 보정: 명시된 인덱스 > 저장된 마지막 페이지 > 0
+        let targetIdx = 0;
+        if (initialIndex === -1) {
+          targetIdx = Math.max(0, loadedPages.length - 1);
+        } else if (typeof initialIndex === 'number') {
+          targetIdx = initialIndex;
+        } else {
+          targetIdx = pageMemoryByPath[filePath] ?? 0;
+        }
+        targetIdx = Math.max(0, Math.min(targetIdx, Math.max(0, loadedPages.length - 1)));
         setCurrentIndex(targetIdx);
         
         setHasActiveFile(true);
@@ -149,6 +178,22 @@ function App() {
       setIsAppLoading(false); // 🏳️ [방어선 해제] 작전 완료! 즉시 통행 재개!
     }
   };
+
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem(PAGE_MEMORY_STORAGE_KEY, JSON.stringify(pageMemoryByPath));
+  }, [pageMemoryByPath]);
+
+  useEffect(() => {
+    if (!zipPath || !hasActiveFile || pages.length === 0) return;
+    setPageMemoryByPath((prev) => {
+      if (prev[zipPath] === currentIndex) return prev;
+      return { ...prev, [zipPath]: currentIndex };
+    });
+  }, [zipPath, currentIndex, hasActiveFile, pages.length]);
 
   // 📂 [핵심] 진짜 파일 열기 실전 배치!!
   const handleOpenFileClick = async () => {
@@ -269,6 +314,7 @@ function App() {
   
   // 💡 [유저 명령 충실 이행] 단일 이미지(1페이지)이면서 형제 파일이 있을 때만 화살표 전설 가동!
   const showNavArrows = hasActiveFile && pages.length === 1 && libraryItems.length > 1;
+  const pageStep = viewMode === '2' ? 2 : 1;
 
   // ⚔️ [유니버설 마스터 엔진] 페이지 넘김과 책 넘김을 통합 처리하는 인공지능 알고리즘!
   // 🚀 [최고급 기동성] useCallback으로 래핑하여 키보드 리스너와 영구 동기화!
@@ -277,28 +323,35 @@ function App() {
     if (isAppLoading) return; 
 
     if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1); // 1. 내부 페이지 뒤로
+      setCurrentIndex(prev => Math.max(0, prev - pageStep)); // 1. 내부 페이지 뒤로
     } else if (canGoPrevLibrary) {
       // 2. 이전 책으로 넘어가서 '마지막 페이지(-1)'에 소프트 랜딩!
       void loadZipIntoViewer(libraryItems[currentLibraryIndex - 1].path, -1);
     }
-  }, [currentIndex, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
+  }, [currentIndex, pageStep, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
 
   const handleNavNext = useCallback(() => {
     // 🔒 [유저 엄명: 스킵 가드] 로딩 중일 때 어떠한 중복 명령 유입도 허용하지 않음!
     if (isAppLoading) return;
 
-    if (currentIndex < pages.length - 1) {
-      setCurrentIndex(prev => prev + 1); // 1. 내부 페이지 앞으로
+    if (currentIndex < pages.length - pageStep) {
+      setCurrentIndex(prev => Math.min(pages.length - 1, prev + pageStep)); // 1. 내부 페이지 앞으로
     } else if (canGoNextLibrary) {
       // 2. 다음 책으로 넘어가서 '첫 페이지(0)'부터 시작!
       void loadZipIntoViewer(libraryItems[currentLibraryIndex + 1].path, 0);
     }
-  }, [currentIndex, pages.length, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
+  }, [currentIndex, pages.length, pageStep, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
 
   // 🏁 전역 내비게이션 가능 상태 최종 판독
   const canGlobalPrev = currentIndex > 0 || canGoPrevLibrary;
-  const canGlobalNext = (pages.length > 0 && currentIndex < pages.length - 1) || canGoNextLibrary;
+  const canGlobalNext = (pages.length > 0 && currentIndex < pages.length - pageStep) || canGoNextLibrary;
+  const visibleEntryNames = useMemo(
+    () =>
+      viewMode === '2'
+        ? [pages[currentIndex]?.entryName, pages[currentIndex + 1]?.entryName].filter(Boolean)
+        : [pages[currentIndex]?.entryName].filter(Boolean),
+    [viewMode, pages, currentIndex]
+  );
 
   // 🎹 [유저 특명] 키보드 '좌/우' 화살표 텔레파시 시스템 주입!
   useEffect(() => {
@@ -373,7 +426,8 @@ function App() {
       <ViewerCanvas 
         hasActiveFile={hasActiveFile}
         zipPath={zipPath}
-        entryName={pages[currentIndex]?.entryName || null}
+        entryNames={visibleEntryNames}
+        viewMode={viewMode}
         imageFitMode={imageFitMode} /* 🔍 [동기화] 보기 모드 정보 하달! */
         
         // 🧭 [신규] 내비게이션 제어 신호 송신!
