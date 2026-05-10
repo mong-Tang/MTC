@@ -317,17 +317,29 @@ function App() {
   };
 
   // 📚 사이드바 라이브러리 항목 클릭 핸들러
-  const handleLibraryItemClick = (filePath: string) => {
+  const handleLibraryItemClick = async (filePath: string) => {
     const item = libraryItems.find((candidate) => candidate.path === filePath);
     if (!item) return;
 
     if (workspaceMode === 'converter') {
+      const appApi = (window as any).appApi;
+      let normalizedItem = item;
+      if (typeof normalizedItem.sizeBytes !== 'number') {
+        try {
+          const sizeBytes = await appApi.getFileSize(filePath);
+          normalizedItem = { ...normalizedItem, sizeBytes };
+          setLibraryItems((prev) => prev.map((entry) => (entry.path === filePath ? normalizedItem : entry)));
+        } catch (error) {
+          console.error('Failed to resolve file size from sidebar item', error);
+        }
+      }
+
       setConverterSourceItems((prev) => {
         const exists = prev.some((entry) => entry.path === filePath);
         if (exists) {
           return prev.filter((entry) => entry.path !== filePath);
         }
-        return [...prev, item];
+        return [...prev, normalizedItem];
       });
       return;
     }
@@ -364,9 +376,10 @@ function App() {
       const items = await Promise.all(
         filePaths.map(async (filePath: string) => {
           const name = await appApi.getBasename(filePath);
+          const sizeBytes = await appApi.getFileSize(filePath);
           const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
           const type = ['zip', 'cbz', '7z', 'rar'].includes(ext) ? 'archive' : 'image';
-          return { name, path: filePath, type } as ConverterSourceItem;
+          return { name, path: filePath, type, sizeBytes } as ConverterSourceItem;
         })
       );
       setConverterSourceItems((prev) => {
@@ -385,9 +398,25 @@ function App() {
     }
   };
 
-  const handleAddAllConverterSource = () => {
+  const handleAddAllConverterSource = async () => {
     setWorkspaceMode('converter');
-    setConverterSourceItems(libraryItems);
+    const appApi = (window as any).appApi;
+
+    const normalizedItems = await Promise.all(
+      libraryItems.map(async (item) => {
+        if (typeof item.sizeBytes === 'number') return item;
+        try {
+          const sizeBytes = await appApi.getFileSize(item.path);
+          return { ...item, sizeBytes };
+        } catch (error) {
+          console.error('Failed to resolve file size for Add All item', error);
+          return item;
+        }
+      })
+    );
+
+    setLibraryItems(normalizedItems);
+    setConverterSourceItems(normalizedItems);
   };
 
   const handleClearConverterSource = () => {

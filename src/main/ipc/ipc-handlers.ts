@@ -27,6 +27,7 @@ interface SidebarListItem {
   path: string;
   type: 'zip' | 'image' | 'archive';
   extension: string;
+  sizeBytes: number;
 }
 
 interface ImageOpenResult {
@@ -135,6 +136,14 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('path:basename', (_event, filePath: string) => {
     return path.basename(filePath);
+  });
+
+  ipcMain.handle('path:file-size', async (_event, filePath: string) => {
+    const stat = await fs.stat(filePath);
+    if (!stat.isFile()) {
+      throw new AppError('UNKNOWN', `Path is not a file: ${filePath}`);
+    }
+    return stat.size;
   });
 
   ipcMain.handle('file:open-dialog', async (_event, options?: Partial<OpenFileDialogOptions>) => {
@@ -260,7 +269,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('folder:list-items', async (_event, folderPath: string) => {
     try {
       const entries = await fs.readdir(folderPath, { withFileTypes: true });
-      const data: SidebarListItem[] = entries
+      const candidates = entries
         .filter((entry) => entry.isFile())
         .map((entry) => {
           const fullPath = path.join(folderPath, entry.name);
@@ -274,10 +283,21 @@ export function registerIpcHandlers(): void {
             path: fullPath,
             type,
             extension: path.extname(entry.name).toLowerCase()
-          } satisfies SidebarListItem;
+          };
         })
-        .filter((item): item is SidebarListItem => item !== null)
-        .sort((left, right) => left.name.localeCompare(right.name, 'ko'));
+        .filter((item): item is { name: string; path: string; type: SidebarListItem['type']; extension: string } => item !== null);
+
+      const data: SidebarListItem[] = (
+        await Promise.all(
+          candidates.map(async (item) => {
+            const stat = await fs.stat(item.path);
+            return {
+              ...item,
+              sizeBytes: stat.size
+            } satisfies SidebarListItem;
+          })
+        )
+      ).sort((left, right) => left.name.localeCompare(right.name, 'ko'));
 
       return { ok: true, data } as const;
     } catch (error) {
