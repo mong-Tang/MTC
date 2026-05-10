@@ -33,6 +33,27 @@ function naturalSortEntries(a: string, b: string): number {
   return collator.compare(a, b);
 }
 
+/**
+ * 🛡️ [신규] 초정밀 쓰레기 스캔 레이더 (Anti-Junk Matrix)
+ * Mac OS의 지저분한 유산과 윈도우의 시스템 잔여물들을 영구 추방한다!
+ */
+function isJunkEntry(entryName: string): boolean {
+  const lower = entryName.toLowerCase();
+  
+  // 1. 🍎 맥(Mac)이 남긴 지옥의 유산 차단!! (__MACOSX/ 하위 모든 것)
+  if (lower.includes('__macosx/') || lower.includes('__macosx\\')) return true;
+  
+  // 2. 👻 '숨은 파일' 및 메타데이터(AppleDouble) 차단!
+  // basename이 ._ 로 시작하거나 (가짜 리소스 포크), .DS_Store 인 경우 즉시 사살!
+  const base = path.basename(lower);
+  if (base.startsWith('._') || base === '.ds_store') return true;
+  
+  // 3. 🪟 윈도우 쓰레기 및 썸네일 캐시 차단!
+  if (base === 'thumbs.db' || base === 'desktop.ini') return true;
+
+  return false;
+}
+
 function resolveMimeType(entryName: string): string {
   const ext = getExtension(entryName);
   return mimeTypesByExtension[ext] ?? 'application/octet-stream';
@@ -47,6 +68,7 @@ export class ZipArchiveProvider implements IArchiveProvider {
     const entryInfos = await this.readEntries(filePath);
     const imageEntries = entryInfos
       .filter((item) => !isDirectoryEntry(item.fileName))
+      .filter((item) => !isJunkEntry(item.fileName)) // 💥 [핵심] 쓰레기 원천 박멸!!!
       .filter((item) => isImageEntry(item.fileName))
       .sort((a, b) => naturalSortEntries(a.fileName, b.fileName));
 

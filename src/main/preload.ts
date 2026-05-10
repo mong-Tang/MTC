@@ -112,6 +112,8 @@ const api = {
   },
   openFileDialog: (options: OpenFileDialogOptions) => ipcRenderer.invoke('file:open-dialog', options) as Promise<string | null>,
   openFolderDialog: (title: string) => ipcRenderer.invoke('folder:open-dialog', title) as Promise<string | null>,
+  getDirectory: (filePath: string) => ipcRenderer.invoke('path:dirname', filePath) as Promise<string>,
+  getBasename: (filePath: string) => ipcRenderer.invoke('path:basename', filePath) as Promise<string>,
   transferFile: (sourcePath: string, destinationDirectory: string, mode: 'copy' | 'cut') =>
     ipcRenderer.invoke('file:transfer', sourcePath, destinationDirectory, mode) as Promise<IpcResult<string>>,
   deleteFile: (targetPath: string) => ipcRenderer.invoke('file:delete', targetPath) as Promise<IpcResult<boolean>>,

@@ -1,0 +1,144 @@
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+
+interface ContextMenuProps {
+  x: number;
+  y: number;
+  show: boolean;
+  onClose: () => void;
+  viewMode: '1' | '2'; // 🔒 상태 감지용
+  onChangeViewMode: (mode: '1' | '2') => void; // ⚡ 변경 트리거
+}
+
+export const ContextMenu: React.FC<ContextMenuProps> = ({ 
+  x, y, show, onClose, viewMode, onChangeViewMode 
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState({ top: y, left: x });
+
+  useLayoutEffect(() => {
+    if (!show || !menuRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const winWidth = window.innerWidth;
+    const winHeight = window.innerHeight;
+    let finalX = x;
+    let finalY = y;
+    if (x + menuRect.width > winWidth) finalX = x - menuRect.width;
+    if (y + menuRect.height > winHeight) finalY = y - menuRect.height;
+    finalX = Math.max(5, finalX);
+    finalY = Math.max(5, finalY);
+    setCoords({ top: finalY, left: finalX });
+  }, [show, x, y]);
+
+  useEffect(() => {
+    if (!show) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
+    };
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('contextmenu', handleClickOutside);
+    }, 50);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [show, onClose]);
+
+  if (!show) return null;
+
+  return (
+    <div 
+      ref={menuRef}
+      className="custom-context-menu"
+      style={{ top: coords.top, left: coords.left }}
+    >
+      {/* 🧭 [1번 타자] 이동 */}
+      <div className="menu-section-title">이동</div>
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>⏭️ 다음 페이지</span> <span className="shortcut">Space / → / ↓</span>
+        </div>
+      </button>
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>⏮️ 이전 페이지</span> <span className="shortcut">BkSpc / ← / ↑</span>
+        </div>
+      </button>
+      <div className="ribbon-divider" />
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
+        </div>
+      </button>
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
+        </div>
+      </button>
+
+      <div className="ribbon-divider" />
+      
+      {/* 🔍 [2번 타자] 보기 설정 */}
+      <div className="menu-section-title">보기 설정</div>
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>⚙️ 자동 맞춤</span> <span className="shortcut">F</span>
+        </div>
+      </button>
+      <button className="context-item" onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
+        </div>
+      </button>
+      
+      {/* 💎 우클릭 메뉴용 정통 체크 결합 */}
+      <button 
+        className={`context-item ${viewMode === '1' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeViewMode('1'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>👤 1쪽 보기</span> <span className="shortcut">1</span>
+        </div>
+      </button>
+      <button 
+        className={`context-item ${viewMode === '2' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeViewMode('2'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+        </div>
+      </button>
+      
+      <div className="ribbon-divider" />
+      
+      {/* ✏️ [3번 타자] 편집 */}
+      <div className="menu-section-title">편집 (🔒 모드 잠금)</div>
+      <button className="context-item" disabled={viewMode !== '1'} onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Del</span>
+        </div>
+      </button>
+      <button className="context-item" disabled={viewMode !== '2'} onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
+        </div>
+      </button>
+      <button className="context-item" disabled={viewMode !== '2'} onClick={onClose}>
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>
+        </div>
+      </button>
+    </div>
+  );
+};

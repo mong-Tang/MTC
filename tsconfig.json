@@ -8,10 +8,14 @@
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"]
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts",
     "src/**/*.json"
   ],
   "exclude": [

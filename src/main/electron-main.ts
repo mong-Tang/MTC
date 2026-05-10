@@ -87,7 +87,12 @@ function createMainWindow(): BrowserWindow {
     }
   });
 
-  window.loadFile(path.join(app.getAppPath(), 'index.html'));
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    window.loadURL(devUrl);
+  } else {
+    window.loadFile(path.join(app.getAppPath(), 'dist', 'renderer', 'index.html'));
+  }
   if (currentSettings.isMaximized) {
     window.maximize();
   }
@@ -116,7 +121,12 @@ function createConverterWindow(): BrowserWindow {
   });
 
 
-  window.loadFile(path.join(app.getAppPath(), 'converter.html'));
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    window.loadURL(new URL('/converter.html', devUrl).href);
+  } else {
+    window.loadFile(path.join(app.getAppPath(), 'converter.html'));
+  }
   window.on('closed', () => {
     converterWindow = null;
   });
@@ -260,7 +270,14 @@ function createHelpWindow(): BrowserWindow {
 
   window.setMenuBarVisibility(false);
   window.setMenu(null);
-  window.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    const helpUrl = new URL('/help.html', devUrl);
+    helpUrl.searchParams.set('lang', currentLocale);
+    window.loadURL(helpUrl.href);
+  } else {
+    window.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  }
   window.on('closed', () => {
     helpWindow = null;
   });
@@ -276,8 +293,15 @@ function enforceHelpWindowMenuHidden(): void {
 }
 
 function openHelpWindow(): void {
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
   if (helpWindow && !helpWindow.isDestroyed()) {
-    helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+    if (devUrl) {
+      const helpUrl = new URL('/help.html', devUrl);
+      helpUrl.searchParams.set('lang', currentLocale);
+      helpWindow.loadURL(helpUrl.href);
+    } else {
+      helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+    }
     enforceHelpWindowMenuHidden();
     if (helpWindow.isMinimized()) {
       helpWindow.restore();
@@ -293,7 +317,14 @@ function reloadHelpWindowForLocale(): void {
   if (!helpWindow || helpWindow.isDestroyed()) {
     return;
   }
-  helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devUrl) {
+    const helpUrl = new URL('/help.html', devUrl);
+    helpUrl.searchParams.set('lang', currentLocale);
+    helpWindow.loadURL(helpUrl.href);
+  } else {
+    helpWindow.loadFile(path.join(app.getAppPath(), 'help.html'), { query: { lang: currentLocale } });
+  }
   enforceHelpWindowMenuHidden();
 }
 

@@ -128,6 +128,14 @@ export function registerIpcHandlers(): void {
     return { ko, en } as const;
   });
 
+  ipcMain.handle('path:dirname', (_event, filePath: string) => {
+    return path.dirname(filePath);
+  });
+
+  ipcMain.handle('path:basename', (_event, filePath: string) => {
+    return path.basename(filePath);
+  });
+
   ipcMain.handle('file:open-dialog', async (_event, options?: Partial<OpenFileDialogOptions>) => {
     const title = options?.title ?? '';
     const zipFilterName = options?.zipFilterName ?? '';
@@ -158,12 +166,16 @@ export function registerIpcHandlers(): void {
       filters.push({ name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] });
     }
 
-    const result = await dialog.showOpenDialog({
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const dialogOptions: Electron.OpenDialogOptions = {
       title,
       defaultPath: options?.defaultPath,
       properties: ['openFile'],
       filters
-    });
+    };
+    const result = focusedWindow 
+      ? await dialog.showOpenDialog(focusedWindow, dialogOptions)
+      : await dialog.showOpenDialog(dialogOptions);
 
     if (result.canceled || result.filePaths.length === 0) {
       return null;
@@ -173,10 +185,14 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('folder:open-dialog', async (_event, title: string) => {
-    const result = await dialog.showOpenDialog({
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const dialogOptions: Electron.OpenDialogOptions = {
       title,
       properties: ['openDirectory']
-    });
+    };
+    const result = focusedWindow 
+      ? await dialog.showOpenDialog(focusedWindow, dialogOptions)
+      : await dialog.showOpenDialog(dialogOptions);
 
     if (result.canceled || result.filePaths.length === 0) {
       return null;
