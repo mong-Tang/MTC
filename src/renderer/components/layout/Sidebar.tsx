@@ -12,6 +12,7 @@ interface SidebarProps {
   onToggleLoadSameBook: (checked: boolean) => void;
   libraryItems?: Array<{ name: string; path: string; type: string }>;
   activeLibraryPath?: string | null;
+  selectedLibraryPaths?: string[];
   onLibraryItemClick?: (path: string) => void;
   libraryFolderName?: string | null; // 📂 [추가] 라이브러리 그룹 폴더 명칭
 }
@@ -19,9 +20,10 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ 
   isOpen, isMenuOpen, onOpenConverter, onOpenFile, onOpenFolder, onFileSelect,
   loadSameBook, onToggleLoadSameBook,
-  libraryItems = [], activeLibraryPath = null, onLibraryItemClick,
+  libraryItems = [], activeLibraryPath = null, selectedLibraryPaths = [], onLibraryItemClick,
   libraryFolderName = null // 📂 기본값 설정
 }) => {
+  const selectedPathSet = new Set(selectedLibraryPaths);
   return (
     <aside className={`app-sidebar ${!isOpen ? 'collapsed' : ''}`}>
       <header className="sidebar-header">
@@ -96,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {libraryItems.map((item) => (
                 <div 
                   key={item.path} 
-                  className={`file-item ${activeLibraryPath === item.path ? 'active' : ''}`}
+                  className={`file-item ${(activeLibraryPath === item.path || selectedPathSet.has(item.path)) ? 'active' : ''}`}
                   onClick={() => onLibraryItemClick && onLibraryItemClick(item.path)}
                   title={item.name}
                 >

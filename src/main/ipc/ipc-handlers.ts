@@ -19,6 +19,7 @@ interface OpenFileDialogOptions {
   archiveFilterName?: string;
   defaultPath?: string;
   excludeZip?: boolean;
+  multiSelections?: boolean;
 }
 
 interface SidebarListItem {
@@ -167,10 +168,14 @@ export function registerIpcHandlers(): void {
     }
 
     const focusedWindow = BrowserWindow.getFocusedWindow();
+    const properties: Electron.OpenDialogOptions['properties'] = ['openFile'];
+    if (options?.multiSelections) {
+      properties.push('multiSelections');
+    }
     const dialogOptions: Electron.OpenDialogOptions = {
       title,
       defaultPath: options?.defaultPath,
-      properties: ['openFile'],
+      properties,
       filters
     };
     const result = focusedWindow 
@@ -181,7 +186,58 @@ export function registerIpcHandlers(): void {
       return null;
     }
 
+    if (options?.multiSelections) {
+      return result.filePaths;
+    }
+
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('file:open-dialog-multi', async (_event, options?: Partial<OpenFileDialogOptions>) => {
+    const title = options?.title ?? '';
+    const zipFilterName = options?.zipFilterName ?? '';
+    const imageFilterName = options?.imageFilterName ?? '';
+    const archiveFilterName = options?.archiveFilterName ?? '';
+    const excludeZip = options?.excludeZip === true;
+
+    const filters = [];
+
+    if (zipFilterName.trim() && !excludeZip) {
+      filters.push({ name: zipFilterName, extensions: ['zip', 'cbz'] });
+    }
+
+    if (archiveFilterName.trim()) {
+      let baseArchiveExts = [
+        'zip', 'cbz', 'cbr', 'rar', '7z', 'iso', 'tar', 'gz',
+        'arj', 'bz2', 'cab', 'chm', 'cpio', 'deb', 'dmg', 'ext', 'fat', 'lzh', 'msi', 'ntfs',
+        'rpm', 'squashfs', 'tbz2', 'tgz', 'txz', 'vdi', 'vhd', 'vhdx', 'vmdk', 'wim', 'xar', 'xz', 'z'
+      ];
+      if (excludeZip) {
+        baseArchiveExts = baseArchiveExts.filter(ext => ext !== 'zip' && ext !== 'cbz');
+      }
+      filters.push({ name: archiveFilterName, extensions: baseArchiveExts });
+    }
+
+    if (imageFilterName.trim()) {
+      filters.push({ name: imageFilterName, extensions: ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] });
+    }
+
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    const dialogOptions: Electron.OpenDialogOptions = {
+      title,
+      defaultPath: options?.defaultPath,
+      properties: ['openFile', 'multiSelections'],
+      filters
+    };
+    const result = focusedWindow
+      ? await dialog.showOpenDialog(focusedWindow, dialogOptions)
+      : await dialog.showOpenDialog(dialogOptions);
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return result.filePaths;
   });
 
   ipcMain.handle('folder:open-dialog', async (_event, title: string) => {

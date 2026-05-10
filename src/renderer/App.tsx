@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { FloatingAnchor } from './components/layout/FloatingAnchor';
 import { Sidebar } from './components/layout/Sidebar';
 import { ViewerCanvas } from './components/layout/ViewerCanvas';
-import { ConverterModal } from './components/modals/ConverterModal';
+import { ConverterPanel } from './components/layout/ConverterPanel';
+import type { ConverterSourceItem } from './components/layout/ConverterPanel';
 import { TitleBarControls } from './components/layout/TitleBarControls';
 import { ContextMenu } from './components/ui/ContextMenu'; // 🌌 [신규] 우클릭 부품
 import { StatusBar } from './components/layout/StatusBar'; // 🌌 [신규] 실시간 현황판
@@ -42,6 +43,7 @@ const VIEW_MODE_STORAGE_KEY = 'mtc:viewMode';
 const PAGE_MEMORY_STORAGE_KEY = 'mtc:lastPageByPath';
 const THEME_MODE_STORAGE_KEY = 'mtc:themeMode';
 type ThemeMode = 'default' | 'light' | 'dark' | 'system';
+type WorkspaceMode = 'viewer' | 'converter';
 
 function readSavedViewMode(): '1' | '2' {
   const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
@@ -72,7 +74,7 @@ function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMenuOpen, setSidebarMenuOpen] = useState(false);
-  const [isConverterOpen, setConverterOpen] = useState(false);
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('viewer');
   const [isAppLoading, setIsAppLoading] = useState(false); // 🛡️ [유저 고안] 철통 보안 마이크로 락 스테이트!
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
   const autoMoveNoticeTimerRef = useRef<number | null>(null);
@@ -92,8 +94,9 @@ function App() {
 
   // 📚 [신규] (같은책) 묶음 로딩 모드 및 라이브러리 항목
   const [loadSameBook, setLoadSameBook] = useState(true);
-  const [libraryItems, setLibraryItems] = useState<any[]>([]);
+  const [libraryItems, setLibraryItems] = useState<ConverterSourceItem[]>([]);
   const [libraryFolderName, setLibraryFolderName] = useState<string | null>(null); // 📂 라이브러리 루트 폴더명
+  const [converterSourceItems, setConverterSourceItems] = useState<ConverterSourceItem[]>([]);
 
   // 📍 [신규] 컨텍스트 메뉴 좌표 및 활성화 상태
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({
@@ -315,8 +318,83 @@ function App() {
 
   // 📚 사이드바 라이브러리 항목 클릭 핸들러
   const handleLibraryItemClick = (filePath: string) => {
+    const item = libraryItems.find((candidate) => candidate.path === filePath);
+    if (!item) return;
+
+    if (workspaceMode === 'converter') {
+      setConverterSourceItems((prev) => {
+        const exists = prev.some((entry) => entry.path === filePath);
+        if (exists) {
+          return prev.filter((entry) => entry.path !== filePath);
+        }
+        return [...prev, item];
+      });
+      return;
+    }
+
     // 🚀 [완벽한 회귀] 유저 제안의 미학대로, 편안한 '1-클릭'으로 롤백하여 즉시 실행합니다!
     void loadZipIntoViewer(filePath); 
+  };
+
+  const handleAddConverterSource = async () => {
+    try {
+      const appApi = (window as any).appApi;
+      let filePaths: string[] = [];
+
+      if (typeof appApi.openFileDialogMulti === 'function') {
+        const multi = await appApi.openFileDialogMulti({
+          title: '컨버터 소스 추가',
+          zipFilterName: '압축/이미지 파일',
+          imageFilterName: '이미지 파일'
+        });
+        if (!multi || multi.length === 0) return;
+        filePaths = multi;
+      } else {
+        // Fallback: preload hot-reload 전 구버전 런타임 호환
+        const picked = await appApi.openFileDialog({
+          title: '컨버터 소스 추가',
+          zipFilterName: '압축/이미지 파일',
+          imageFilterName: '이미지 파일',
+          multiSelections: true
+        });
+        if (!picked) return;
+        filePaths = Array.isArray(picked) ? picked : [picked];
+      }
+
+      const items = await Promise.all(
+        filePaths.map(async (filePath: string) => {
+          const name = await appApi.getBasename(filePath);
+          const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+          const type = ['zip', 'cbz', '7z', 'rar'].includes(ext) ? 'archive' : 'image';
+          return { name, path: filePath, type } as ConverterSourceItem;
+        })
+      );
+      setConverterSourceItems((prev) => {
+        const existing = new Set(prev.map((entry) => entry.path));
+        const next = [...prev];
+        for (const item of items) {
+          if (!existing.has(item.path)) {
+            next.push(item);
+          }
+        }
+        return next;
+      });
+      setWorkspaceMode('converter');
+    } catch (error) {
+      console.error('Failed to add converter source', error);
+    }
+  };
+
+  const handleAddAllConverterSource = () => {
+    setWorkspaceMode('converter');
+    setConverterSourceItems(libraryItems);
+  };
+
+  const handleClearConverterSource = () => {
+    setConverterSourceItems([]);
+    if (workspaceMode === 'converter') {
+      setSelectedPath(null);
+    }
   };
 
   // 🎭 가상 파일 선택 시뮬레이터 (우선 유지하되 비활성 유도)
@@ -396,7 +474,7 @@ function App() {
   // 🎹 [유저 특명] 키보드 '좌/우' 화살표 텔레파시 시스템 주입!
   useEffect(() => {
     // 활성화된 파일이 없거나 컨버터가 떠있으면 키보드 차단
-    if (!hasActiveFile || isConverterOpen) return;
+    if (!hasActiveFile || workspaceMode === 'converter') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // 포커스가 인풋 창에 가 있을 때는 단축키 비활성화 (안전장치)
@@ -439,7 +517,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasActiveFile, isConverterOpen, handleNavPrev, handleNavNext, pages.length, viewMode]);
+  }, [hasActiveFile, workspaceMode, handleNavPrev, handleNavNext, pages.length, viewMode]);
 
   return (
     <div 
@@ -460,20 +538,28 @@ function App() {
       <FloatingAnchor 
         onToggleSidebar={() => setSidebarOpen(!isSidebarOpen)}
         onToggleMenu={toggleSidebarMenu}
+        onShowViewer={() => setWorkspaceMode('viewer')}
+        onShowConverter={() => setWorkspaceMode('converter')}
+        canShowViewer={workspaceMode !== 'viewer'}
+        canShowConverter={workspaceMode !== 'converter'}
       />
 
       {/* 📂 서고 */}
       <Sidebar 
         isOpen={isSidebarOpen} 
         isMenuOpen={isSidebarMenuOpen}
-        onOpenConverter={() => setConverterOpen(true)}
+        onOpenConverter={() => {
+          setWorkspaceMode('converter');
+          setSidebarMenuOpen(false);
+        }}
         onOpenFile={handleOpenFileClick} 
         onOpenFolder={handleOpenFolderClick} // ⚡ [1.0 복제분실 연동!!]
         onFileSelect={handleFileSelect}
         loadSameBook={loadSameBook}
         onToggleLoadSameBook={setLoadSameBook}
         libraryItems={libraryItems}
-        activeLibraryPath={selectedPath}
+        activeLibraryPath={workspaceMode === 'viewer' ? selectedPath : null}
+        selectedLibraryPaths={converterSourceItems.map((item) => item.path)}
         onLibraryItemClick={handleLibraryItemClick}
         // onLibraryItemDoubleClick는 다시 역사속으로 사라집니다.
         libraryFolderName={libraryFolderName} // 📂 [전송] 라이브러리 그룹 이름!
@@ -487,49 +573,53 @@ function App() {
         />
       )}
 
-      {/* 🖼️ 무대 (메인 뷰어) */}
-      <ViewerCanvas 
-        hasActiveFile={hasActiveFile}
-        zipPath={zipPath}
-        entryNames={visibleEntryNames}
-        viewMode={viewMode}
-        imageFitMode={imageFitMode} /* 🔍 [동기화] 보기 모드 정보 하달! */
-        
-        // 🧭 [신규] 내비게이션 제어 신호 송신!
-        showNavArrows={showNavArrows}
-        canGoPrev={canGoPrevLibrary}
-        canGoNext={canGoNextLibrary}
-        onPrev={handleNavPrev}
-        onNext={handleNavNext}
+      {workspaceMode === 'viewer' ? (
+        <>
+          {/* 🖼️ 무대 (메인 뷰어) */}
+          <ViewerCanvas 
+            hasActiveFile={hasActiveFile}
+            zipPath={zipPath}
+            entryNames={visibleEntryNames}
+            viewMode={viewMode}
+            imageFitMode={imageFitMode} /* 🔍 [동기화] 보기 모드 정보 하달! */
+            
+            // 🧭 [신규] 내비게이션 제어 신호 송신!
+            showNavArrows={showNavArrows}
+            canGoPrev={canGoPrevLibrary}
+            canGoNext={canGoNextLibrary}
+            onPrev={handleNavPrev}
+            onNext={handleNavNext}
 
-        onClick={() => {
-          if (isSidebarMenuOpen) setSidebarMenuOpen(false);
-          if (contextMenu.show) setContextMenu(prev => ({ ...prev, show: false }));
-        }} 
-        onContextMenu={handleContextMenu}
-      />
+            onClick={() => {
+              if (isSidebarMenuOpen) setSidebarMenuOpen(false);
+              if (contextMenu.show) setContextMenu(prev => ({ ...prev, show: false }));
+            }} 
+            onContextMenu={handleContextMenu}
+          />
 
-      {/* 🛰️ [긴급 재탈출] 상태바를 뷰어 둥지 밖으로 꺼내, 화면 하단 전체를 웅장하게 점령합니다! */}
+        </>
+      ) : (
+        <ConverterPanel
+          sourceItems={converterSourceItems}
+          onAddSource={handleAddConverterSource}
+          onAddAllSource={handleAddAllConverterSource}
+          onClearSource={handleClearConverterSource}
+        />
+      )}
+
+      {/* 🛰️ 상태바는 화면 전환과 무관하게 하단 고정 유지 */}
       <StatusBar 
         hasActiveFile={hasActiveFile}
         activeFileName={zipPath ? zipPath.split(/[/\\]/).pop() : null}
         currentPageIndex={currentIndex}
         totalPages={pages.length}
         bookPositionHint={getBookPositionHint()}
-        totalLibraryItems={libraryItems.length} // 📚 [연동] 라이브러리 총 개수 하달!
-        isSidebarOpen={isSidebarOpen} // 📏 [연동] 사이드바 개폐 정보 하달!
-        
-        // 🧭 [유저 하달] 상태바 중앙 내비게이션 엔진 주입!!
+        totalLibraryItems={libraryItems.length}
+        isSidebarOpen={isSidebarOpen}
         canGoPrev={canGlobalPrev}
         canGoNext={canGlobalNext}
         onPrev={handleNavPrev}
         onNext={handleNavNext}
-      />
-
-      {/* 🎁 콘텐츠 컨버터 모달 */}
-      <ConverterModal 
-        isOpen={isConverterOpen} 
-        onClose={() => setConverterOpen(false)} 
       />
 
       {/* 🌌 궁극의 전천후 팝업 메뉴 (🔒 뷰모드 & 스케일 모드 동기화!) */}

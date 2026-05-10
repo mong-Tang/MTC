@@ -4,9 +4,20 @@ import { IconSidebarToggle, IconChevronLeft, IconChevronRight, IconList } from '
 interface FloatingAnchorProps {
   onToggleSidebar: () => void;
   onToggleMenu: () => void; // ⚡ 역할 변경: 컨버터 직접 열기 -> 메뉴 토글
+  onShowViewer: () => void;
+  onShowConverter: () => void;
+  canShowViewer: boolean;
+  canShowConverter: boolean;
 }
 
-export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({ onToggleSidebar, onToggleMenu }) => {
+export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({
+  onToggleSidebar,
+  onToggleMenu,
+  onShowViewer,
+  onShowConverter,
+  canShowViewer,
+  canShowConverter
+}) => {
   return (
     <header className="floating-control-anchor">
       <button 
@@ -16,10 +27,10 @@ export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({ onToggleSidebar,
       >
         <IconSidebarToggle />
       </button>
-      <button className="control-btn" title="이전 파일">
+      <button className="control-btn" title="뷰어 화면" onClick={onShowViewer} disabled={!canShowViewer}>
         <IconChevronLeft />
       </button>
-      <button className="control-btn" title="다음 파일">
+      <button className="control-btn" title="컨버터 화면" onClick={onShowConverter} disabled={!canShowConverter}>
         <IconChevronRight />
       </button>
       <button 

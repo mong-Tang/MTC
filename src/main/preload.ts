@@ -111,6 +111,8 @@ const api = {
     };
   },
   openFileDialog: (options: OpenFileDialogOptions) => ipcRenderer.invoke('file:open-dialog', options) as Promise<string | null>,
+  openFileDialogMulti: (options: OpenFileDialogOptions) =>
+    ipcRenderer.invoke('file:open-dialog-multi', options) as Promise<string[] | null>,
   openFolderDialog: (title: string) => ipcRenderer.invoke('folder:open-dialog', title) as Promise<string | null>,
   getDirectory: (filePath: string) => ipcRenderer.invoke('path:dirname', filePath) as Promise<string>,
   getBasename: (filePath: string) => ipcRenderer.invoke('path:basename', filePath) as Promise<string>,
