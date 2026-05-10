@@ -91,10 +91,11 @@ export class ZipArchiveProvider implements IArchiveProvider {
 
   async getPage(filePath: string, entryName: string): Promise<ArchivePageData> {
     const bytes = await this.readEntryBytes(filePath, entryName);
+    const arrayBuffer = bytes.buffer as ArrayBuffer;
     return {
       entryName,
       mimeType: resolveMimeType(entryName),
-      bytes: Array.from(bytes)
+      bytes: arrayBuffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
     };
   }
 

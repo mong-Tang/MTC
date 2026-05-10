@@ -69,7 +69,7 @@ interface ImageOpenResult {
   path: string;
   name: string;
   mimeType: string;
-  bytes: number[];
+  bytes: ArrayBuffer;
 }
 
 interface ConverterResult {
@@ -84,7 +84,7 @@ type ZipEditRequest =
       afterEntryName: string;
       insertFileName: string;
       insertMimeType: string;
-      insertBytes: number[];
+      insertBytes: ArrayBuffer;
     };
 
 const api = {

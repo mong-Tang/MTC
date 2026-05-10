@@ -5,12 +5,14 @@ interface ContextMenuProps {
   y: number;
   show: boolean;
   onClose: () => void;
-  viewMode: '1' | '2'; // 🔒 상태 감지용
-  onChangeViewMode: (mode: '1' | '2') => void; // ⚡ 변경 트리거
+  viewMode: '1' | '2';
+  onChangeViewMode: (mode: '1' | '2') => void;
+  imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
+  onChangeImageFitMode: (mode: 'auto' | 'actual' | 'width' | 'height') => void; // ⚡ 스케일 변경 위임
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  x, y, show, onClose, viewMode, onChangeViewMode 
+  x, y, show, onClose, viewMode, onChangeViewMode, imageFitMode, onChangeImageFitMode
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: y, left: x });
@@ -82,20 +84,47 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
       <div className="ribbon-divider" />
       
-      {/* 🔍 [2번 타자] 보기 설정 */}
-      <div className="menu-section-title">보기 설정</div>
-      <button className="context-item" onClick={onClose}>
+      {/* 🔍 [2번 타자] 보기 설정 (비율 & 스케일) */}
+      <div className="menu-section-title">스케일 설정</div>
+      <button 
+        className={`context-item ${imageFitMode === 'auto' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeImageFitMode('auto'); onClose(); }}
+      >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>⚙️ 자동 맞춤</span> <span className="shortcut">F</span>
+          <span>⚙️ 자동 맞춤 (Full)</span> <span className="shortcut">F</span>
         </div>
       </button>
-      <button className="context-item" onClick={onClose}>
+      <button 
+        className={`context-item ${imageFitMode === 'height' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeImageFitMode('height'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>↕️ 높이 맞춤</span> <span className="shortcut">H</span>
+        </div>
+      </button>
+      <button 
+        className={`context-item ${imageFitMode === 'width' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeImageFitMode('width'); onClose(); }}
+      >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
           <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
         </div>
       </button>
+      <button 
+        className={`context-item ${imageFitMode === 'actual' ? 'active-mode' : ''}`} 
+        onClick={() => { onChangeImageFitMode('actual'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>💎 1:1 보기 (원본)</span> <span className="shortcut">O</span>
+        </div>
+      </button>
+
+      <div className="ribbon-divider" />
+      <div className="menu-section-title">페이지 설정</div>
       
       {/* 💎 우클릭 메뉴용 정통 체크 결합 */}
       <button 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconFile, IconFolder, IconPlay, IconSettings } from '../ui/Icons';
+import { IconFile, IconFolder, IconPlay, IconSettings, IconImage, IconZip } from '../ui/Icons';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -100,7 +100,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onLibraryItemClick && onLibraryItemClick(item.path)}
                   title={item.name}
                 >
-                  <IconFile />
+                  {/* 🚥 [유저 피드백 반영] 파일 타입별 동적 이모지(아이콘) 교체 엔진 가동! */}
+                  {item.type === 'zip' || item.type === 'archive' ? (
+                    <IconZip />
+                  ) : item.type === 'image' ? (
+                    <IconImage />
+                  ) : (
+                    <IconFile />
+                  )}
                   <span className="file-name-text">
                     {item.name}
                   </span>

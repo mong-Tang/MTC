@@ -32,7 +32,7 @@ interface ImageOpenResult {
   path: string;
   name: string;
   mimeType: string;
-  bytes: number[];
+  bytes: ArrayBuffer; // 🚀 [최적화] Array 대신 네이티브 바이너리!
 }
 
 const ZIP_EXTENSIONS = new Set(['.zip']);
@@ -276,12 +276,13 @@ export function registerIpcHandlers(): void {
         throw new AppError('UNKNOWN', `Unsupported image extension: ${extension}`);
       }
 
-      const bytes = Array.from(await fs.readFile(imagePath));
+      const buffer = await fs.readFile(imagePath);
+      const arrayBuffer = buffer.buffer as ArrayBuffer;
       const data: ImageOpenResult = {
         path: imagePath,
         name: path.basename(imagePath),
         mimeType,
-        bytes
+        bytes: arrayBuffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) // ⚡ 순수 ArrayBuffer 추출!
       };
 
       return { ok: true, data } as const;

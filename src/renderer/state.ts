@@ -19,7 +19,7 @@ interface ArchiveOpenResult {
 interface ArchivePageData {
   entryName: string;
   mimeType: string;
-  bytes: number[];
+  bytes: ArrayBuffer;
 }
 
 interface SerializableAppError {
@@ -58,7 +58,7 @@ interface OpenedImageFile {
   path: string;
   name: string;
   mimeType: string;
-  bytes: number[];
+  bytes: ArrayBuffer;
 }
 
 interface ImageDimensions {

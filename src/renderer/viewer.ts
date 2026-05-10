@@ -27,12 +27,12 @@ function resetOpenedContent(): void {
   syncBookNavigationStateToMenu();
 }
 
-async function renderImageBytes(name: string, mimeType: string, bytes: number[]): Promise<void> {
+async function renderImageBytes(name: string, mimeType: string, bytes: ArrayBuffer): Promise<void> {
   const viewerImage = elements.viewerImage();
   const imageElement = document.createElement('img');
   imageElement.decoding = 'async';
 
-  const blob = new Blob([Uint8Array.from(bytes)], { type: mimeType });
+  const blob = new Blob([bytes], { type: mimeType });
   const objectUrl = URL.createObjectURL(blob);
 
   imageElement.src = objectUrl;
@@ -121,7 +121,7 @@ async function renderZipPages(pages: ArchivePage[]): Promise<void> {
 
     const imageElement = document.createElement('img');
     imageElement.decoding = 'async';
-    const blob = new Blob([Uint8Array.from(result.data.bytes)], { type: result.data.mimeType });
+    const blob = new Blob([result.data.bytes], { type: result.data.mimeType });
     const objectUrl = URL.createObjectURL(blob);
     imageElement.src = objectUrl;
     imageElement.alt = page.displayName;

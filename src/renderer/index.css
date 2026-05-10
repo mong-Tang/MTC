@@ -1,22 +1,132 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap');
 
 :root {
-  /* 🏛️ Dan-a (단아) Deep Warm Chestnut Palette */
-  /* 🌟 사용자 피드백 반영: 조금 더 화사하고 깊이 있는 미디엄-다크 밤색 (#2F2A28) */
-  --bg-base: #2F2A28;          /* 한 층 밝아진 기품 있는 따뜻한 밤빛 */
-  --bg-panel: rgba(47, 42, 40, 0.97);
-  --bg-sidebar: #1E1E1F;      /* 🌟 흐리멍덩함을 걷어낸 딥 챠콜 (Deep Crisp Charcoal) */
-  --text-sidebar: #EAE6E2;    /* 메인 텍스트 체계와 일치하도록 통일 */
-  --text-main: #EAE6E2;
-  --text-dim: #A59C96;
-  --accent: #CE743E;           /* 🌟 Canon Chestnut 그대로 유지 */
-  --accent-muted: rgba(206, 116, 62, 0.15);
-  --border-subtle: rgba(255, 255, 255, 0.1); /* 🌟 경계선을 더 선명하고 또렷하게 */
-  
+  /* 🏗️ [COMMON] 색상과 무관한 물리적 구조 변수 */
   --font-sans: 'Inter', 'Noto Sans KR', sans-serif;
   --sidebar-width: 260px;
   --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ==========================================================================
+   🌓 THEME ENGINE (테마 컨트롤 타워)
+   ========================================================================== */
+
+/* 🌘 1. THEME: DARK (기본값 및 수동 다크 지정) -------------------------- */
+:root, 
+[data-theme='dark'] {
+  /* 🏛️ Dan-a Deep Warm Chestnut Palette */
+  --bg-base: #2F2A28;
+  --bg-panel: rgba(47, 42, 40, 0.97);
+  --bg-sidebar: #1E1E1F;
+  --text-sidebar: #EAE6E2;
+  --text-main: #EAE6E2;
+  --text-dim: #A59C96;
+  --accent: #CE743E;
+  --accent-muted: rgba(206, 116, 62, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  
+  /* 🔗 [LINK] 시맨틱 컬러 레이어 (하드코딩 추방용 엔진) */
+  --rgb-contrast: 255, 255, 255;        /* 💡 다크에선 투명 레이어가 '흰색' 기반 */
+  --bg-floating-bar: rgba(24, 24, 24, 0.6);
+  --bg-floating-panel: rgba(28, 28, 28, 0.95);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --modal-backdrop: rgba(0, 0, 0, 0.6);
+  
+  /* 🌌 THEME_DEF: DARK */
+  --theme-def-sidebar-rgb: 30, 30, 31;
+  --theme-def-accent-rgb: 206, 116, 62;
+  --theme-def-list-badge-rgb: 140, 160, 180;
+  --theme-def-status-glass-opacity: 0.85;
+  --theme-def-status-blur: 12px;
+}
+
+/* 🌅 2. THEME: LIGHT (준비된 고품격 라이트 베이지) ----------------------- */
+[data-theme='light'] {
+  /* ☕ Warm Milk & Linen Palette */
+  --bg-base: #F8F5F2;           /* 부드럽고 따뜻한 린넨 색상 */
+  --bg-panel: rgba(255, 255, 255, 0.96);
+  --bg-sidebar: #EDE9E4;       /* 사이드바는 한 톤 가라앉은 베이지 그레이 */
+  --text-sidebar: #3A3533;     /* 가독성 높은 짙은 밤색 텍스트 */
+  --text-main: #3A3533;
+  --text-dim: #7A726C;
+  --accent: #CE743E;            /* 🌟 영혼의 액센트는 라이트에서도 그대로 빛납니다 */
+  --accent-muted: rgba(206, 116, 62, 0.1);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  
+  /* 🔗 [LINK] 시맨틱 컬러 레이어 (라이트 최적화 반전형) */
+  --rgb-contrast: 0, 0, 0;             /* 💡 라이트에선 투명 레이어가 '검은색' 기반으로 자동 변환! */
+  --bg-floating-bar: rgba(255, 255, 255, 0.7);
+  --bg-floating-panel: rgba(255, 255, 255, 0.98);
+  --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.08); /* 라이트에선 그림자를 매우 옅게 */
+  --modal-backdrop: rgba(0, 0, 0, 0.4);
+  
+  /* 🌌 THEME_DEF: LIGHT (투명도와 반전 최적화) */
+  --theme-def-sidebar-rgb: 237, 233, 228;
+  --theme-def-accent-rgb: 206, 116, 62;
+  --theme-def-list-badge-rgb: 110, 125, 135; /* 라이트에서는 살짝 더 진한 메탈릭 */
+  --theme-def-status-glass-opacity: 0.9;    /* 라이트에선 가독성을 위해 투명도 낮춤 */
+  --theme-def-status-blur: 16px;            /* 더 넓고 부드러운 확산 */
+}
+
+/* 🎨 4. THEME: CUSTOM (사용자 실시간 보정 프리셋) ------------------------- */
+/* 이 공간은 추후 자바스크립트나 설정 UI를 통해 실시간 변조될 '유동 프리셋' 전용입니다. */
+[data-theme='custom'] {
+  /* 💡 초기값은 안전하게 다크 테마를 계승하며, 유저 제어 시 즉시 덮어씌워집니다. */
+  --bg-base: #2F2A28;
+  --bg-panel: rgba(47, 42, 40, 0.97);
+  --bg-sidebar: #1E1E1F;
+  --text-sidebar: #EAE6E2;
+  --text-main: #EAE6E2;
+  --text-dim: #A59C96;
+  --accent: #CE743E;
+  --accent-muted: rgba(206, 116, 62, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  
+  --rgb-contrast: 255, 255, 255;
+  --bg-floating-bar: rgba(24, 24, 24, 0.6);
+  --bg-floating-panel: rgba(28, 28, 28, 0.95);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --modal-backdrop: rgba(0, 0, 0, 0.6);
+  
+  --theme-def-sidebar-rgb: 30, 30, 31;
+  --theme-def-accent-rgb: 206, 116, 62;
+  --theme-def-list-badge-rgb: 140, 160, 180;
+  --theme-def-status-glass-opacity: 0.85;
+  --theme-def-status-blur: 12px;
+}
+
+/* 💻 3. THEME: SYSTEM (사용자 OS 설정 자동 동기화) ----------------------- */
+/* [data-theme='system'] 상태일 때만 OS 설정을 추종하도록 설계하여 유연성 확보 */
+@media (prefers-color-scheme: light) {
+  :root[data-theme='system'] {
+    /* 라이트 모드 변수들을 상속 적용 */
+    --bg-base: #F8F5F2;
+    --bg-panel: rgba(255, 255, 255, 0.96);
+    --bg-sidebar: #EDE9E4;
+    --text-sidebar: #3A3533;
+    --text-main: #3A3533;
+    --text-dim: #7A726C;
+    --accent: #CE743E;
+    --accent-muted: rgba(206, 116, 62, 0.1);
+    --border-subtle: rgba(0, 0, 0, 0.08);
+
+    /* 🔗 시스템 라이트 동기화 레버 */
+    --rgb-contrast: 0, 0, 0;
+    --bg-floating-bar: rgba(255, 255, 255, 0.7);
+    --bg-floating-panel: rgba(255, 255, 255, 0.98);
+    --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.08);
+    --modal-backdrop: rgba(0, 0, 0, 0.4);
+
+    --theme-def-sidebar-rgb: 237, 233, 228;
+    --theme-def-accent-rgb: 206, 116, 62;
+    --theme-def-list-badge-rgb: 110, 125, 135;
+    --theme-def-status-glass-opacity: 0.9;
+    --theme-def-status-blur: 16px;
+  }
+}
+/* 시스템이 다크면, 이미 최상단 기본값이 다크이므로 별도 재정의 필요 없음! (Dry logic) */
+
+/* ========================================================================== */
 
 * {
   box-sizing: border-box;
@@ -44,7 +154,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15); /* 은은하게 보이는 막대 */
+  background: rgba(var(--rgb-contrast), 0.15); /* 🔗 테마별 자동 반전 */
   border-radius: 10px;
   transition: background 0.3s;
 }
@@ -71,7 +181,7 @@ body {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgba(24, 24, 24, 0.6);
+  background: var(--bg-floating-bar);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
@@ -94,7 +204,7 @@ body {
 
 .control-btn:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-contrast), 0.05);
 }
 
 /* 📂 Sidebar Structure */
@@ -102,7 +212,7 @@ body {
   width: var(--sidebar-width);
   background: var(--bg-sidebar);
   color: var(--text-sidebar); /* 재색 바탕 위에서 극강의 가독성을 확보합니다 */
-  border-right: 1px solid rgba(255, 255, 255, 0.12); /* 🛡️ 칼날 같은 경계선 부여 */
+  border-right: 1px solid var(--border-subtle); /* 🛡️ 칼날 같은 경계선 부여 */
   display: flex;
   flex-direction: column;
   transition: margin-left 0.4s var(--transition-smooth);
@@ -185,7 +295,7 @@ body {
 }
 
 .menu-btn:hover {
-  background: rgba(255, 255, 255, 0.06); /* 이제 칸 전체가 칠해집니다! */
+  background: rgba(var(--rgb-contrast), 0.06); /* 이제 칸 전체가 칠해집니다! */
   transform: none; /* 밀려 나가는 효과도 정갈하게 제거 */
 }
 
@@ -236,7 +346,7 @@ body {
   border-left: 1px solid transparent;
 }
 .file-list-nested .file-item:hover {
-  border-left-color: rgba(255, 255, 255, 0.15);
+  border-left-color: rgba(var(--rgb-contrast), 0.15);
 }
 .file-list-nested .file-item.active {
   border-left-color: var(--accent); /* 활성화 시 좌측 가이드라인 발광 */
@@ -250,7 +360,7 @@ body {
 
 /* 📄 [완성] 일체화된 풀 와이드 리스트 항목 */
 .file-item {
-  padding: 12px 20px; /* 충분한 클릭 영역 확보 */
+  padding: 8px 20px; /* 📐 [피드백] 가독성과 한계 밀도(Density)를 극대화하기 위해 12px -> 8px로 최적 압축! */
   font-size: 0.88rem;
   color: var(--text-dim);
   cursor: pointer;
@@ -265,12 +375,12 @@ body {
 }
 
 .file-item:hover {
-  background: rgba(255, 255, 255, 0.05); /* 메뉴판 호버와 정확히 동일한 톤 */
+  background: rgba(var(--rgb-contrast), 0.05); /* 메뉴판 호버와 정확히 동일한 톤 */
   color: var(--text-main);
 }
 
 .file-item.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--rgb-contrast), 0.08);
   color: var(--accent);
   font-weight: 500;
 }
@@ -311,7 +421,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--modal-backdrop);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -323,9 +433,9 @@ body {
 .converter-modal {
   width: 520px;
   background: var(--bg-panel);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
   border-radius: 20px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-popup);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -450,11 +560,11 @@ body {
   top: calc(100% + 6px);
   left: 0;
   min-width: 220px; /* 🚀 단축키 공간을 위해 너비 상향 조정! */
-  background: rgba(28, 28, 28, 0.95);
+  background: var(--bg-floating-panel);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-popup);
   padding: 6px 0;
   z-index: 2000;
   display: flex;
@@ -578,11 +688,11 @@ body {
   position: fixed; /* 화면 절대 위치 고수 */
   z-index: 3000; /* 모든 것을 압도하는 최상위 레벨 */
   min-width: 180px;
-  background: rgba(35, 35, 35, 0.9);
+  background: var(--bg-floating-panel);
   backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
   border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-popup);
   padding: 8px 0;
   animation: fadeInPop 0.15s ease-out;
   pointer-events: auto;
@@ -623,7 +733,7 @@ body {
 }
 
 .context-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--rgb-contrast), 0.08);
 }
 
 .context-item.text-danger {
@@ -655,11 +765,11 @@ body {
 .custom-checkbox-ui {
   width: 14px;
   height: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(var(--rgb-contrast), 0.3);
   border-radius: 4px;
   position: relative;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(var(--rgb-contrast), 0.05);
 }
 
 /* 🎯 체크됐을 때의 영롱한 변화 */
@@ -705,7 +815,7 @@ body {
 }
 
 .win-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--rgb-contrast), 0.08);
   color: var(--text-main);
 }
 
@@ -727,8 +837,9 @@ body {
   left: 0;
   right: 0;
   height: 26px; 
-  background: var(--bg-sidebar); /* 🔗 사이드바와 한 몸이 되는 구조적 결속 완성! */
-  border-top: 1px solid rgba(255, 255, 255, 0.1); /* 🛡️ 골격의 일치감을 위해 상단 테두리도 선명화 */
+  background: rgba(var(--theme-def-sidebar-rgb), var(--theme-def-status-glass-opacity)); /* 🌌 [ThemeDef] 보존된 사이드바 DNA 주입 */
+  backdrop-filter: blur(var(--theme-def-status-blur)); /* 🔮 보존된 기억의 블러링 */
+  border-top: 1px solid rgba(var(--rgb-contrast), 0.08);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -738,7 +849,6 @@ body {
   user-select: none;
   -webkit-user-select: none;
   z-index: 999;
-  /* 💡 솔리드 컬러가 되었으므로 글래스 효과는 자동 탈거 */
   flex-shrink: 0;
 }
 
@@ -756,7 +866,7 @@ body {
   box-sizing: border-box;
   
   /* ⚔️ 수직 분할선(Split Line) 하단까지 통짜 연장! */
-  border-right: 1px solid rgba(255, 255, 255, 0.12); 
+  border-right: 1px solid rgba(var(--rgb-contrast), 0.12); 
   
   /* 🌊 사이드바 접힐 때의 애니메이션 타이밍까지 완벽 싱크! */
   transition: width 0.4s var(--transition-smooth), border-right-color 0.4s var(--transition-smooth);
@@ -787,6 +897,7 @@ body {
   align-items: center;
   padding: 0 16px;
   overflow: hidden;
+  position: relative; /* ⚓ [필수] 중앙 절대 좌표 고정을 위한 기준 닻 설정! */
 }
 
 /* ⬅️ 2구역 좌측 군락 (배지 + 파일명 합체) */
@@ -839,32 +950,32 @@ body {
 }
 
 .status-badge.idle {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(var(--rgb-contrast), 0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(var(--rgb-contrast), 0.12);
 }
 
 /* 🏛️ LIST 전용 테마: 기술적이고 지적인 메탈릭 실버 톤 */
 .badge-list {
-  background: rgba(140, 160, 180, 0.07) !important; /* 미세한 청회색 빛 감돔 */
-  border-color: rgba(140, 160, 180, 0.22) !important;
+  background: rgba(var(--theme-def-list-badge-rgb), 0.07) !important; /* 🌌 [ThemeDef] 계승 */
+  border-color: rgba(var(--theme-def-list-badge-rgb), 0.22) !important;
   color: #A0B2C2 !important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 /* 💤 STANDBY 전용 테마: 웜톤 배경과 녹아드는 초저전력 대기광 */
 .badge-engine.idle {
-  background: rgba(206, 116, 62, 0.03) !important; /* 미세한 잔광 */
-  border-color: rgba(206, 116, 62, 0.15) !important; /* 아주 옅은 시그니처 컬러 테두리 */
+  background: rgba(var(--theme-def-accent-rgb), 0.03) !important; /* 🌌 [ThemeDef] 계승 */
+  border-color: rgba(var(--theme-def-accent-rgb), 0.15) !important; 
   color: var(--text-dim) !important;
   opacity: 0.8;
 }
 
 .status-badge.active {
-  background: rgba(206, 116, 62, 0.08); /* ✨ 은은하게 감도는 시그니처 밤빛의 온기 */
+  background: rgba(var(--theme-def-accent-rgb), 0.08); /* 🌌 [ThemeDef] 계승 */
   color: var(--accent);
-  border: 1px solid rgba(206, 116, 62, 0.3); /* 선명하지만 부담 없는 경계 */
-  box-shadow: 0 0 10px rgba(206, 116, 62, 0.12);
+  border: 1px solid rgba(var(--theme-def-accent-rgb), 0.3); 
+  box-shadow: 0 0 10px rgba(var(--theme-def-accent-rgb), 0.12);
   animation: activePulse 2.5s infinite alternate ease-in-out;
   font-weight: 700;
 }
@@ -872,13 +983,13 @@ body {
 @keyframes activePulse {
   from { 
     opacity: 0.85; 
-    box-shadow: 0 0 6px rgba(206, 116, 62, 0.1);
-    border-color: rgba(206, 116, 62, 0.25);
+    box-shadow: 0 0 6px rgba(var(--theme-def-accent-rgb), 0.1);
+    border-color: rgba(var(--theme-def-accent-rgb), 0.25);
   }
   to { 
     opacity: 1; 
-    box-shadow: 0 0 14px rgba(206, 116, 62, 0.2);
-    border-color: rgba(206, 116, 62, 0.45); /* 맥박이 뛸 때 테두리 빛이 살짝 강해짐 */
+    box-shadow: 0 0 14px rgba(var(--theme-def-accent-rgb), 0.2);
+    border-color: rgba(var(--theme-def-accent-rgb), 0.45); 
   }
 }
 
@@ -910,8 +1021,14 @@ body {
 }
 
 /* 🧱 상태바가 화면을 가로지르게 되었으므로 전체 하단 완충 여백 확보! */
-.app-main-content, .app-sidebar {
-  padding-bottom: 26px; 
+.app-sidebar {
+  padding-bottom: 26px; /* 사이드바는 스크롤을 품어야 하므로 패딩 방식 유지 */
+}
+
+.app-main-content {
+  /* 🚀 [정렬 최적화] 패딩 대신 마진을 사용하여 박스의 물리적 크기를 상태바 직전에서 
+     칼같이 단절시킵니다. 이로써 Flexbox의 내부 정렬 왜곡이 100% 완벽 소멸됩니다! */
+  margin-bottom: 26px; 
 }
 
 /* 🎨 메인 콘텐츠 기본 박스 레이아웃 보정 */
@@ -919,4 +1036,137 @@ body {
   flex: 1;
   height: 100%;
   box-sizing: border-box;
+  position: relative; /* 🧭 [필수] 내비게이션 오버레이의 기준점 생성! */
+}
+
+/* 🧭 뷰어 오버레이 내비게이션 (시네마틱 글래스 화살표) */
+.viewer-nav-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px; /* 🔍 [피드백 반영] 최적의 가시성과 오작동 방지를 위한 정밀 폭 조정! */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 90; /* 스테이터스바 보단 아래, 콘텐츠보단 위 */
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: all;
+}
+
+.viewer-nav-overlay.left {
+  left: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent);
+}
+
+.viewer-nav-overlay.right {
+  right: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.15), transparent);
+}
+
+.viewer-nav-overlay:hover {
+  opacity: 1;
+}
+
+.nav-circle-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 튕기는 듯한 고급진 애니메이션 */
+  user-select: none;
+}
+
+/* 🚀 화살표 아이콘 세부 보정 */
+.nav-circle-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.viewer-nav-overlay:hover .nav-circle-btn {
+  background: rgba(var(--theme-def-accent-rgb), 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 12px 40px rgba(var(--theme-def-accent-rgb), 0.5);
+}
+
+/* 🚫 비활성화 상태 (목록 끝) */
+.viewer-nav-overlay.disabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   🧭 STATUS BAR NAVIGATION CLUSTER (상태바 중앙 조종석)
+   ========================================================================== */
+.status-content-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+  
+  /* 📍 [유저 격분 방지] 절대 좌표 강제 구속 레이아웃 (요동 방지) */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10; /* 좌우 요소보다 상위에 위치하여 클릭 보장 */
+}
+
+.status-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 18px;
+  background: rgba(var(--rgb-contrast), 0.04);
+  border: 1px solid rgba(var(--rgb-contrast), 0.15);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-size: 16px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-bottom: 2px; /* 꺽쇠 기호 세로 정렬 미세 보정 */
+  outline: none;
+}
+
+.status-nav-btn:hover:not(:disabled) {
+  background: rgba(var(--theme-def-accent-rgb), 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(var(--theme-def-accent-rgb), 0.2);
+  transform: translateY(-1px);
+}
+
+.status-nav-btn:active:not(:disabled) {
+  transform: translateY(0px) scale(0.95);
+  background: var(--accent);
+  color: white;
+}
+
+.status-nav-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: rgba(var(--rgb-contrast), 0.08);
 }

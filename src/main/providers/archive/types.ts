@@ -19,5 +19,5 @@ export interface ArchiveOpenResult {
 export interface ArchivePageData {
   entryName: string;
   mimeType: string;
-  bytes: number[];
+  bytes: ArrayBuffer;
 }

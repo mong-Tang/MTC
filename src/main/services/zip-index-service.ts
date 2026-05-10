@@ -6,6 +6,26 @@ import type { ArchiveOpenResult, ArchivePageData } from '../providers/archive/ty
 import { ZipArchiveProvider } from '../providers/zip/zip-provider';
 
 const zipProvider = new ZipArchiveProvider();
+ 
+ /* 🖼️ [신규] 이미지 뷰어를 위한 직접 이미지 지원 매핑 */
+ const IMAGE_EXTENSIONS = new Map([
+   ['.png', 'image/png'],
+   ['.jpg', 'image/jpeg'],
+   ['.jpeg', 'image/jpeg'],
+   ['.gif', 'image/gif'],
+   ['.bmp', 'image/bmp'],
+   ['.webp', 'image/webp']
+ ]);
+ 
+ function isImageFile(filePath: string): boolean {
+   const ext = path.extname(filePath).toLowerCase();
+   return IMAGE_EXTENSIONS.has(ext);
+ }
+ 
+ function getMimeType(filePath: string): string {
+   const ext = path.extname(filePath).toLowerCase();
+   return IMAGE_EXTENSIONS.get(ext) ?? 'application/octet-stream';
+ }
 
 function mapFsError(error: unknown): AppError {
   if (!(error instanceof Error)) {
@@ -64,9 +84,25 @@ export async function openZip(filePath: string): Promise<ArchiveOpenResult> {
   }
 
   if (!zipProvider.canOpen(normalizedPath)) {
-    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz is supported in v0.1.');
+    // 🚀 [신공] 단일 이미지 파일인 경우 가상 아카이브로 승화시켜 수용합니다!
+    if (isImageFile(normalizedPath)) {
+      const fileId = `${normalizedPath}|${stats.size}|${Math.trunc(stats.mtimeMs)}`;
+      const baseName = path.basename(normalizedPath);
+      return {
+        meta: {
+          title: baseName,
+          totalPages: 1,
+          hasEncryptedEntries: false,
+          fileId
+        },
+        pages: [
+          { index: 0, entryName: '__IMAGE_SINGLE_ENTRY__', displayName: baseName }
+        ]
+      };
+    }
+    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz/images are supported.');
   }
-
+ 
   await validateZipSignature(normalizedPath);
 
   const result = await zipProvider.open(normalizedPath);
@@ -99,7 +135,17 @@ export async function getZipPage(filePath: string, entryName: string): Promise<A
   }
 
   if (!zipProvider.canOpen(normalizedPath)) {
-    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz is supported in v0.1.');
+    // 🚀 [신공] 단일 이미지 파일인 경우 즉석에서 바이트 어레이로 스트리밍 반환!
+    if (isImageFile(normalizedPath)) {
+      const buffer = await fs.readFile(normalizedPath);
+      const arrayBuffer = buffer.buffer as ArrayBuffer;
+      return {
+        entryName,
+        mimeType: getMimeType(normalizedPath),
+        bytes: arrayBuffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) // ⚡ [최적화] 네이티브 버퍼 패스스루!
+      };
+    }
+    throw new AppError('ZIP_OPEN_FAILED', 'Only .zip/.cbz/images are supported.');
   }
 
   await validateZipSignature(normalizedPath);

@@ -1003,8 +1003,8 @@ function notifyAction(message: string): void {
   startNotificationTimer();
 }
 
-async function readImageDimensions(name: string, mimeType: string, bytes: number[]): Promise<ImageDimensions> {
-  const blob = new Blob([Uint8Array.from(bytes)], { type: mimeType });
+async function readImageDimensions(name: string, mimeType: string, bytes: ArrayBuffer): Promise<ImageDimensions> {
+  const blob = new Blob([bytes], { type: mimeType });
   const objectUrl = URL.createObjectURL(blob);
   try {
     const image = new Image();
@@ -1023,8 +1023,8 @@ async function readImageDimensions(name: string, mimeType: string, bytes: number
 async function resizeImageBytesToTarget(
   source: OpenedImageFile,
   target: ImageDimensions
-): Promise<{ mimeType: string; bytes: number[] }> {
-  const blob = new Blob([Uint8Array.from(source.bytes)], { type: source.mimeType });
+): Promise<{ mimeType: string; bytes: ArrayBuffer }> {
+  const blob = new Blob([source.bytes], { type: source.mimeType });
   const objectUrl = URL.createObjectURL(blob);
 
   try {
@@ -1058,7 +1058,7 @@ async function resizeImageBytesToTarget(
     const buffer = await resizedBlob.arrayBuffer();
     return {
       mimeType: outputMime,
-      bytes: Array.from(new Uint8Array(buffer))
+      bytes: buffer // ArrayBuffer
     };
   } finally {
     URL.revokeObjectURL(objectUrl);
