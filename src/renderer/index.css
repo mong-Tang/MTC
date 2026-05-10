@@ -302,7 +302,6 @@ body {
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  margin-right: 10px;
 }
 
 .converter-source-count {
@@ -374,9 +373,23 @@ body {
   background: rgba(var(--rgb-contrast), 0.015);
 }
 
+.converter-file-list-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .converter-section-title {
   font-size: 0.85rem;
   color: var(--text-main);
+  margin-bottom: 0;
+}
+
+.converter-file-list-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
@@ -393,13 +406,32 @@ body {
   align-items: center;
   justify-content: center;
   padding: 8px;
+  flex: 1;
+}
+
+.converter-help-block {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.converter-help-line {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.35;
 }
 
 .converter-item-list {
   border: 1px solid rgba(var(--rgb-contrast), 0.08);
   border-radius: 8px;
-  max-height: 180px;
+  max-height: none;
+  height: 100%;
   overflow: auto;
+  flex: 1;
 }
 
 .converter-item-row {
@@ -408,6 +440,11 @@ body {
   gap: 8px;
   padding: 8px 10px;
   border-bottom: 1px solid rgba(var(--rgb-contrast), 0.06);
+  cursor: pointer;
+}
+
+.converter-item-row:hover {
+  background: rgba(var(--rgb-contrast), 0.06);
 }
 
 .converter-item-row:last-child {

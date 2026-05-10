@@ -17,9 +17,10 @@ interface ConverterPanelProps {
   onAddSource: () => void;
   onAddAllSource: () => void;
   onClearSource: () => void;
+  onRemoveSourceItem: (path: string) => void;
 }
 
-export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onAddSource, onAddAllSource, onClearSource }) => {
+export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onAddSource, onAddAllSource, onClearSource, onRemoveSourceItem }) => {
   const [mode, setMode] = useState<ConverterMode>('merge');
 
   return (
@@ -27,15 +28,18 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onA
       <ConverterToolbar
         mode={mode}
         onChangeMode={setMode}
-        sourceCount={sourceItems.length}
-        onAdd={onAddSource}
-        onAddAll={onAddAllSource}
-        onClearAll={onClearSource}
       />
       <div className="converter-panel-body">
         <div className="converter-workbench-grid">
           <section className="converter-pane">
-            <ConverterFileList mode={mode} items={sourceItems} />
+            <ConverterFileList
+              mode={mode}
+              items={sourceItems}
+              onAdd={onAddSource}
+              onAddAll={onAddAllSource}
+              onClear={onClearSource}
+              onRemoveItem={onRemoveSourceItem}
+            />
           </section>
           <section className="converter-pane">
             <ConverterOptions mode={mode} />

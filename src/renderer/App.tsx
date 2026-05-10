@@ -397,6 +397,10 @@ function App() {
     }
   };
 
+  const handleRemoveConverterSourceItem = (pathToRemove: string) => {
+    setConverterSourceItems((prev) => prev.filter((item) => item.path !== pathToRemove));
+  };
+
   // 🎭 가상 파일 선택 시뮬레이터 (우선 유지하되 비활성 유도)
   const handleFileSelect = () => {
     // 향후 실데이터 로더로 대체 예정
@@ -559,7 +563,7 @@ function App() {
         onToggleLoadSameBook={setLoadSameBook}
         libraryItems={libraryItems}
         activeLibraryPath={workspaceMode === 'viewer' ? selectedPath : null}
-        selectedLibraryPaths={converterSourceItems.map((item) => item.path)}
+        selectedLibraryPaths={[]}
         onLibraryItemClick={handleLibraryItemClick}
         // onLibraryItemDoubleClick는 다시 역사속으로 사라집니다.
         libraryFolderName={libraryFolderName} // 📂 [전송] 라이브러리 그룹 이름!
@@ -604,6 +608,7 @@ function App() {
           onAddSource={handleAddConverterSource}
           onAddAllSource={handleAddAllConverterSource}
           onClearSource={handleClearConverterSource}
+          onRemoveSourceItem={handleRemoveConverterSourceItem}
         />
       )}
 
