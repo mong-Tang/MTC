@@ -241,8 +241,10 @@ body {
   position: absolute;
   top: 16px;
   left: 16px;
-  z-index: 2000; /* 🚀 레이어 격상: 절대 우위의 클릭 우선순위 확보 */
-  -webkit-app-region: no-drag !important; /* 🛡️ [앵커 수호단] 좌측 상단 드래그 영역의 마수를 차단하고 100% 완벽한 호버/클릭 반응성 복구! */
+  z-index: 2000;
+  /* 🚀 레이어 격상: 절대 우위의 클릭 우선순위 확보 */
+  -webkit-app-region: no-drag !important;
+  /* 🛡️ [앵커 수호단] 좌측 상단 드래그 영역의 마수를 차단하고 100% 완벽한 호버/클릭 반응성 복구! */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -251,39 +253,47 @@ body {
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 🎭 미적 트랜지션 가속 곡선 튜닝 */
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 🎭 미적 트랜지션 가속 곡선 튜닝 */
 }
 
 /* 🌫️ [단아의 미학 V2] 사이드바 폐쇄 시, 콘트롤 패널을 좌측 벽 너머로 6px+100% 숨기고 '딱 10px' 센서만 꼬리처럼 남깁니다. */
 .floating-control-anchor.immersive-mode {
-  opacity: 1; /* 투명화 중단: 10px 꼬리를 선명하게 노출하여 존재감 신호 발신 */
+  opacity: 1;
+  /* 투명화 중단: 10px 꼬리를 선명하게 노출하여 존재감 신호 발신 */
   /* 📐 [황금비 좌표연산] 16px 여백 + 자기너비 100% - 10px 노출 = calc(-100% - 6px) 좌측 철수! */
-  transform: translateX(calc(-100% - 6px)); 
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5); /* 10px 꼬리에 입체적 그림자 부여 */
+  transform: translateX(calc(-100% - 6px));
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5);
+  /* 10px 꼬리에 입체적 그림자 부여 */
   cursor: pointer;
-  
+
   /* 🎨 [시인성 부활] 배경색을 테마 액센트 색상으로 강제 발광시켜 '당겨주세요' 시그널 전달! */
   background: var(--accent) !important;
   border-color: var(--accent) !important;
-  opacity: 0.85; /* 살짝의 투명도로 고급스러움 가미 */
+  opacity: 0.85;
+  /* 살짝의 투명도로 고급스러움 가미 */
 }
 
 /* 📡 [초감각 레이더] 4px의 좁은 물리 판정을 극복하기 위해 우측으로 30px 확장된 '투명 유도 히트박스' 자동 생성! */
 .floating-control-anchor.immersive-mode::before {
   content: '';
   position: absolute;
-  top: -10px; /* 상하 조준 범위를 넓혀 더욱 쾌적한 접근성 부여 */
+  top: -10px;
+  /* 상하 조준 범위를 넓혀 더욱 쾌적한 접근성 부여 */
   bottom: -10px;
   left: 0;
-  right: -36px; /* 우측 감지 센서 확장! */
+  right: -36px;
+  /* 우측 감지 센서 확장! */
   background: transparent;
-  z-index: -1; /* 본체 뒤에서 안전하게 히트박스 역할 수행 */
+  z-index: -1;
+  /* 본체 뒤에서 안전하게 히트박스 역할 수행 */
 }
 
 .floating-control-anchor.immersive-mode:hover {
-  transform: translateX(0); /* 🚀 [출격] 은폐를 해제하고 원래의 16px 정위치로 부드럽게 글라이딩 출격! */
+  transform: translateX(0);
+  /* 🚀 [출격] 은폐를 해제하고 원래의 16px 정위치로 부드럽게 글라이딩 출격! */
   box-shadow: var(--shadow-popup);
-  
+
   /* 🔮 [원상 복구] 출격과 동시에 원래의 단아한 반투명 유리 재질로 부드럽게 모핑(Morphing) */
   background: var(--bg-floating-bar) !important;
   border-color: var(--border-subtle) !important;
@@ -320,7 +330,8 @@ body {
 }
 
 .converter-panel-shell {
-  padding: 44px 14px 40px; /* 📏 [대칭 통합] 좌우 여백(14px)과 깔맞춤한 시각적 여백(14px) + 상태바(26px) = 총 40px 최적화! */
+  padding: 44px 14px 40px;
+  /* 📏 [대칭 통합] 좌우 여백(14px)과 깔맞춤한 시각적 여백(14px) + 상태바(26px) = 총 40px 최적화! */
   background: var(--bg-base);
   height: 100%;
   box-sizing: border-box;
@@ -540,7 +551,8 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-height: 0; /* 🔥 [긴급] 자식이 늘어나도 부모가 비대해지는 것을 막는 절대 잠금장치! */
+  min-height: 0;
+  /* 🔥 [긴급] 자식이 늘어나도 부모가 비대해지는 것을 막는 절대 잠금장치! */
   padding: 16px;
   border: 1px solid rgba(var(--rgb-contrast), 0.06);
   border-radius: 16px;
@@ -550,9 +562,11 @@ body {
 
 /* 👑 [시각적 피날레] 설정의 마침표를 찍는 하단 고정형 액션 버퍼 */
 .converter-action-footer {
-  margin-top: 20px; /* 🛸 [수정] 터미널이 아래에 있으므로 auto-margin 제거하여 자연스럽게 배치 */
+  margin-top: 20px;
+  /* 🛸 [수정] 터미널이 아래에 있으므로 auto-margin 제거하여 자연스럽게 배치 */
   padding-top: 16px;
-  border-top: 1px solid rgba(var(--rgb-contrast), 0.04); /* 세련된 초박형 분리선 */
+  border-top: 1px solid rgba(var(--rgb-contrast), 0.04);
+  /* 세련된 초박형 분리선 */
 }
 
 /* ⚡ [집행 버튼] 압도적인 면적과 광휘로 클릭 욕구를 자극하는 얼티밋 CTA */
@@ -560,7 +574,8 @@ body {
   position: relative !important;
   overflow: hidden !important;
   width: 100% !important;
-  height: 48px !important; /* 압도적 존재감의 높이 */
+  height: 48px !important;
+  /* 압도적 존재감의 높이 */
   font-size: 1.05rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.08em !important;
@@ -570,12 +585,14 @@ body {
   justify-content: center !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   box-shadow: 0 4px 16px rgba(var(--theme-def-accent-rgb), 0.3) !important;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important; /* 통통 튀는 탄력적 호버 */
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  /* 통통 튀는 탄력적 호버 */
 }
 
 .btn-label-text {
   position: relative;
-  z-index: 2; /* 텍스트가 게이지 위로 올라오도록 보호 */
+  z-index: 2;
+  /* 텍스트가 게이지 위로 올라오도록 보호 */
 }
 
 /* 🚀 [버튼 내장 트랙] 하단에 밀착하여 숨죽이고 있는 레이저 레일 */
@@ -584,15 +601,18 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 5px; /* 초박형 레이저 두께 */
-  background: rgba(0, 0, 0, 0.2); /* 트랙은 살짝 어둡게 음각 효과 */
+  height: 5px;
+  /* 초박형 레이저 두께 */
+  background: rgba(0, 0, 0, 0.2);
+  /* 트랙은 살짝 어둡게 음각 효과 */
   z-index: 1;
 }
 
 /* 💡 [최고존엄 게이지 필러] 액센트 테마 컬러가 폭포처럼 흐르며 에너지를 충전! */
 .btn-inner-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #ff9f68); /* 🔥 테마 액센트 용암 컬러 */
+  background: linear-gradient(90deg, var(--accent), #ff9f68);
+  /* 🔥 테마 액센트 용암 컬러 */
   box-shadow: 0 0 15px rgba(var(--theme-def-accent-rgb), 0.8), 0 0 5px #ffffff inset;
   border-radius: 0 4px 4px 0;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -603,7 +623,9 @@ body {
 .btn-inner-progress-fill::after {
   content: '';
   position: absolute;
-  top: 0; right: 0; bottom: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 10px;
   background: #ffffff;
   box-shadow: 0 0 10px 2px #ffffff;
@@ -613,17 +635,17 @@ body {
 
 /* 🌑 [가동 중인 슬레이트 모드] 작업 중일 때는 희뿌연 회색이 아닌, 테마 고유의 컬러가 살짝 도는 '탁하고 진한 테크 배경'으로 변신! */
 .converter-execute-btn.processing {
-  opacity: 1 !important; /* 불투명도 강제 복원 */
+  opacity: 1 !important;
+  /* 불투명도 강제 복원 */
   /* 🔥 [개혁] 밋밋한 검정 대신, 테마의 액센트 컬러를 아주 탁하게 섞어 '살아있는 가동 색상'으로 업그레이드! */
-  background: linear-gradient(
-    to bottom, 
-    rgba(var(--theme-def-accent-rgb), 0.15), 
-    rgba(var(--theme-def-accent-rgb), 0.05)
-  ), #1a1a1a !important; 
+  background: linear-gradient(to bottom,
+      rgba(var(--theme-def-accent-rgb), 0.15),
+      rgba(var(--theme-def-accent-rgb), 0.05)), #1a1a1a !important;
   color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(var(--theme-def-accent-rgb), 0.2) !important; /* 테두리에도 은은한 오렌지 테크 라인 */
+  border: 1px solid rgba(var(--theme-def-accent-rgb), 0.2) !important;
+  /* 테두리에도 은은한 오렌지 테크 라인 */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
-  transform: none !important; 
+  transform: none !important;
   cursor: wait !important;
 }
 
@@ -648,15 +670,24 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex: 1; 
-  min-height: 0; /* 🔥 [수정] 최소높이 강제를 해제하여 절대적인 화면 높이 준수 강제! */
-  overflow: hidden; /* 하단 이탈 절대 방지 */
+  flex: 1;
+  min-height: 0;
+  /* 🔥 [수정] 최소높이 강제를 해제하여 절대적인 화면 높이 준수 강제! */
+  overflow: hidden;
+  /* 하단 이탈 절대 방지 */
   animation: slideDownFade 0.3s ease-out forwards;
 }
 
 @keyframes slideDownFade {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 📊 [게이지 트랙] */
@@ -672,7 +703,8 @@ body {
 /* 🚀 [차오르는 빛] 프로그레스 실시간 필러 */
 .terminal-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #ff9f68); /* 테마 액센트 그라데이션 */
+  background: linear-gradient(90deg, var(--accent), #ff9f68);
+  /* 테마 액센트 그라데이션 */
   box-shadow: 0 0 10px rgba(var(--theme-def-accent-rgb), 0.6);
   border-radius: 4px;
   transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -686,13 +718,16 @@ body {
   font-size: 0.78rem;
   line-height: 1.5;
   color: var(--text-dim);
-  background: transparent; /* 🔥 [단일화] 이중 상자 효과 제거를 위해 배경 투명 처리 */
-  padding: 0; /* 바깥 패널의 패딩만 활용 */
+  background: transparent;
+  /* 🔥 [단일화] 이중 상자 효과 제거를 위해 배경 투명 처리 */
+  padding: 0;
+  /* 바깥 패널의 패딩만 활용 */
 }
 
 .terminal-logs-container::-webkit-scrollbar {
   width: 6px;
 }
+
 .terminal-logs-container::-webkit-scrollbar-thumb {
   background: rgba(var(--rgb-contrast), 0.1);
   border-radius: 3px;
@@ -707,8 +742,15 @@ body {
 }
 
 @keyframes logAppear {
-  from { opacity: 0; transform: translateX(5px); }
-  to { opacity: 0.85; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(5px);
+  }
+
+  to {
+    opacity: 0.85;
+    transform: translateX(0);
+  }
 }
 
 .terminal-log-line:last-child {
@@ -720,7 +762,8 @@ body {
 /* ✍️ [메시지 작성창] 사용자가 병합 시 메모를 남기는 입력 구역 */
 .converter-message-area {
   margin-top: 16px;
-  flex: 1; /* 남은 공간 전체 사용 */
+  flex: 1;
+  /* 남은 공간 전체 사용 */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1483,20 +1526,24 @@ body {
 
 .primary-btn {
   padding: 10px 24px;
-  background: var(--accent); /* 🔥 [개혁] 테마의 혼이 담긴 고품격 액센트 컬러 투입! */
-  color: #ffffff; /* 💡 강렬한 액센트 위에서 빛나는 선명한 화이트 텍스트 */
+  background: var(--accent);
+  /* 🔥 [개혁] 테마의 혼이 담긴 고품격 액센트 컬러 투입! */
+  color: #ffffff;
+  /* 💡 강렬한 액센트 위에서 빛나는 선명한 화이트 텍스트 */
   border: none;
   border-radius: 8px;
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--theme-def-accent-rgb), 0.25); /* 🪐 은은한 컬러 광륜 장착 */
+  box-shadow: 0 4px 12px rgba(var(--theme-def-accent-rgb), 0.25);
+  /* 🪐 은은한 컬러 광륜 장착 */
   transition: all 0.25s var(--transition-smooth);
 }
 
 .primary-btn:hover {
   transform: translateY(-2px);
-  filter: brightness(1.1); /* 세련된 발광 광채 효과 */
+  filter: brightness(1.1);
+  /* 세련된 발광 광채 효과 */
   box-shadow: 0 6px 18px rgba(var(--theme-def-accent-rgb), 0.4);
 }
 
@@ -1504,7 +1551,8 @@ body {
   opacity: 0.4;
   cursor: not-allowed;
   transform: none;
-  background: rgba(var(--rgb-contrast), 0.12) !important; /* 🌫️ 중립적 비활성화 상태로 즉시 격하 */
+  background: rgba(var(--rgb-contrast), 0.12) !important;
+  /* 🌫️ 중립적 비활성화 상태로 즉시 격하 */
   color: rgba(var(--rgb-contrast), 0.5) !important;
   box-shadow: none !important;
 }
@@ -1536,7 +1584,8 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  right: 200px; /* 🛡️ [방공구역 선포] 우측 컨트롤 버튼 영역(약 184px)을 드래그 영역에서 완전히 배제하여 호버링 간섭 100% 원천 차단! */
+  right: 200px;
+  /* 🛡️ [방공구역 선포] 우측 컨트롤 버튼 영역(약 184px)을 드래그 영역에서 완전히 배제하여 호버링 간섭 100% 원천 차단! */
   height: 40px;
   /* 드래그 가능한 상단 높이 */
   -webkit-app-region: drag;
@@ -2408,4 +2457,153 @@ body {
 .converter-item-row.selected .converter-item-index {
   color: var(--accent);
   font-weight: 700;
+}
+
+/* 🚀 [Master Dashboard V2] New Console Dashboard Styling */
+.converter-console-layout {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  height: 135px;
+  /* 📐 [고정] 하단 관제패널의 여유롭고 정갈한 절대 높이 최적화 */
+  flex-shrink: 0;
+  /* 🔒 공간 압박에도 절대 수축 거부! */
+}
+
+.console-control-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* ↕️ 상단(버튼)과 하단(게이지) 공간 배분 */
+  gap: 8px;
+  height: 100%;
+
+  /* 🧱 [동기화] 우측 터미널 패널과 완벽히 동일한 대시보드 카드 아키텍처 부여 */
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  /* 📏 내부 패딩 통일 */
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.02), 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: slideDownFade 0.3s ease-out forwards;
+  /* 🎬 등장 애니메이션 동시성 확보 */
+}
+
+.console-log-column {
+  flex: 2.2;
+  /* 📊 황금비 배분 (로그 터미널을 좀 더 광활하게!) */
+  height: 100%;
+  min-width: 0;
+  /* 🧱 플렉스 하위 요소 무한팽창 방지용 보루 */
+}
+
+.console-log-column .converter-terminal-panel {
+  margin-top: 0 !important;
+  /* 🧹 부모 그리드 레이아웃 통제를 위한 마진 리셋 */
+  height: 100%;
+  flex: 1;
+}
+
+/* 🎮 사이버네틱 타이머 & 게이지 스타일 통합 아키텍처 */
+.console-gauge-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 🧹 [정리] 불필요해진 중복 백그라운드 및 테두리 파괴, 카드 내부에 자연스럽게 안착! */
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.console-gauge-container {
+  position: relative;
+  width: 56px;
+  /* 🧬 통합된 레이아웃에 최적화된 직경 튜닝 */
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  /* ⌚ 12시 방향 기점 정렬 */
+  display: block;
+  /* 🚫 블록 지정으로 SVG 유령 마진 차단! */
+}
+
+.gauge-track {
+  fill: none;
+  stroke: rgba(var(--rgb-contrast), 0.08);
+  stroke-width: 7;
+  /* ⚖️ 안정감을 주는 선 두께 */
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gauge-fill.pulsing {
+  filter: drop-shadow(0 0 4px var(--accent));
+  animation: gaugePulse 2s infinite ease-in-out;
+}
+
+@keyframes gaugePulse {
+  0% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+
+  100% {
+    opacity: 0.85;
+  }
+}
+
+.gauge-center-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gauge-percent-text {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.gauge-timer-text {
+  font-size: 0.62rem;
+  font-family: 'Consolas', monospace;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0.9;
+  margin-top: -1px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 4px;
+  border-radius: 4px;
 }

@@ -154,7 +154,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             <span className="converter-option-suffix">.{outputFormat}</span>
           </div>
         </label>
-        
+
         {/* 🎯 [긴급 투입] 병합 모드 전용: 압축 해제 여부를 결정하는 하이레벨 선택 시스템! */}
         {mode === 'merge' && (
           <div className="converter-option-block">
@@ -180,8 +180,8 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
               </label>
             </div>
             <p className="converter-help-line" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-              {mergeStrategy === 'unpack' 
-                ? '※ 압축파일을 자동으로 풀어서 내부 이미지만 쏙쏙 골라 한 권으로 병합합니다.' 
+              {mergeStrategy === 'unpack'
+                ? '※ 압축파일을 자동으로 풀어서 내부 이미지만 쏙쏙 골라 한 권으로 병합합니다.'
                 : '※ 압축 해제 없이 선택한 ZIP 파일들을 파일 그 자체로 통째로 모아 저장합니다.'}
             </p>
           </div>
@@ -266,7 +266,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                   💡 병합 시 기존 압축 파일은 무압축 승계, 일반 이미지는 새로 압축하여 최적의 밸런스를 유지합니다.
                 </p>
               </div>
-              
+
               <div className="converter-radio-item-group">
                 <label className="converter-option-radio-item">
                   <input
@@ -303,51 +303,22 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         <div className="converter-option-stack">
           <div className="converter-option-block">
             <p className="converter-option-block-label">분할 기준</p>
-            <div className="converter-option-radio-group" style={{ flexDirection: 'column', gap: '10px' }}>
-              <div className="converter-radio-item-group">
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="split-criterion-radio"
-                    checked={splitCriterion === 'pages'}
-                    onChange={() => onChangeSplitCriterion('pages')}
-                  />
-                  <span>페이지 수 기준 (동일 비율)</span>
-                </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  📏 설정한 페이지 수 단위로 아카이브를 균등하게 나눕니다.
-                </p>
-              </div>
+            <div className="converter-option-select-group">
+              <select
+                value={splitCriterion}
+                onChange={(event) => onChangeSplitCriterion(event.target.value as SplitCriterion)}
+                style={{ width: '100%', marginBottom: '8px' }}
+              >
+                <option value="pages">페이지 수 기준 (동일 비율)</option>
+                <option value="sizeMb">파일 용량 기준 (MB단위 제한)</option>
+                <option value="custom">사용자 설정 (직접 수동 분할)</option>
+              </select>
 
-              <div className="converter-radio-item-group">
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="split-criterion-radio"
-                    checked={splitCriterion === 'sizeMb'}
-                    onChange={() => onChangeSplitCriterion('sizeMb')}
-                  />
-                  <span>파일 용량 기준 (MB단위 제한)</span>
-                </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  💾 각 결과 파일의 용량이 지정된 MB를 넘지 않도록 분할합니다.
-                </p>
-              </div>
-
-              <div className="converter-radio-item-group">
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="split-criterion-radio"
-                    checked={splitCriterion === 'custom'}
-                    onChange={() => onChangeSplitCriterion('custom')}
-                  />
-                  <span>사용자 설정 (직접 수동 분할)</span>
-                </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  ✂️ 사용자가 입력한 특정 페이지 경계를 기준으로 책을 나눕니다.
-                </p>
-              </div>
+              <p className="converter-help-line" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic', minHeight: '1.2rem' }}>
+                {splitCriterion === 'pages' && '📏 설정한 페이지 수 단위로 아카이브를 균등하게 나눕니다.'}
+                {splitCriterion === 'sizeMb' && '💾 각 결과 파일의 용량이 지정된 MB를 넘지 않도록 분할합니다.'}
+                {splitCriterion === 'custom' && '✂️ 사용자가 입력한 특정 페이지 경계를 기준으로 책을 나눕니다.'}
+              </p>
             </div>
           </div>
           <label className="converter-option-row">

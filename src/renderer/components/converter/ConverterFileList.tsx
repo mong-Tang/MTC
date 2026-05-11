@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { ConverterMode } from '../layout/ConverterPanel';
 import type { ConverterSourceItem } from '../layout/ConverterPanel';
 import type { CompressionPolicy } from '../layout/ConverterPanel';
+import { EmptyState, EmptyStateHelpLine } from '../ui/EmptyState';
 
 interface ConverterFileListProps {
   mode: ConverterMode;
@@ -689,23 +690,23 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         </div>
       </div>
       {items.length === 0 ? (
-        <div 
-          className="converter-empty-list"
-          onContextMenu={(e) => handleOpenContextMenu(e)} // Allow "Add" context in empty space
+        <EmptyState 
+          height={100}
+          onContextMenu={(e) => handleOpenContextMenu(e)}
         >
-          <div className="converter-help-block">
-            <p className="converter-section-text">
-              {mode === 'merge' ? '병합할 파일을 순서대로 추가하세요.' : '분할할 파일 1개를 선택하세요.'}
-            </p>
-            <p className="converter-help-line">- 사이드바 목록에서 햄버거 메뉴의 [Add All] 사용</p>
-            <p className="converter-help-line">- 사이드바 파일 클릭: 입력 목록에 추가/제거</p>
-            <p className="converter-help-line">- [+ Add]: 탐색기에서 직접 파일 추가</p>
-            <p className="converter-help-line">- 행 선택 후 [Delete]: 선택한 파일 목록 제거</p>
-            {mode === 'split' && (
-              <p className="converter-help-line" style={{ color: 'var(--accent)', fontWeight: 600 }}>- 파일 더블 클릭: 내부 구성 계층 열기 / 닫기</p>
-            )}
-          </div>
-        </div>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
+            {mode === 'merge' ? '병합할 파일을 순서대로 추가하세요.' : '분할할 파일 1개를 선택하세요.'}
+          </p>
+          <EmptyStateHelpLine>- 사이드바 목록에서 햄버거 메뉴의 [Add All] 사용</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- 사이드바 파일 클릭: 입력 목록에 추가/제거</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- [+ Add]: 탐색기에서 직접 파일 추가</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- 행 선택 후 [Delete]: 선택한 파일 목록 제거</EmptyStateHelpLine>
+          {mode === 'split' && (
+            <EmptyStateHelpLine style={{ color: 'var(--accent)', fontWeight: 600 }}>
+              - 파일 더블 클릭: 내부 구성 계층 열기 / 닫기
+            </EmptyStateHelpLine>
+          )}
+        </EmptyState>
       ) : (
         <div className="converter-item-list">
           <div className="converter-item-table-head">

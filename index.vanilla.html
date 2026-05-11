@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; img-src 'self' blob: data:;"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZIP Book Viewer</title>
+    <link rel="shortcut icon" href="./assets/mongTang_ico32X32.png" type="image/png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Premium Custom HTML Menubar with Sliding Hover Dropdowns -->
+      <header class="custom-header">
+        <div class="custom-menu-group">
+          <!-- App Logo -->
+          <div class="menu-app-logo">
+            <img src="./assets/mongTang_ico16X16.png" alt="logo" />
+          </div>
+          <!-- File Menu -->
+          <div class="custom-menu-item" id="menu-item-file">
+            <button class="custom-menu-trigger" type="button">📁 파일</button>
+            <div class="custom-dropdown">
+              <button class="dropdown-item" type="button" data-action="open-file">
+                <span class="dropdown-text">📄 파일 열기</span>
+                <span class="dropdown-shortcut">Ctrl+O</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="open-folder">
+                <span class="dropdown-text">📂 폴더 열기</span>
+                <span class="dropdown-shortcut">Ctrl+Shift+O</span>
+              </button>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-action="close-file">
+                <span class="dropdown-text">❌ 파일 닫기</span>
+                <span class="dropdown-shortcut">Ctrl+W</span>
+              </button>
+              <div class="dropdown-submenu-parent">
+                <button class="dropdown-item submenu-trigger" type="button">
+                  <span class="dropdown-text">⏱️ 최근 열람</span>
+                  <span class="dropdown-arrow">❯</span>
+                </button>
+                <div class="custom-submenu" id="html-recent-submenu">
+                  <!-- Dynamically filled -->
+                </div>
+              </div>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-action="file-copy">
+                <span class="dropdown-text">📋 파일 복사</span>
+                <span class="dropdown-shortcut">Ctrl+C</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="file-cut">
+                <span class="dropdown-text">✂️ 파일 잘라내기</span>
+                <span class="dropdown-shortcut">Ctrl+X</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="file-paste">
+                <span class="dropdown-text">📥 파일 붙여넣기</span>
+                <span class="dropdown-shortcut">Ctrl+V</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="file-delete">
+                <span class="dropdown-text">🗑️ 파일 삭제</span>
+              </button>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-action="file-cancel-transfer">
+                <span class="dropdown-text">🚫 파일 이동 취소</span>
+                <span class="dropdown-shortcut">Esc</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Edit Menu -->
+          <div class="custom-menu-item" id="menu-item-edit">
+            <button class="custom-menu-trigger" type="button">✏️ 편집</button>
+            <div class="custom-dropdown">
+              <button class="dropdown-item" type="button" data-action="edit-delete-left-page">
+                <span class="dropdown-text">◀️ 왼쪽 페이지 삭제</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="edit-delete-right-page">
+                <span class="dropdown-text">▶️ 오른쪽 페이지 삭제</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="edit-insert-after-current-page">
+                <span class="dropdown-text">➕ 현재 페이지 다음에 추가...</span>
+              </button>
+            </div>
+          </div>
+ 
+          <!-- View Menu -->
+          <div class="custom-menu-item" id="menu-item-view">
+            <button class="custom-menu-trigger" type="button">👁️ 보기</button>
+            <div class="custom-dropdown">
+              <div class="dropdown-submenu-parent">
+                <button class="dropdown-item submenu-trigger" type="button">
+                  <span class="dropdown-text">📖 페이지 보기</span>
+                  <span class="dropdown-arrow">❯</span>
+                </button>
+                <div class="custom-submenu">
+                  <button class="dropdown-item" type="button" data-action="view-single-page">
+                    <span class="dropdown-text">👤 1쪽 보기</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="view-double-page">
+                    <span class="dropdown-text">👥 2쪽 보기</span>
+                  </button>
+                </div>
+              </div>
+              <button class="dropdown-item" type="button" data-action="show-viewer">
+                <span class="dropdown-text">🔄 라이브러리/뷰어 전환</span>
+              </button>
+              <div class="dropdown-separator"></div>
+              <div class="dropdown-submenu-parent">
+                <button class="dropdown-item submenu-trigger" type="button">
+                  <span class="dropdown-text">🧭 이동</span>
+                  <span class="dropdown-arrow">❯</span>
+                </button>
+                <div class="custom-submenu">
+                  <button class="dropdown-item" type="button" data-action="move-prev-page">
+                    <span class="dropdown-text">⏮️ 이전 페이지</span>
+                    <span class="dropdown-shortcut">Left</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="move-next-page">
+                    <span class="dropdown-text">⏭️ 다음 페이지</span>
+                    <span class="dropdown-shortcut">Right</span>
+                  </button>
+                  <div class="dropdown-separator"></div>
+                  <button class="dropdown-item" type="button" data-action="move-first-page">
+                    <span class="dropdown-text">⏪ 처음 페이지</span>
+                    <span class="dropdown-shortcut">Home</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="move-last-page">
+                    <span class="dropdown-text">⏩ 마지막 페이지</span>
+                    <span class="dropdown-shortcut">End</span>
+                  </button>
+                  <div class="dropdown-separator"></div>
+                  <button class="dropdown-item" type="button" data-action="move-prev-10-pages">
+                    <span class="dropdown-text">⏪ 10페이지 뒤로</span>
+                    <span class="dropdown-shortcut">PageUp</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="move-next-10-pages">
+                    <span class="dropdown-text">⏩ 10페이지 앞으로</span>
+                    <span class="dropdown-shortcut">PageDown</span>
+                  </button>
+                  <div class="dropdown-separator"></div>
+                  <button class="dropdown-item" type="button" data-action="open-prev-book">
+                    <span class="dropdown-text">📚 이전권 보기</span>
+                    <span class="dropdown-shortcut">Shift+PageUp</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="open-next-book">
+                    <span class="dropdown-text">📚 다음권 보기</span>
+                    <span class="dropdown-shortcut">Shift+PageDown</span>
+                  </button>
+                </div>
+              </div>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-action="toggle-folder-list">
+                <span class="dropdown-text">📁 목록 패널 표시</span>
+                <span class="dropdown-shortcut">Ctrl+B</span>
+              </button>
+              <div class="dropdown-separator"></div>
+              <div class="dropdown-submenu-parent">
+                <button class="dropdown-item submenu-trigger" type="button">
+                  <span class="dropdown-text">📐 이미지 맞춤</span>
+                  <span class="dropdown-arrow">❯</span>
+                </button>
+                <div class="custom-submenu">
+                  <button class="dropdown-item" type="button" data-action="image-fit-auto">
+                    <span class="dropdown-text">⚙️ 자동 맞춤</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="image-fit-actual">
+                    <span class="dropdown-text">🔍 1:1 맞춤</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="image-fit-width">
+                    <span class="dropdown-text">↔️ 폭 맞춤</span>
+                  </button>
+                  <button class="dropdown-item" type="button" data-action="image-fit-height">
+                    <span class="dropdown-text">↕️ 높이 맞춤</span>
+                  </button>
+                </div>
+              </div>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-action="theme-light">
+                <span class="dropdown-text">🔆 라이트 테마</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="theme-dark">
+                <span class="dropdown-text">🌙 다크 테마</span>
+              </button>
+              <button class="dropdown-item" type="button" data-action="theme-system">
+                <span class="dropdown-text">💻 시스템 테마</span>
+              </button>
+            </div>
+          </div>
+ 
+          <!-- Locale Menu -->
+          <div class="custom-menu-item" id="menu-item-locale">
+            <button class="custom-menu-trigger" type="button">🌐 언어</button>
+            <div class="custom-dropdown">
+              <button class="dropdown-item" type="button" data-locale="ko">
+                <span class="dropdown-text">🇰🇷 한국어 (Korean)</span>
+              </button>
+              <button class="dropdown-item" type="button" data-locale="en">
+                <span class="dropdown-text">🇺🇸 English</span>
+              </button>
+            </div>
+          </div>
+ 
+          <!-- Tools Menu -->
+          <div class="custom-menu-item" id="menu-item-tools">
+            <button class="custom-menu-trigger" type="button">🔧 도구</button>
+            <div class="custom-dropdown">
+              <button class="dropdown-item" type="button" data-tool="converter">
+                <span class="dropdown-text">⚡ 컨버터</span>
+                <span class="dropdown-shortcut">F5</span>
+              </button>
+            </div>
+          </div>
+ 
+          <!-- Help Menu -->
+          <div class="custom-menu-item" id="menu-item-help">
+            <button class="custom-menu-trigger" type="button">❓ 도움말</button>
+            <div class="custom-dropdown">
+              <button class="dropdown-item" type="button" data-help="user-guide">
+                <span class="dropdown-text">📖 사용 가이드</span>
+              </button>
+              <div class="dropdown-separator"></div>
+              <button class="dropdown-item" type="button" data-help="about">
+                <span class="dropdown-text">ℹ️ 정보</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- One-piece Right Control Cluster Area -->
+        <div class="header-right-area">
+          <!-- Direct 1-page / 2-page view checkboxes/toggles in header right -->
+          <div class="header-view-toggles">
+            <button class="header-toggle-btn" id="header-btn-single" type="button" title="1쪽 보기">1쪽</button>
+            <button class="header-toggle-btn" id="header-btn-double" type="button" title="2쪽 보기">2쪽</button>
+          </div>
+          <!-- Premium Mac-style Traffic Light Window Controls on the right -->
+          <div class="window-controls">
+            <button class="win-btn" id="win-btn-minimize" type="button" aria-label="Minimize"></button>
+            <button class="win-btn" id="win-btn-maximize" type="button" aria-label="Maximize"></button>
+            <button class="win-btn" id="win-btn-close" type="button" aria-label="Close"></button>
+          </div>
+        </div>
+      </header>
+      <main id="workspace" class="workspace">
+        <aside class="sidebar">
+          <div id="sidebar-title" class="sidebar-title hidden">파일 목록</div>
+          <div id="sidebar-drag-layer" class="sidebar-drag-layer hidden" aria-hidden="true"></div>
+          <div id="file-tree" class="file-tree hidden"></div>
+        </aside>
+
+        <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="sidebar splitter"></div>
+
+        <section class="content-pane">
+          <div id="global-error" class="global-error"></div>
+
+          <!-- Launcher View -->
+          <div id="view-launcher" class="view">
+            <div class="launcher-root">
+              <!-- Brand -->
+              <div class="launcher-brand">
+                <div class="launcher-wordmark" id="launcher-wordmark">ZIP 이미지 뷰어</div>
+                <div class="launcher-tagline" id="launcher-tagline">로컬 이미지 ZIP 열람 도구</div>
+              </div>
+
+              <!-- Actions -->
+              <div class="launcher-actions">
+                <button id="launcher-btn-open-file" class="launcher-btn primary" type="button">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 3.5A1.5 1.5 0 013.5 2h4.086a1.5 1.5 0 011.06.44l.915.914A1.5 1.5 0 0010.62 4H12.5A1.5 1.5 0 0114 5.5v7A1.5 1.5 0 0112.5 14h-9A1.5 1.5 0 012 12.5v-9z" stroke="currentColor" stroke-width="1.4"/>
+                  </svg>
+                  파일 열기
+                </button>
+                <button id="launcher-btn-open-folder" class="launcher-btn" type="button">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1.5 3.5A1.5 1.5 0 013 2h3.379a1.5 1.5 0 011.06.44l.621.621A1.5 1.5 0 009.12 3.5H13A1.5 1.5 0 0114.5 5v7A1.5 1.5 0 0113 13.5H3A1.5 1.5 0 011.5 12V3.5z" stroke="currentColor" stroke-width="1.4"/>
+                  </svg>
+                  폴더 열기
+                </button>
+              </div>
+
+              <!-- Recent -->
+              <div id="launcher-recent-section">
+                <div class="launcher-section-label" id="launcher-recent-label">최근 열람</div>
+                <ul class="launcher-recent-list" id="launcher-recent-list">
+                  <li class="launcher-recent-empty" id="launcher-recent-empty">최근 열람 내역이 없습니다.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Viewer View -->
+          <div id="view-viewer" class="view hidden">
+            <div id="viewer-image" class="viewer-image"></div>
+          </div>
+
+          <!-- Settings View -->
+          <div id="view-settings" class="view hidden">
+            <div id="settings-placeholder" class="card"></div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Elegant Status Bar at the bottom -->
+      <footer class="custom-status-bar" id="custom-status-bar">
+        <div class="status-left">
+          <span class="status-badge idle" id="status-badge">대기 중</span>
+          <span class="status-text" id="status-left-text">파일을 선택하거나 드롭해 주세요.</span>
+        </div>
+        <span class="status-right" id="status-right"></span>
+      </footer>
+
+      <!-- Drag & Drop Visual Overlay Layer -->
+      <div id="drop-overlay" class="drop-overlay hidden" aria-hidden="true">
+        <div id="drop-overlay-text" class="drop-overlay-text">파일을 여기에 놓으세요</div>
+      </div>
+
+      <!-- Premium Custom Confirm Modal -->
+      <div id="custom-confirm-modal" class="custom-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <div class="confirm-modal-panel">
+          <div class="confirm-modal-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 id="confirm-modal-title" class="confirm-modal-title">알림</h3>
+          <div id="confirm-modal-message" class="confirm-modal-message">다음 권을 보시겠습니까?</div>
+          <div class="confirm-modal-actions">
+            <button id="confirm-modal-cancel" type="button" class="secondary-button">취소</button>
+            <button id="confirm-modal-confirm" type="button" class="primary-button">확인</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Premium All Recents Modal -->
+      <div id="all-recents-modal" class="custom-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="all-recents-modal-title">
+        <div class="confirm-modal-panel all-recents-panel">
+          <h3 id="all-recents-modal-title" class="confirm-modal-title">⏱️ 최근 열람 전체 목록</h3>
+          <div class="all-recents-list-container">
+            <ul id="all-recents-modal-list" class="all-recents-modal-list"></ul>
+          </div>
+          <div class="confirm-modal-actions">
+            <button id="all-recents-modal-close" type="button" class="primary-button">닫기</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="notification-modal" class="notification-modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="notification-modal-panel">
+          <div id="notification-modal-text" class="notification-modal-text"></div>
+          <div class="notification-modal-subtext">💡 이 안내문은 위치 이동이 가능합니다.</div>
+        </div>
+      </div>
+      <div id="size-adjust-modal" class="size-adjust-modal hidden" role="dialog" aria-modal="true" aria-labelledby="size-adjust-title">
+        <div class="size-adjust-panel">
+          <h2 id="size-adjust-title" class="size-adjust-title"></h2>
+          <div id="size-adjust-message" class="size-adjust-message"></div>
+          <div class="size-adjust-actions">
+            <button id="size-adjust-cancel" type="button" class="secondary-button">취소</button>
+            <button id="size-adjust-original" type="button" class="secondary-button">원본 그대로</button>
+            <button id="size-adjust-confirm" type="button" class="primary-button">확인</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="./dist/renderer/state.js"></script>
+    <script src="./dist/renderer/index.js"></script>
+    <script src="./dist/renderer/viewer.js"></script>
+    <script src="./dist/renderer/events.js"></script>
+  </body>
+</html>
