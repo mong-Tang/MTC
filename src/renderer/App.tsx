@@ -7,6 +7,7 @@ import { ViewerCanvas } from './components/layout/ViewerCanvas';
 import { ConverterPanel } from './components/layout/ConverterPanel';
 import type { ConverterSourceItem } from './components/layout/ConverterPanel';
 import { TitleBarControls } from './components/layout/TitleBarControls';
+import type { ConverterMode } from './components/layout/ConverterPanel'; // 🚀 [신규] 모드 상태 상위 격상
 import { ContextMenu } from './components/ui/ContextMenu'; // 🌌 [신규] 우클릭 부품
 import { StatusBar } from './components/layout/StatusBar'; // 🌌 [신규] 실시간 현황판
 
@@ -74,6 +75,8 @@ function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMenuOpen, setSidebarMenuOpen] = useState(false);
+  const [converterStatusText, setConverterStatusText] = useState<string>(''); // 📡 [신규] 컨버터 전용 상태 메시지 저장소
+  const [converterMode, setConverterMode] = useState<ConverterMode>('merge'); // 🚀 [격상] 컨버터 통합 관제 모드
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('viewer');
   const [isAppLoading, setIsAppLoading] = useState(false); // 🛡️ [유저 고안] 철통 보안 마이크로 락 스테이트!
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
@@ -97,6 +100,7 @@ function App() {
   const [libraryItems, setLibraryItems] = useState<ConverterSourceItem[]>([]);
   const [libraryFolderName, setLibraryFolderName] = useState<string | null>(null); // 📂 라이브러리 루트 폴더명
   const [converterSourceItems, setConverterSourceItems] = useState<ConverterSourceItem[]>([]);
+  const [selectedConverterPaths, setSelectedConverterPaths] = useState<Set<string>>(new Set());
 
   // 📍 [신규] 컨텍스트 메뉴 좌표 및 활성화 상태
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({
@@ -426,8 +430,29 @@ function App() {
     }
   };
 
-  const handleRemoveConverterSourceItem = (pathToRemove: string) => {
-    setConverterSourceItems((prev) => prev.filter((item) => item.path !== pathToRemove));
+  // 🔄 [격상 연산] 상위에서 동작을 총괄하는 모드 통합 전환 핸들러!
+  const handleConverterModeChange = (nextMode: ConverterMode) => {
+    if (nextMode === converterMode) return;
+    setConverterMode(nextMode);
+    handleClearConverterSource(); // 🧹 변경 즉시 유기적 정제 발동!
+  };
+
+  const handleRemoveConverterSourceItems = (pathsToRemove: string[]) => {
+    const removalSet = new Set(pathsToRemove);
+    setConverterSourceItems((prev) => prev.filter((item) => !removalSet.has(item.path)));
+    
+    // 🎯 Also purge from global selection set!
+    setSelectedConverterPaths(prev => {
+      const next = new Set(prev);
+      pathsToRemove.forEach(p => next.delete(p));
+      return next;
+    });
+  };
+
+  const handleDeleteSelectedConverterSources = () => {
+    if (selectedConverterPaths.size === 0) return;
+    handleRemoveConverterSourceItems(Array.from(selectedConverterPaths));
+    // Note: Selection cleanup is handled inside the call above!
   };
 
   // 🎭 가상 파일 선택 시뮬레이터 (우선 유지하되 비활성 유도)
@@ -565,6 +590,11 @@ function App() {
         onChangeViewMode={setViewMode}
         themeMode={themeMode}
         onChangeThemeMode={setThemeMode}
+        // 🚀 [New] Global Workspace Integration
+        workspaceMode={workspaceMode}
+        hasActiveFile={hasActiveFile}
+        converterMode={converterMode} // 🛸 [신규] 타이틀바에 실시간 주입!!
+        onChangeConverterMode={handleConverterModeChange} // ⚡ 통합 리모컨 연결!
       />
       
       {/* ⚓ 관제탑 (앵커바) */}
@@ -633,16 +663,23 @@ function App() {
         </>
       ) : (
         <ConverterPanel
+          mode={converterMode} // 🛸 [격상 완수] 하향식 주입!
           sourceItems={converterSourceItems}
+          hasSidebarItems={libraryItems.length > 0}
+          selectedPaths={selectedConverterPaths}
+          onToggleSelection={setSelectedConverterPaths}
           onAddSource={handleAddConverterSource}
           onAddAllSource={handleAddAllConverterSource}
           onClearSource={handleClearConverterSource}
-          onRemoveSourceItem={handleRemoveConverterSourceItem}
+          onRemoveSourceItems={handleRemoveConverterSourceItems}
+          onUpdateStatusText={setConverterStatusText} // 📡 하달받은 실시간 메시지를 상태 저장소로 업링크!
         />
       )}
 
       {/* 🛰️ 상태바는 화면 전환과 무관하게 하단 고정 유지 */}
       <StatusBar 
+        workspaceMode={workspaceMode}
+        converterStatusText={converterStatusText} // 📢 통합 메시지 발동!!
         hasActiveFile={hasActiveFile}
         activeFileName={zipPath ? zipPath.split(/[/\\]/).pop() : null}
         currentPageIndex={currentIndex}

@@ -186,7 +186,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
             className={`viewer-nav-overlay left ${!canGoPrev ? 'disabled' : ''}`} 
             onClick={(e) => { e.stopPropagation(); onPrev && onPrev(); }}
           >
-            <div className="nav-circle-btn">
+            <div className="viewer-nav-circle-btn">
               <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
             </div>
           </div>
@@ -194,7 +194,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
             className={`viewer-nav-overlay right ${!canGoNext ? 'disabled' : ''}`} 
             onClick={(e) => { e.stopPropagation(); onNext && onNext(); }}
           >
-            <div className="nav-circle-btn">
+            <div className="viewer-nav-circle-btn">
               <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></svg>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { ConverterFileList } from '../converter/ConverterFileList';
 import { ConverterFooter } from '../converter/ConverterFooter';
 import { ConverterOptions } from '../converter/ConverterOptions';
 import { ConverterPanelShell } from '../converter/ConverterPanelShell';
-import { ConverterToolbar } from '../converter/ConverterToolbar';
+// 💡 Toolbar has been elevated to system Titlebar.
 
 export type ConverterMode = 'merge' | 'split';
 export type CompressionPolicy = 'auto' | 'store' | 'compress';
@@ -18,14 +18,29 @@ export interface ConverterSourceItem {
 
 interface ConverterPanelProps {
   sourceItems: ConverterSourceItem[];
+  hasSidebarItems: boolean;
+  selectedPaths: Set<string>;
+  onToggleSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+  mode: ConverterMode; // 🛰️ [격상 완료]
   onAddSource: () => void;
   onAddAllSource: () => void;
   onClearSource: () => void;
-  onRemoveSourceItem: (path: string) => void;
+  onRemoveSourceItems: (paths: string[]) => void;
+  onUpdateStatusText?: (text: string) => void; // 🛰️ 상태바 업링크 신호선!
 }
 
-export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onAddSource, onAddAllSource, onClearSource, onRemoveSourceItem }) => {
-  const [mode, setMode] = useState<ConverterMode>('merge');
+export const ConverterPanel: React.FC<ConverterPanelProps> = ({ 
+  sourceItems, 
+  hasSidebarItems,
+  selectedPaths,
+  onToggleSelection,
+  mode, // 🛰️
+  onAddSource, 
+  onAddAllSource, 
+  onClearSource, 
+  onRemoveSourceItems,
+  onUpdateStatusText
+}) => {
   const [outputFormat, setOutputFormat] = useState<'zip' | 'cbz'>('zip');
   const [outputNameBase, setOutputNameBase] = useState<string>('output');
   const [outputNamePattern, setOutputNamePattern] = useState<OutputNamePattern>('name_underscore_index');
@@ -105,12 +120,35 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onA
           ? '사용자 설정 시작 페이지를 오름차순으로 확인하세요.'
           : null;
 
+  // 🛰️ [동기화 엔진] 실시간 상태 텍스트 생성 및 상위 전송
+  useEffect(() => {
+    if (!onUpdateStatusText) return;
+
+    const splitHint =
+      splitCriterion === 'pages' ? `${splitValue}페이지 단위` :
+      splitCriterion === 'sizeMb' ? `${splitValue}MB 단위` :
+      `사용자 설정 [${splitCustomValues || '-'}]`;
+
+    const msg = !isExecuteEnabled && disabledReason
+      ? `[대기] ${disabledReason}`
+      : mode === 'merge'
+      ? `여러 권을 하나로 묶어 .${outputFormat} 파일로 저장합니다.`
+      : `대용량 파일을 ${splitHint}로 분할해 .${outputFormat} 파일로 저장합니다.`;
+
+    onUpdateStatusText(msg);
+  }, [
+    onUpdateStatusText, 
+    mode, 
+    outputFormat, 
+    splitCriterion, 
+    splitValue, 
+    splitCustomValues, 
+    isExecuteEnabled, 
+    disabledReason
+  ]);
+
   return (
     <ConverterPanelShell>
-      <ConverterToolbar
-        mode={mode}
-        onChangeMode={setMode}
-      />
       <div className="converter-panel-body">
         <div className="converter-workbench-grid">
           <section className="converter-pane">
@@ -119,10 +157,13 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onA
               outputFormat={outputFormat}
               compressionPolicy={compressionPolicy}
               items={sourceItems}
+              hasSidebarItems={hasSidebarItems}
+              selectedPaths={selectedPaths}
+              onToggleSelection={onToggleSelection}
               onAdd={onAddSource}
               onAddAll={onAddAllSource}
               onClear={onClearSource}
-              onRemoveItem={onRemoveSourceItem}
+              onRemoveItems={onRemoveSourceItems}
             />
           </section>
           <section className="converter-pane">
@@ -147,19 +188,12 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({ sourceItems, onA
               outputDirectory={outputDirectory}
               onChangeOutputDirectory={setOutputDirectory}
               onPickOutputDirectory={handlePickOutputDirectory}
+              canExecute={isExecuteEnabled}
+              disabledReason={disabledReason}
             />
           </section>
         </div>
       </div>
-      <ConverterFooter
-        mode={mode}
-        outputFormat={outputFormat}
-        splitCriterion={splitCriterion}
-        splitValue={splitValue}
-        splitCustomValues={splitCustomValues}
-        canExecute={isExecuteEnabled}
-        disabledReason={disabledReason}
-      />
     </ConverterPanelShell>
   );
 };

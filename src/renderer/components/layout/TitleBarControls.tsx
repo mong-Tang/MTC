@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { ConverterMode } from './ConverterPanel'; // 🛰️ [격상] 모드 상태 타입 공유
 
 /**
  * TitleBarControls
@@ -9,12 +10,31 @@ interface TitleBarProps {
   onChangeViewMode: (mode: '1' | '2') => void;
   themeMode: 'default' | 'light' | 'dark' | 'system';
   onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
+  
+  // 🚀 Workspace Context
+  workspaceMode?: 'viewer' | 'converter';
+  hasActiveFile?: boolean;
+
+  // 🛸 [격상] 컨버터 관제 계통 추가!
+  converterMode?: ConverterMode;
+  onChangeConverterMode?: (mode: ConverterMode) => void;
 }
 
-export const TitleBarControls: React.FC<TitleBarProps> = ({ viewMode, onChangeViewMode, themeMode, onChangeThemeMode }) => {
+type ActiveMenuKey = 'view' | 'move' | 'edit';
+
+export const TitleBarControls: React.FC<TitleBarProps> = ({ 
+  viewMode, 
+  onChangeViewMode, 
+  themeMode, 
+  onChangeThemeMode,
+  workspaceMode = 'viewer',
+  hasActiveFile = false,
+  converterMode = 'merge',
+  onChangeConverterMode
+}) => {
   
   const [isExpanded, setExpanded] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<'view' | 'move' | 'edit' | null>(null);
+  const [activeMenu, setActiveMenu] = useState<ActiveMenuKey | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const appApi = (window as any).appApi;
 
@@ -34,251 +54,291 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({ viewMode, onChangeVi
   const handleMaximize = () => appApi?.maximizeWindow?.();
   const handleClose = () => appApi?.closeWindow?.();
 
-  const toggleSubmenu = (menuName: 'view' | 'move' | 'edit') => {
+  const toggleSubmenu = (menuName: ActiveMenuKey) => {
     setActiveMenu(activeMenu === menuName ? null : menuName);
   };
 
-  const handleMouseEnterMenu = (menuName: 'view' | 'move' | 'edit') => {
+  const handleMouseEnterMenu = (menuName: ActiveMenuKey) => {
     if (activeMenu !== null) setActiveMenu(menuName);
   };
 
   return (
     <>
       <div className="titlebar-draggable-region"></div>
+
+      {/* 🛸 [격상된 전함 지휘소] 컨버터 통합 헤더 (위풍당당 왼쪽 고정!) */}
+      {workspaceMode === 'converter' && (
+        <div className="titlebar-converter-header">
+          <h2 className="titlebar-converter-title">컨버터</h2>
+          
+          <div className="converter-mode-switch" role="tablist" aria-label="컨버터 모드">
+            <button
+              className={`converter-mode-btn ${converterMode === 'merge' ? 'active' : ''}`}
+              onClick={() => onChangeConverterMode && onChangeConverterMode('merge')}
+              role="tab"
+              aria-selected={converterMode === 'merge'}
+              type="button"
+            >
+              병합
+            </button>
+            <button
+              className={`converter-mode-btn ${converterMode === 'split' ? 'active' : ''}`}
+              onClick={() => onChangeConverterMode && onChangeConverterMode('split')}
+              role="tab"
+              aria-selected={converterMode === 'split'}
+              type="button"
+            >
+              분할
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="window-controls" ref={containerRef}>
         
         {/* 🌊 [확장 리본] */}
         <div className={`title-menu-ribbon ${isExpanded ? 'expanded' : ''}`}>
-          
-          {/* 🧭 [1번 타자] 이동 */}
-          <div className="ribbon-dropdown-container">
-            <button 
-              className="ribbon-item" 
-              onClick={() => toggleSubmenu('move')}
-              onMouseEnter={() => handleMouseEnterMenu('move')}
-              style={{ color: activeMenu === 'move' ? 'var(--text-main)' : '' }}
-            >
-              이동
-            </button>
-            {activeMenu === 'move' && (
-              <div className="ribbon-dropdown">
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏭️ 다음 페이지</span> <span className="shortcut">Space / → / ↓</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏮️ 이전 페이지</span> <span className="shortcut">BkSpc / ← / ↑</span>
-                  </div>
-                </button>
-                <div className="ribbon-divider" />
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
-                  </div>
-                </button>
-                <div className="ribbon-divider" />
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏹️ 첫 페이지</span> <span className="shortcut">Home</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⏺️ 마지막 페이지</span> <span className="shortcut">End</span>
-                  </div>
-                </button>
-                <div className="ribbon-divider" />
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>📚 다음권 보기</span> <span className="shortcut">Ctrl + →</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>📚 이전권 보기</span> <span className="shortcut">Ctrl + ←</span>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
 
-          {/* 🔍 [2번 타자] 보기 */}
-          <div className="ribbon-dropdown-container">
-            <button 
-              className="ribbon-item" 
-              onClick={() => toggleSubmenu('view')}
-              onMouseEnter={() => handleMouseEnterMenu('view')}
-              style={{ color: activeMenu === 'view' ? 'var(--text-main)' : '' }}
-            >
-              보기
-            </button>
-            {activeMenu === 'view' && (
-              <div className="ribbon-dropdown">
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>⚙️ 자동 맞춤</span> <span className="shortcut">F</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>🔍 1:1 맞춤</span> <span className="shortcut">O</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
-                  </div>
-                </button>
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>↕️ 높이 맞춤</span> <span className="shortcut">H</span>
-                  </div>
-                </button>
-                <div className="ribbon-divider" />
-                
-                {/* 💎 뷰모드 체크 연동 */}
+          {/* 뷰어 전용 메뉴 3총사 (컨버터 모드일 땐 비지블 = 0!) */}
+          {workspaceMode === 'viewer' && (
+            <>
+              {/* 🧭 [2번 타자] 이동 */}
+              <div className="ribbon-dropdown-container">
                 <button 
-                  className={`ribbon-dropdown-item ${viewMode === '1' ? 'active-mode' : ''}`} 
-                  onClick={() => { onChangeViewMode('1'); setActiveMenu(null); }}
+                  className="ribbon-item" 
+                  onClick={() => toggleSubmenu('move')}
+                  onMouseEnter={() => handleMouseEnterMenu('move')}
+                  style={{ color: activeMenu === 'move' ? 'var(--text-main)' : '' }}
                 >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>👤 1쪽 보기</span> <span className="shortcut">1</span>
-                  </div>
+                  이동
                 </button>
-                <button 
-                  className={`ribbon-dropdown-item ${viewMode === '2' ? 'active-mode' : ''}`} 
-                  onClick={() => { onChangeViewMode('2'); setActiveMenu(null); }}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+                {activeMenu === 'move' && (
+                  <div className="ribbon-dropdown">
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏭️ 다음 페이지</span> <span className="shortcut">Space / → / ↓</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏮️ 이전 페이지</span> <span className="shortcut">BkSpc / ← / ↑</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏹️ 첫 페이지</span> <span className="shortcut">Home</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⏺️ 마지막 페이지</span> <span className="shortcut">End</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>📚 다음권 보기</span> <span className="shortcut">Ctrl + →</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>📚 이전권 보기</span> <span className="shortcut">Ctrl + ←</span>
+                      </div>
+                    </button>
                   </div>
-                </button>
-                <div className="ribbon-divider" />
-                <button
-                  className={`ribbon-dropdown-item ${themeMode === 'default' ? 'active-mode' : ''}`}
-                  onClick={() => { onChangeThemeMode('default'); setActiveMenu(null); }}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>기본설정</span>
-                  </div>
-                </button>
-                <button
-                  className={`ribbon-dropdown-item ${themeMode === 'light' ? 'active-mode' : ''}`}
-                  onClick={() => { onChangeThemeMode('light'); setActiveMenu(null); }}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>라이트</span>
-                  </div>
-                </button>
-                <button
-                  className={`ribbon-dropdown-item ${themeMode === 'dark' ? 'active-mode' : ''}`}
-                  onClick={() => { onChangeThemeMode('dark'); setActiveMenu(null); }}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>다크</span>
-                  </div>
-                </button>
-                <button
-                  className={`ribbon-dropdown-item ${themeMode === 'system' ? 'active-mode' : ''}`}
-                  onClick={() => { onChangeThemeMode('system'); setActiveMenu(null); }}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>시스템</span>
-                  </div>
-                </button>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* ✏️ [3번 타자] 편집 */}
-          <div className="ribbon-dropdown-container">
-            <button 
-              className="ribbon-item" 
-              onClick={() => toggleSubmenu('edit')}
-              onMouseEnter={() => handleMouseEnterMenu('edit')}
-              style={{ color: activeMenu === 'edit' ? 'var(--text-main)' : '' }}
-            >
-              편집
-            </button>
-            {activeMenu === 'edit' && (
-              <div className="ribbon-dropdown">
+              {/* 🔍 [3번 타자] 보기 */}
+              <div className="ribbon-dropdown-container">
                 <button 
-                  className="ribbon-dropdown-item" 
-                  disabled={viewMode !== '1'} 
-                  onClick={() => setActiveMenu(null)}
+                  className="ribbon-item" 
+                  onClick={() => toggleSubmenu('view')}
+                  onMouseEnter={() => handleMouseEnterMenu('view')}
+                  style={{ color: activeMenu === 'view' ? 'var(--text-main)' : '' }}
                 >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Delete</span>
-                  </div>
+                  보기
                 </button>
-                <button 
-                  className="ribbon-dropdown-item" 
-                  disabled={viewMode !== '2'} 
-                  onClick={() => setActiveMenu(null)}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
+                {activeMenu === 'view' && (
+                  <div className="ribbon-dropdown">
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>⚙️ 자동 맞춤</span> <span className="shortcut">F</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>🔍 1:1 맞춤</span> <span className="shortcut">O</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>↕️ 높이 맞춤</span> <span className="shortcut">H</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    
+                    {/* 💎 뷰모드 체크 연동 */}
+                    <button 
+                      className={`ribbon-dropdown-item ${viewMode === '1' ? 'active-mode' : ''}`} 
+                      onClick={() => { onChangeViewMode('1'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>👤 1쪽 보기</span> <span className="shortcut">1</span>
+                      </div>
+                    </button>
+                    <button 
+                      className={`ribbon-dropdown-item ${viewMode === '2' ? 'active-mode' : ''}`} 
+                      onClick={() => { onChangeViewMode('2'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+
+                    <button
+                      className={`ribbon-dropdown-item ${themeMode === 'default' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangeThemeMode('default'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>기본설정</span>
+                      </div>
+                    </button>
+                    <button
+                      className={`ribbon-dropdown-item ${themeMode === 'light' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangeThemeMode('light'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>라이트</span>
+                      </div>
+                    </button>
+                    <button
+                      className={`ribbon-dropdown-item ${themeMode === 'dark' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangeThemeMode('dark'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>다크</span>
+                      </div>
+                    </button>
+                    <button
+                      className={`ribbon-dropdown-item ${themeMode === 'system' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangeThemeMode('system'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>시스템</span>
+                      </div>
+                    </button>
                   </div>
-                </button>
-                <button 
-                  className="ribbon-dropdown-item" 
-                  disabled={viewMode !== '2'} 
-                  onClick={() => setActiveMenu(null)}
-                >
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>
-                  </div>
-                </button>
-                <div className="ribbon-divider" />
-                <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                  <span className="check-slot">✓</span>
-                  <div className="item-label-group">
-                    <span>➕ 페이지 다음에 추가</span> <span className="shortcut">Insert</span>
-                  </div>
-                </button>
+                )}
               </div>
-            )}
-          </div>
+
+              {/* ✏️ [4번 타자] 편집 */}
+              <div className="ribbon-dropdown-container">
+                <button 
+                  className="ribbon-item" 
+                  onClick={() => toggleSubmenu('edit')}
+                  onMouseEnter={() => handleMouseEnterMenu('edit')}
+                  style={{ color: activeMenu === 'edit' ? 'var(--text-main)' : '' }}
+                >
+                  편집
+                </button>
+                {activeMenu === 'edit' && (
+                  <div className="ribbon-dropdown">
+                    <button 
+                      className="ribbon-dropdown-item" 
+                      disabled={viewMode !== '1'} 
+                      onClick={() => setActiveMenu(null)}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Delete</span>
+                      </div>
+                    </button>
+                    <button 
+                      className="ribbon-dropdown-item" 
+                      disabled={viewMode !== '2'} 
+                      onClick={() => setActiveMenu(null)}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
+                      </div>
+                    </button>
+                    <button 
+                      className="ribbon-dropdown-item" 
+                      disabled={viewMode !== '2'} 
+                      onClick={() => setActiveMenu(null)}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>➕ 페이지 다음에 추가</span> <span className="shortcut">Insert</span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* 🍔 메인 햄버거 토글 */}
         <button 
-          className="win-btn btn-menu" 
+          className={`win-btn btn-titlebar-hamburger ${(workspaceMode !== 'viewer' || !hasActiveFile) ? 'disabled' : ''}`} 
+          disabled={workspaceMode !== 'viewer' || !hasActiveFile}
           onClick={() => {
             setExpanded(!isExpanded);
             if (isExpanded) setActiveMenu(null); 
           }} 
-          title="확장 메뉴" 
-          style={{ opacity: 0.7, color: isExpanded ? 'var(--accent)' : 'inherit' }}
+          title={workspaceMode !== 'viewer' ? '이 메뉴는 뷰어 전용입니다' : (!hasActiveFile ? '파일을 먼저 열어주세요' : '확장 메뉴')}
+          style={{ 
+            opacity: (workspaceMode !== 'viewer' || !hasActiveFile) ? 0.25 : 0.7, 
+            color: isExpanded ? 'var(--accent)' : 'inherit',
+            cursor: (workspaceMode !== 'viewer' || !hasActiveFile) ? 'default' : 'pointer',
+            pointerEvents: (workspaceMode !== 'viewer' || !hasActiveFile) ? 'none' : 'auto' 
+          }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="3" y1="12" x2="21" y2="12"></line>

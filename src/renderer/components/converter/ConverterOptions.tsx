@@ -25,6 +25,9 @@ interface ConverterOptionsProps {
   outputDirectory: string;
   onChangeOutputDirectory: (path: string) => void;
   onPickOutputDirectory: () => void;
+  // 🛸 [신규 계승] 최종 집행 권한 통합!
+  canExecute: boolean;
+  disabledReason: string | null;
 }
 
 export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
@@ -47,7 +50,9 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   onChangeSplitTotalPages,
   outputDirectory,
   onChangeOutputDirectory,
-  onPickOutputDirectory
+  onPickOutputDirectory,
+  canExecute,
+  disabledReason
 }) => {
   const customSplitPreview = useMemo(() => {
     if (splitCriterion !== 'custom') return '';
@@ -99,17 +104,23 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
 
   return (
     <section className="converter-section">
-      <h3 className="converter-section-title">변환 옵션</h3>
+      <div className="converter-file-list-header">
+        <h3 className="converter-section-title">변환 옵션</h3>
+      </div>
       <div className="converter-option-stack">
         <label className="converter-option-row">
           <span>출력 포맷</span>
-          <select value={outputFormat} onChange={(event) => onChangeOutputFormat(event.target.value as 'zip' | 'cbz')}>
+          <select
+            value={outputFormat}
+            onChange={(event) => onChangeOutputFormat(event.target.value as 'zip' | 'cbz')}
+            style={{ width: '100%' }}
+          >
             <option value="zip">ZIP (.zip)</option>
             <option value="cbz">CBZ (.cbz)</option>
           </select>
         </label>
         <label className="converter-option-row">
-          <span>{mode === 'merge' ? '출력 파일명' : '출력 파일명 접두어'}</span>
+          <span>{mode === 'merge' ? '출력 파일명' : '출력 접두어'}</span>
           <div className="converter-option-path-row">
             <input
               type="text"
@@ -183,27 +194,45 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       </div>
       {mode === 'merge' ? (
         <div className="converter-option-stack">
-          <label className="converter-option-row">
-            <span>압축 정책</span>
-            <select value={compressionPolicy} onChange={(event) => onChangeCompressionPolicy(event.target.value as CompressionPolicy)}>
-              <option value="auto">자동: 압축파일 병합 무압축 / 일반이미지 압축</option>
-              <option value="store">항상 무압축</option>
-              <option value="compress">항상 압축</option>
+          <div className="converter-option-block">
+            <p className="converter-option-block-label">압축 정책</p>
+            <select
+              value={compressionPolicy}
+              onChange={(event) => onChangeCompressionPolicy(event.target.value as CompressionPolicy)}
+              style={{ width: '100%' }}
+            >
+              <option value="auto">자동 (추천)</option>
+              <option value="store">항상 무압축 (빠름)</option>
+              <option value="compress">항상 압축 (최소 용량)</option>
             </select>
-          </label>
+            <p className="converter-help-line" style={{ marginTop: '4px' }}>
+              {compressionPolicy === 'auto' && '💡 병합 시 기존 압축 파일은 무압축 승계, 일반 이미지는 새로 압축하여 최적의 밸런스를 유지합니다.'}
+              {compressionPolicy === 'store' && '⚡ 압축 연산 과정을 생략하여 병합/분할 속도가 가장 빠르며 원본 그대로 저장됩니다.'}
+              {compressionPolicy === 'compress' && '📦 모든 데이터를 최고 수준으로 압축하여 저장 장치의 공간을 최대한 절약합니다.'}
+            </p>
+          </div>
         </div>
       ) : (
         <div className="converter-option-stack">
-          <label className="converter-option-row">
-            <span>분할 기준</span>
-            <select value={splitCriterion} onChange={(event) => onChangeSplitCriterion(event.target.value as SplitCriterion)}>
-              <option value="pages">페이지 수 기준</option>
-              <option value="sizeMb">파일 용량 기준(MB)</option>
-              <option value="custom">사용자 설정(다음 권 시작 페이지)</option>
+          <div className="converter-option-block">
+            <p className="converter-option-block-label">분할 기준</p>
+            <select
+              value={splitCriterion}
+              onChange={(event) => onChangeSplitCriterion(event.target.value as SplitCriterion)}
+              style={{ width: '100%' }}
+            >
+              <option value="pages">페이지 수 기준 (동일 비율)</option>
+              <option value="sizeMb">파일 용량 기준 (MB단위 제한)</option>
+              <option value="custom">사용자 설정 (직접 수동 분할)</option>
             </select>
-          </label>
+            <p className="converter-help-line" style={{ marginTop: '4px' }}>
+              {splitCriterion === 'pages' && '📏 설정한 페이지 수 단위로 아카이브를 균등하게 나눕니다.'}
+              {splitCriterion === 'sizeMb' && '💾 각 결과 파일의 용량이 지정된 MB를 넘지 않도록 분할합니다.'}
+              {splitCriterion === 'custom' && '✂️ 사용자가 입력한 특정 페이지 경계를 기준으로 책을 나눕니다.'}
+            </p>
+          </div>
           <label className="converter-option-row">
-            <span>{splitCriterion === 'custom' ? '다음 권 시작 페이지' : '기준 값'}</span>
+            <span>{splitCriterion === 'custom' ? '시작 페이지' : '기준 값'}</span>
             {splitCriterion === 'custom' ? (
               <input
                 type="text"
@@ -245,6 +274,18 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           )}
         </div>
       )}
+
+      {/* 🚀 [마스터 클라이맥스] 모든 옵션 설정의 종착역, 강력한 실행 엔진 통합! */}
+      <div className="converter-action-footer">
+        <button
+          className="primary-btn converter-execute-btn"
+          type="button"
+          disabled={!canExecute}
+          title={!canExecute && disabledReason ? disabledReason : ''}
+        >
+          {mode === 'merge' ? '병합 실행' : '분할 실행'}
+        </button>
+      </div>
     </section>
   );
 };

@@ -14,6 +14,10 @@ interface StatusBarProps {
   canGoNext?: boolean;
   onPrev?: () => void;
   onNext?: () => void;
+
+  // 🚀 [신규] 작업공간 통합 제어 벡터!
+  workspaceMode?: 'viewer' | 'converter';
+  converterStatusText?: string; // 🛰️ [신규] 컨버터 연동 메시지 수신 포트!
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -27,7 +31,9 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   canGoPrev = false,
   canGoNext = false,
   onPrev,
-  onNext
+  onNext,
+  workspaceMode = 'viewer',
+  converterStatusText = ''
 }) => {
   
   // 📊 진행률 계산 (1.0 재현)
@@ -50,54 +56,68 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 
       {/* 🌌 [2구역] 메인 캔버스 하단: 3개 군집으로 분할된 커맨드 센터! */}
       <div className="status-main-content-zone">
-        
-        {/* ⬅️ 좌측: 배지 + 파일명 */}
-        <div className="status-content-left">
-          <span className={`status-badge badge-engine ${hasActiveFile ? 'active' : 'idle'}`}>
-            {hasActiveFile ? 'VIEWING' : 'STANDBY'}
-          </span>
-          <span className="status-text filename-text">
-            {hasActiveFile ? activeFileName : '대기 중...'}
-          </span>
-        </div>
-
-        {/* 🧭 [중앙 신규] 유저 특명! 상태바 정중앙 다기능 내비게이터!! */}
-        {hasActiveFile && (
-          <div className="status-content-center">
-            <button 
-              className="status-nav-btn prev" 
-              onClick={onPrev} 
-              disabled={!canGoPrev}
-              title="이전 (페이지/책)"
-            >
-              ‹
-            </button>
-            <button 
-              className="status-nav-btn next" 
-              onClick={onNext} 
-              disabled={!canGoNext}
-              title="다음 (페이지/책)"
-            >
-              ›
-            </button>
+        {workspaceMode === 'converter' ? (
+          // 🏗️ 컨버터 모드 전용 레이아웃: 뷰어의 잔상 제거!
+          <div className="status-content-left">
+            <span className="status-badge badge-engine active">
+              CONVERTER
+            </span>
+            <span className="status-text filename-text">
+              {converterStatusText || '변환 작업 대기 중...'}
+            </span>
           </div>
-        )}
-
-        {/* ➡️ 우측 계기판: 페이징 텔레메트리 */}
-        {hasActiveFile && (
-          <div className="status-right">
-            {bookPositionHint && (
-              <span className="nav-hint-badge">
-                {bookPositionHint}
+        ) : (
+          // 🖼️ 기본 뷰어 모드 레이아웃
+          <>
+            {/* ⬅️ 좌측: 배지 + 파일명 */}
+            <div className="status-content-left">
+              <span className={`status-badge badge-engine ${hasActiveFile ? 'active' : 'idle'}`}>
+                {hasActiveFile ? 'VIEWING' : 'STANDBY'}
               </span>
+              <span className="status-text filename-text">
+                {hasActiveFile ? activeFileName : '대기 중...'}
+              </span>
+            </div>
+
+            {/* 🧭 [중앙] 유저 특명! 상태바 정중앙 다기능 내비게이터!! */}
+            {hasActiveFile && (
+              <div className="status-content-center">
+                <button 
+                  className="status-nav-btn prev" 
+                  onClick={onPrev} 
+                  disabled={!canGoPrev}
+                  title="이전 (페이지/책)"
+                >
+                  ‹
+                </button>
+                <button 
+                  className="status-nav-btn next" 
+                  onClick={onNext} 
+                  disabled={!canGoNext}
+                  title="다음 (페이지/책)"
+                >
+                  ›
+                </button>
+              </div>
             )}
 
-            {totalPages > 0 && (
-              <span className="status-telemetry">
-                [ 현재 쪽수 : {currentPageIndex + 1}/{totalPages}, 진행률 : {progressPercent}% ]
-              </span>
+            {/* ➡️ 우측 계기판: 페이징 텔레메트리 */}
+            {hasActiveFile && (
+              <div className="status-right">
+                {bookPositionHint && (
+                  <span className="nav-hint-badge">
+                    {bookPositionHint}
+                  </span>
+                )}
+
+                {totalPages > 0 && (
+                  <span className="status-telemetry">
+                    [ 현재 쪽수 : {currentPageIndex + 1}/{totalPages}, 진행률 : {progressPercent}% ]
+                  </span>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </footer>

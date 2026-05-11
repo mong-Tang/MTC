@@ -21,19 +21,9 @@ export const ConverterFooter: React.FC<ConverterFooterProps> = ({
   canExecute,
   disabledReason
 }) => {
-  const splitHint =
-    splitCriterion === 'pages' ? `${splitValue}페이지 단위` :
-    splitCriterion === 'sizeMb' ? `${splitValue}MB 단위` :
-    `사용자 설정 [${splitCustomValues || '-'}]`;
   return (
     <footer className="converter-footer">
-      <span className="converter-footer-hint">
-        {!canExecute && disabledReason
-          ? disabledReason
-          : mode === 'merge'
-          ? `여러 권을 하나로 묶어 .${outputFormat} 파일로 저장합니다.`
-          : `대용량 파일을 ${splitHint}로 분할해 .${outputFormat} 파일로 저장합니다.`}
-      </span>
+      {/* 💡 힌트 텍스트가 하단 상태바로 완벽 통합 이전되어 제거되었습니다. */}
       <button
         className="primary-btn"
         type="button"

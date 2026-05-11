@@ -91,11 +91,11 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
       y: typeof candidate?.windowBounds?.y === 'number' ? candidate.windowBounds.y : defaultAppSettings.windowBounds.y,
       width:
         typeof candidate?.windowBounds?.width === 'number' && Number.isFinite(candidate.windowBounds.width)
-          ? Math.max(900, candidate.windowBounds.width)
+          ? Math.max(1354, candidate.windowBounds.width)
           : defaultAppSettings.windowBounds.width,
       height:
         typeof candidate?.windowBounds?.height === 'number' && Number.isFinite(candidate.windowBounds.height)
-          ? Math.max(640, candidate.windowBounds.height)
+          ? Math.max(840, candidate.windowBounds.height)
           : defaultAppSettings.windowBounds.height
     },
     isMaximized: candidate?.isMaximized === true,

@@ -21,20 +21,20 @@ export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({
   return (
     <header className="floating-control-anchor">
       <button 
-        className="control-btn" 
+        className="anchor-control-btn" 
         onClick={onToggleSidebar} 
         title="사이드바 열기/닫기"
       >
         <IconSidebarToggle />
       </button>
-      <button className="control-btn" title="뷰어 화면" onClick={onShowViewer} disabled={!canShowViewer}>
+      <button className="anchor-control-btn" title="뷰어 화면" onClick={onShowViewer} disabled={!canShowViewer}>
         <IconChevronLeft />
       </button>
-      <button className="control-btn" title="컨버터 화면" onClick={onShowConverter} disabled={!canShowConverter}>
+      <button className="anchor-control-btn" title="컨버터 화면" onClick={onShowConverter} disabled={!canShowConverter}>
         <IconChevronRight />
       </button>
       <button 
-        className="control-btn" 
+        className="anchor-control-btn" 
         onClick={onToggleMenu} 
         title="통합 메뉴 열기/닫기"
       >
