@@ -3,6 +3,7 @@ import type { ConverterMode } from '../layout/ConverterPanel';
 import type { CompressionPolicy } from '../layout/ConverterPanel';
 import type { OutputNamePattern } from '../layout/ConverterPanel';
 import type { SplitCriterion } from '../layout/ConverterPanel';
+import type { MergeStrategy } from '../layout/ConverterPanel'; // 🛡️ [임포트] 병합 전략 타입 추가
 
 interface ConverterOptionsProps {
   mode: ConverterMode;
@@ -25,6 +26,8 @@ interface ConverterOptionsProps {
   outputDirectory: string;
   onChangeOutputDirectory: (path: string) => void;
   onPickOutputDirectory: () => void;
+  mergeStrategy: MergeStrategy; // 🛰️ [수혈] 병합 전략
+  onChangeMergeStrategy: (strategy: MergeStrategy) => void; // 🛰️ [수혈] 전략 변경 핸들러
   // 🛸 [신규 계승] 최종 집행 권한 통합!
   canExecute: boolean;
   disabledReason: string | null;
@@ -32,9 +35,8 @@ interface ConverterOptionsProps {
   progressPercent: number;
   executionLogs: string[];
   isProcessing: boolean;
-  mergeComment: string;
-  onChangeMergeComment: (val: string) => void;
 }
+
 
 export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   mode,
@@ -57,14 +59,14 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   outputDirectory,
   onChangeOutputDirectory,
   onPickOutputDirectory,
+  mergeStrategy,
+  onChangeMergeStrategy,
   canExecute,
   disabledReason,
   onExecute,
   progressPercent,
   executionLogs,
-  isProcessing,
-  mergeComment,
-  onChangeMergeComment
+  isProcessing
 }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +126,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   const outputLabelBase = outputNameBase.trim() || 'output';
 
   return (
-    <section className="converter-section">
+    <section className="converter-section converter-options-section">
       <div className="converter-file-list-header">
         <h3 className="converter-section-title">변환 옵션</h3>
       </div>
@@ -152,6 +154,38 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             <span className="converter-option-suffix">.{outputFormat}</span>
           </div>
         </label>
+        
+        {/* 🎯 [긴급 투입] 병합 모드 전용: 압축 해제 여부를 결정하는 하이레벨 선택 시스템! */}
+        {mode === 'merge' && (
+          <div className="converter-option-block">
+            <p className="converter-option-block-label">병합 전략 (파일 묶음 방식)</p>
+            <div className="converter-option-radio-group" style={{ marginBottom: '4px' }}>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="merge-strategy-radio"
+                  checked={mergeStrategy === 'unpack'}
+                  onChange={() => onChangeMergeStrategy('unpack')}
+                />
+                <span>내부 이미지 결합 (만화책 합본)</span>
+              </label>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="merge-strategy-radio"
+                  checked={mergeStrategy === 'bundle'}
+                  onChange={() => onChangeMergeStrategy('bundle')}
+                />
+                <span>원본 파일 그대로 담기 (단순 묶음)</span>
+              </label>
+            </div>
+            <p className="converter-help-line" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+              {mergeStrategy === 'unpack' 
+                ? '※ 압축파일을 자동으로 풀어서 내부 이미지만 쏙쏙 골라 한 권으로 병합합니다.' 
+                : '※ 압축 해제 없이 선택한 ZIP 파일들을 파일 그 자체로 통째로 모아 저장합니다.'}
+            </p>
+          </div>
+        )}
         {mode === 'split' && (
           <>
             <div className="converter-option-block">
@@ -217,40 +251,104 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         <div className="converter-option-stack">
           <div className="converter-option-block">
             <p className="converter-option-block-label">압축 정책</p>
-            <select
-              value={compressionPolicy}
-              onChange={(event) => onChangeCompressionPolicy(event.target.value as CompressionPolicy)}
-              style={{ width: '100%' }}
-            >
-              <option value="auto">자동 (추천)</option>
-              <option value="store">항상 무압축 (빠름)</option>
-              <option value="compress">항상 압축 (최소 용량)</option>
-            </select>
-            <p className="converter-help-line" style={{ marginTop: '4px' }}>
-              {compressionPolicy === 'auto' && '💡 병합 시 기존 압축 파일은 무압축 승계, 일반 이미지는 새로 압축하여 최적의 밸런스를 유지합니다.'}
-              {compressionPolicy === 'store' && '⚡ 압축 연산 과정을 생략하여 병합/분할 속도가 가장 빠르며 원본 그대로 저장됩니다.'}
-              {compressionPolicy === 'compress' && '📦 모든 데이터를 최고 수준으로 압축하여 저장 장치의 공간을 최대한 절약합니다.'}
-            </p>
+            <div className="converter-option-radio-group" style={{ flexDirection: 'column', gap: '10px' }}>
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="compression-policy-radio"
+                    checked={compressionPolicy === 'auto'}
+                    onChange={() => onChangeCompressionPolicy('auto')}
+                  />
+                  <span>자동 (추천)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  💡 병합 시 기존 압축 파일은 무압축 승계, 일반 이미지는 새로 압축하여 최적의 밸런스를 유지합니다.
+                </p>
+              </div>
+              
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="compression-policy-radio"
+                    checked={compressionPolicy === 'store'}
+                    onChange={() => onChangeCompressionPolicy('store')}
+                  />
+                  <span>항상 무압축 (빠름)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  ⚡ 압축 연산 과정을 생략하여 병합/분할 속도가 가장 빠르며 원본 그대로 저장됩니다.
+                </p>
+              </div>
+
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="compression-policy-radio"
+                    checked={compressionPolicy === 'compress'}
+                    onChange={() => onChangeCompressionPolicy('compress')}
+                  />
+                  <span>항상 압축 (최소 용량)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  📦 모든 데이터를 최고 수준으로 압축하여 저장 장치의 공간을 최대한 절약합니다.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
         <div className="converter-option-stack">
           <div className="converter-option-block">
             <p className="converter-option-block-label">분할 기준</p>
-            <select
-              value={splitCriterion}
-              onChange={(event) => onChangeSplitCriterion(event.target.value as SplitCriterion)}
-              style={{ width: '100%' }}
-            >
-              <option value="pages">페이지 수 기준 (동일 비율)</option>
-              <option value="sizeMb">파일 용량 기준 (MB단위 제한)</option>
-              <option value="custom">사용자 설정 (직접 수동 분할)</option>
-            </select>
-            <p className="converter-help-line" style={{ marginTop: '4px' }}>
-              {splitCriterion === 'pages' && '📏 설정한 페이지 수 단위로 아카이브를 균등하게 나눕니다.'}
-              {splitCriterion === 'sizeMb' && '💾 각 결과 파일의 용량이 지정된 MB를 넘지 않도록 분할합니다.'}
-              {splitCriterion === 'custom' && '✂️ 사용자가 입력한 특정 페이지 경계를 기준으로 책을 나눕니다.'}
-            </p>
+            <div className="converter-option-radio-group" style={{ flexDirection: 'column', gap: '10px' }}>
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="split-criterion-radio"
+                    checked={splitCriterion === 'pages'}
+                    onChange={() => onChangeSplitCriterion('pages')}
+                  />
+                  <span>페이지 수 기준 (동일 비율)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  📏 설정한 페이지 수 단위로 아카이브를 균등하게 나눕니다.
+                </p>
+              </div>
+
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="split-criterion-radio"
+                    checked={splitCriterion === 'sizeMb'}
+                    onChange={() => onChangeSplitCriterion('sizeMb')}
+                  />
+                  <span>파일 용량 기준 (MB단위 제한)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  💾 각 결과 파일의 용량이 지정된 MB를 넘지 않도록 분할합니다.
+                </p>
+              </div>
+
+              <div className="converter-radio-item-group">
+                <label className="converter-option-radio-item">
+                  <input
+                    type="radio"
+                    name="split-criterion-radio"
+                    checked={splitCriterion === 'custom'}
+                    onChange={() => onChangeSplitCriterion('custom')}
+                  />
+                  <span>사용자 설정 (직접 수동 분할)</span>
+                </label>
+                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  ✂️ 사용자가 입력한 특정 페이지 경계를 기준으로 책을 나눕니다.
+                </p>
+              </div>
+            </div>
           </div>
           <label className="converter-option-row">
             <span>{splitCriterion === 'custom' ? '시작 페이지' : '기준 값'}</span>
@@ -296,47 +394,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         </div>
       )}
 
-      {/* 🚀 [마스터 클라이맥스] 모든 옵션 설정의 종착역, 강력한 실행 엔진 통합! */}
-      <div className="converter-action-footer">
-        <button
-          className={`primary-btn converter-execute-btn ${isProcessing ? 'processing' : ''}`}
-          type="button"
-          disabled={!canExecute}
-          title={!canExecute && disabledReason ? disabledReason : ''}
-          onClick={onExecute}
-        >
-          {/* ⚡ [버튼 내장 레이저 프로그레스] 버튼 내부에 탑재된 초박형 네온 게이지 */}
-          {isProcessing && (
-            <div className="btn-inner-progress-track">
-              <div 
-                className="btn-inner-progress-fill" 
-                style={{ width: `${progressPercent}%` }} 
-              />
-            </div>
-          )}
-          
-          <span className="btn-label-text">
-            {isProcessing ? `처리 중 (${progressPercent}%)` : (mode === 'merge' ? '병합 실행' : '분할 실행')}
-          </span>
-        </button>
-      </div>
 
-      {/* 📟 [실시간 통신창 / 터미널 센터] 버튼 아래에 상주하며 연산 중 발생하는 시스템 메시지를 그대로 노출! */}
-      <div className="converter-terminal-panel">
-        <div className="terminal-logs-container" ref={terminalRef}>
-          {executionLogs.length === 0 ? (
-            <div className="terminal-log-line" style={{ opacity: 0.4 }}>
-              [SYSTEM] 명령 대기 중... 병합을 실행하면 작업 내역이 여기에 표시됩니다.
-            </div>
-          ) : (
-            executionLogs.map((log, idx) => (
-              <div key={idx} className="terminal-log-line">
-                {log}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </section>
   );
 };

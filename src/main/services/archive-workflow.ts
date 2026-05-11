@@ -210,11 +210,11 @@ async function getAllFilesRecursive(dir: string): Promise<string[]> {
 export async function mergeArchivesWorkflow(
   sourcePaths: string[],
   outputZipPath: string,
-  onProgress?: (event: { percent: number; message: string }) => void,
-  comment?: string
+  strategy: 'unpack' | 'bundle' = 'unpack',
+  onProgress?: (event: { percent: number; message: string }) => void
 ): Promise<{ logs: string[] }> {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'mtc-merge-'));
-  const logs: string[] = [`[Merge Started] Total sources: ${sourcePaths.length}`];
+  const logs: string[] = [`[Merge Started] Mode: ${strategy}, Total sources: ${sourcePaths.length}`];
   
   const report = (percent: number, message: string) => {
     logs.push(message);
@@ -227,29 +227,49 @@ export async function mergeArchivesWorkflow(
     const unifiedDir = path.join(tempRoot, 'unified');
     await fs.mkdir(unifiedDir, { recursive: true });
 
-    // 📝 [메시지 주입] 사용자가 작성한 메시지가 있다면 note.txt로 생성하여 통합 폴더에 자동 삽입!
-    if (comment && comment.trim()) {
-      await fs.writeFile(path.join(unifiedDir, 'note.txt'), comment.trim(), 'utf8');
-      report(1, '[Note Added] User merge message recorded.');
-    }
-    
-    let globalImageCounter = 1;
+    let totalGathered = 0;
     const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.avif'];
 
-    report(2, `[Stage 1] Decompressing and collecting assets from ${sourcePaths.length} sources...`);
+    report(2, strategy === 'bundle' 
+      ? `[Stage 1] Packaging ${sourcePaths.length} files for direct merge (no extraction)...`
+      : `[Stage 1] Decompressing and flattening assets from ${sourcePaths.length} sources...`);
 
     for (let i = 0; i < sourcePaths.length; i++) {
       const src = sourcePaths[i];
       const ext = path.extname(src).toLowerCase();
       const baseName = path.basename(src);
       
-      // 전체 작업의 약 60%를 추출 과정에 배당하여 프로그레션 연산
+      // 전체 작업의 약 60%를 추출/복사 과정에 배당하여 프로그레션 연산
       const basePercent = 5;
       const stepSize = 65 / sourcePaths.length;
       const currentPercent = Math.floor(basePercent + (i * stepSize));
 
       report(currentPercent, `-> Processing [${i + 1}/${sourcePaths.length}]: ${baseName}`);
+
+      // 🛡️ [긴급 분기] 원본 파일 묶음 전략: 압축 해제 바이패스 & 즉각 복제!
+      if (strategy === 'bundle') {
+        let destPath = path.join(unifiedDir, baseName);
+        const baseNameNoExt = path.basename(src, ext);
+        
+        // 중복 파일명 충돌 회피 (예: Book.zip, Book_1.zip)
+        let collisionCounter = 1;
+        while (true) {
+          try {
+            await fs.access(destPath);
+            destPath = path.join(unifiedDir, `${baseNameNoExt}_${collisionCounter}${ext}`);
+            collisionCounter++;
+          } catch (err: any) {
+            if (err.code === 'ENOENT') break;
+            throw err;
+          }
+        }
+
+        await fs.copyFile(src, destPath);
+        totalGathered++;
+        continue;
+      }
       
+      // 🔍 [만화책 특화] 압축 해제 & 이미지 추출 전략
       const itemWorkDir = path.join(tempRoot, `item_${i}`);
       await fs.mkdir(itemWorkDir, { recursive: true });
 
@@ -263,7 +283,7 @@ export async function mergeArchivesWorkflow(
       } else if (imageExtensions.includes(ext)) {
         await fs.copyFile(src, path.join(itemWorkDir, baseName));
       } else {
-        report(currentPercent, `   [Info] Skipping unsupported format: ${baseName}`);
+        report(currentPercent, `   [Info] Skipping unsupported format (Image/Archive expected): ${baseName}`);
         continue;
       }
 
@@ -272,24 +292,21 @@ export async function mergeArchivesWorkflow(
         .filter(f => imageExtensions.includes(path.extname(f).toLowerCase()))
         .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-      // report(currentPercent, `   -> Found ${sortedFiles.length} valid images.`);
-
       for (const file of sortedFiles) {
         const fExt = path.extname(file);
-        const paddedIndex = String(globalImageCounter).padStart(6, '0');
+        const paddedIndex = String(totalGathered + 1).padStart(6, '0');
         const destFileName = `${paddedIndex}${fExt}`;
         const destPath = path.join(unifiedDir, destFileName);
         
         await fs.copyFile(file, destPath);
-        globalImageCounter++;
+        totalGathered++;
       }
     }
 
-    const finalImageCount = globalImageCounter - 1;
-    report(75, `[Stage 2] Asset consolidation complete. Total gathered: ${finalImageCount} images.`);
+    report(75, `[Stage 2] Asset consolidation complete. Total gathered: ${totalGathered} items.`);
 
-    if (finalImageCount === 0) {
-      throw new Error('No valid image assets found in provided sources to merge.');
+    if (totalGathered === 0) {
+      throw new Error('No valid assets found in provided sources to merge.');
     }
 
     report(80, `[Stage 3] Re-compressing into final output: ${path.basename(outputZipPath)}`);

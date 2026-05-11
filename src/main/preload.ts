@@ -169,8 +169,8 @@ const api = {
   },
   convertArchiveToZip: (sourcePath: string, outputDirectory: string, targetExtension?: string, customFilename?: string) =>
     ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory, targetExtension, customFilename) as Promise<IpcResult<ConverterResult>>,
-  mergeFiles: (sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension?: string, comment?: string) =>
-    ipcRenderer.invoke('converter:merge-files', sourcePaths, outputDirectory, outputFilename, targetExtension, comment) as Promise<IpcResult<ConverterResult>>,
+  mergeFiles: (sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension?: string, mergeStrategy?: string) =>
+    ipcRenderer.invoke('converter:merge-files', sourcePaths, outputDirectory, outputFilename, targetExtension, mergeStrategy) as Promise<IpcResult<ConverterResult>>,
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,

@@ -439,7 +439,7 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  ipcMain.handle('converter:merge-files', async (_event, sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension: string = '.zip', comment?: string) => {
+  ipcMain.handle('converter:merge-files', async (_event, sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension: string = '.zip', mergeStrategy: 'unpack' | 'bundle' = 'unpack') => {
     try {
       if (!sourcePaths || sourcePaths.length === 0) {
         throw new AppError('UNKNOWN', 'No source files selected for merge.');
@@ -453,7 +453,7 @@ export function registerIpcHandlers(): void {
       const destinationPath = await resolveUniquePath(outputDirectory, `${effectiveFilename}${finalExtension}`);
 
       const logs: string[] = [
-        `[Merge Engine Init] Destination: ${destinationPath}`,
+        `[Merge Engine Init] Strategy: ${mergeStrategy}`,
         `[Items Count] ${sourcePaths.length}`
       ];
 
@@ -461,11 +461,11 @@ export function registerIpcHandlers(): void {
       const workflowResult = await mergeArchivesWorkflow(
         sourcePaths, 
         destinationPath,
+        mergeStrategy,
         (event) => {
           // 📡 실시간으로 렌더러(UI)에게 진행상황 송신
           _event.sender.send('converter:progress', event);
-        },
-        comment // 📝 사용자가 작성한 병합 메시지 주입!
+        }
       );
 
       return {

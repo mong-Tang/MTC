@@ -328,17 +328,36 @@ function App() {
     if (workspaceMode === 'converter') {
       const appApi = (window as any).appApi;
       let normalizedItem = item;
-      if (typeof normalizedItem.sizeBytes !== 'number') {
+      const needsSize = typeof normalizedItem.sizeBytes !== 'number';
+      const needsPages = typeof normalizedItem.totalPages !== 'number';
+      const needsUncompressed = typeof normalizedItem.uncompressedSizeBytes !== 'number';
+
+      if (needsSize || needsPages || needsUncompressed) {
         try {
-          const sizeBytes = await appApi.getFileSize(filePath);
-          normalizedItem = { ...normalizedItem, sizeBytes };
+          let { sizeBytes, totalPages, uncompressedSizeBytes } = normalizedItem;
+          if (needsSize) sizeBytes = await appApi.getFileSize(filePath);
+          if (needsPages || needsUncompressed) {
+            if (normalizedItem.type === 'image') {
+              totalPages = 1;
+              uncompressedSizeBytes = sizeBytes;
+            } else {
+              const info = await appApi.openZip(filePath);
+              totalPages = info?.data?.meta?.totalPages ?? 0;
+              uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+            }
+          }
+          normalizedItem = { ...normalizedItem, sizeBytes, totalPages, uncompressedSizeBytes };
           setLibraryItems((prev) => prev.map((entry) => (entry.path === filePath ? normalizedItem : entry)));
         } catch (error) {
-          console.error('Failed to resolve file size from sidebar item', error);
+          console.error('Failed to resolve metadata from sidebar item', error);
         }
       }
 
       setConverterSourceItems((prev) => {
+        if (converterMode === 'split') {
+          // [분할 모드 칙령] 무조건 새로운 왕을 즉위시켜 단일 지배 체제 확립!
+          return [normalizedItem];
+        }
         const exists = prev.some((entry) => entry.path === filePath);
         if (exists) {
           return prev.filter((entry) => entry.path !== filePath);
@@ -356,25 +375,38 @@ function App() {
     try {
       const appApi = (window as any).appApi;
       let filePaths: string[] = [];
+      const isSplitMode = converterMode === 'split';
 
-      if (typeof appApi.openFileDialogMulti === 'function') {
-        const multi = await appApi.openFileDialogMulti({
-          title: '컨버터 소스 추가',
+      if (isSplitMode) {
+        // [분할 전용] 단일 파일 선택 모드로 초고속 강제 전환!
+        const picked = await appApi.openFileDialog({
+          title: '분할 대상 파일 선택',
           zipFilterName: '압축/이미지 파일',
           imageFilterName: '이미지 파일'
         });
-        if (!multi || multi.length === 0) return;
-        filePaths = multi;
-      } else {
-        // Fallback: preload hot-reload 전 구버전 런타임 호환
-        const picked = await appApi.openFileDialog({
-          title: '컨버터 소스 추가',
-          zipFilterName: '압축/이미지 파일',
-          imageFilterName: '이미지 파일',
-          multiSelections: true
-        });
         if (!picked) return;
-        filePaths = Array.isArray(picked) ? picked : [picked];
+        filePaths = [picked];
+      } else {
+        // [병합 전용] 기존 멀티 셀렉션 레일 가동!
+        if (typeof appApi.openFileDialogMulti === 'function') {
+          const multi = await appApi.openFileDialogMulti({
+            title: '컨버터 소스 추가',
+            zipFilterName: '압축/이미지 파일',
+            imageFilterName: '이미지 파일'
+          });
+          if (!multi || multi.length === 0) return;
+          filePaths = multi;
+        } else {
+          // Fallback: preload hot-reload 전 구버전 런타임 호환
+          const picked = await appApi.openFileDialog({
+            title: '컨버터 소스 추가',
+            zipFilterName: '압축/이미지 파일',
+            imageFilterName: '이미지 파일',
+            multiSelections: true
+          });
+          if (!picked) return;
+          filePaths = Array.isArray(picked) ? picked : [picked];
+        }
       }
 
       const items = await Promise.all(
@@ -383,10 +415,27 @@ function App() {
           const sizeBytes = await appApi.getFileSize(filePath);
           const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
           const type = ['zip', 'cbz', '7z', 'rar'].includes(ext) ? 'archive' : 'image';
-          return { name, path: filePath, type, sizeBytes } as ConverterSourceItem;
+          let totalPages = 0;
+          let uncompressedSizeBytes = sizeBytes;
+          try {
+            if (type === 'archive') {
+              const info = await appApi.openZip(filePath);
+              totalPages = info?.data?.meta?.totalPages ?? 0;
+              uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+            } else {
+              totalPages = 1;
+              uncompressedSizeBytes = sizeBytes;
+            }
+          } catch { totalPages = 0; }
+          return { name, path: filePath, type, sizeBytes, totalPages, uncompressedSizeBytes } as ConverterSourceItem;
         })
       );
+
       setConverterSourceItems((prev) => {
+        if (isSplitMode) {
+          // [분할 모드 특권] 기존 리스트를 무조건 덮어쓰고 오직 '하나'만 왕좌에 안착!
+          return items;
+        }
         const existing = new Set(prev.map((entry) => entry.path));
         const next = [...prev];
         for (const item of items) {
@@ -408,12 +457,27 @@ function App() {
 
     const normalizedItems = await Promise.all(
       libraryItems.map(async (item) => {
-        if (typeof item.sizeBytes === 'number') return item;
+        const needsSize = typeof item.sizeBytes !== 'number';
+        const needsPages = typeof item.totalPages !== 'number';
+        const needsUncompressed = typeof item.uncompressedSizeBytes !== 'number';
+        if (!needsSize && !needsPages && !needsUncompressed) return item;
+
         try {
-          const sizeBytes = await appApi.getFileSize(item.path);
-          return { ...item, sizeBytes };
+          let { sizeBytes, totalPages, uncompressedSizeBytes } = item;
+          if (needsSize) sizeBytes = await appApi.getFileSize(item.path);
+          if (needsPages || needsUncompressed) {
+            if (item.type === 'image') {
+              totalPages = 1;
+              uncompressedSizeBytes = sizeBytes;
+            } else {
+              const info = await appApi.openZip(item.path);
+              totalPages = info?.data?.meta?.totalPages ?? 0;
+              uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+            }
+          }
+          return { ...item, sizeBytes, totalPages, uncompressedSizeBytes };
         } catch (error) {
-          console.error('Failed to resolve file size for Add All item', error);
+          console.error('Failed to resolve metadata for Add All item', error);
           return item;
         }
       })

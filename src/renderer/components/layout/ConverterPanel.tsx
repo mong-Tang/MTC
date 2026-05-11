@@ -9,11 +9,14 @@ export type ConverterMode = 'merge' | 'split';
 export type CompressionPolicy = 'auto' | 'store' | 'compress';
 export type SplitCriterion = 'pages' | 'sizeMb' | 'custom';
 export type OutputNamePattern = 'name-index' | 'index-name' | 'name_underscore_index' | 'index_underscore_name';
+export type MergeStrategy = 'unpack' | 'bundle'; // 🛡️ [신규] 병합 전략 (풀어서 병합 vs 원본 묶기)
 export interface ConverterSourceItem {
   name: string;
   path: string;
   type: string;
   sizeBytes?: number;
+  totalPages?: number; // 📖 [데이터 모델 확장] 각 아카이브의 총 쪽수 필드 추가!
+  uncompressedSizeBytes?: number; // 🗜️ [데이터 모델 확장] 압축 내부 원본 크기 총합!
 }
 
 interface ConverterPanelProps {
@@ -45,15 +48,50 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const [outputNameBase, setOutputNameBase] = useState<string>('output');
   const [outputNamePattern, setOutputNamePattern] = useState<OutputNamePattern>('name_underscore_index');
   const [compressionPolicy, setCompressionPolicy] = useState<CompressionPolicy>('auto');
-  const [splitCriterion, setSplitCriterion] = useState<SplitCriterion>('pages');
+  const [splitCriterion, setSplitCriterion] = useState<SplitCriterion>('custom');
   const [splitValue, setSplitValue] = useState<number>(100);
   const [splitCustomValues, setSplitCustomValues] = useState<string>('100,100');
   const [splitTotalPages, setSplitTotalPages] = useState<number>(1000);
+  const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('unpack'); // 🎯 [긴급 수혈] 기본은 '풀기'이나 유저 선택권 부여
   const [outputDirectory, setOutputDirectory] = useState('');
   const [isProcessing, setIsProcessing] = useState(false); // 🛰️ [작업 잠금] 병합 중 중복 클릭 및 UI 오작동 방지
   const [progressPercent, setProgressPercent] = useState(0); // 📊 현재 진행률 게이지
   const [executionLogs, setExecutionLogs] = useState<string[]>([]); // 📝 실시간 로깅 스트림
-  const [mergeComment, setMergeComment] = useState<string>(''); // 📝 사용자가 작성하는 병합 메모/메시지
+  const [elapsedTime, setElapsedTime] = useState(0); // ⏱️ [정밀 타이머] 작업 경과 시간 실시간 트래킹
+  const [processingMode, setProcessingMode] = useState<ConverterMode | null>(null); // 🚦 [모드 고유 인식표] 어느 화면에서 작업을 시작했는지 박제
+  
+  // ⏱️ [실시간 타이머 박동] 작업 시작 시 1초마다 째깍째깍!
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isProcessing) {
+      setElapsedTime(0); // 작업 시작 시 리셋
+      interval = setInterval(() => {
+        setElapsedTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isProcessing]);
+
+  // 🧹 [모드 전환 클리너] 화면을 전환할 때마다 기존 작업의 누적 로그 및 잔여 게이지 정보를 깨끗이 초기화!
+  useEffect(() => {
+    setExecutionLogs([]);
+    setProgressPercent(0);
+    setElapsedTime(0);
+  }, [mode]);
+
+  // ⏳ [글로벌 커서 컨트롤러] 작업 중일 때 전체 애플리케이션에 'is-processing' 클래스를 부여하여 모래시계 커서를 발동!
+  useEffect(() => {
+    if (isProcessing) {
+      document.body.classList.add('is-processing');
+    } else {
+      document.body.classList.remove('is-processing');
+    }
+    return () => {
+      document.body.classList.remove('is-processing'); // 언마운트 시 안전 해제
+    };
+  }, [isProcessing]);
 
   useEffect(() => {
     if (sourceItems.length === 0) {
@@ -173,6 +211,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     if (!isExecuteEnabled || isProcessing) return;
 
     setIsProcessing(true);
+    setProcessingMode(mode); // 📡 현재 동작 중인 모드 낙인 찍기!
     setProgressPercent(0); // 게이지 초기화
     setExecutionLogs([]); // 로그 리셋
     const startTime = Date.now();
@@ -196,7 +235,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
           outputDirectory, 
           outputNameBase, 
           outputFormat,
-          mergeComment // 📝 사용자가 작성한 메시지 탑재!
+          mergeStrategy // 🚀 [전략 투하] 유저가 고른 전략 주입!
         );
 
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -233,8 +272,14 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     } finally {
       // 🔐 작업 잠금 해제하여 UI 다시 복구
       setIsProcessing(false);
+      setProcessingMode(null); // 🏁 신분증 폐기!
     }
   };
+
+  const isEffectiveProcessing = isProcessing && processingMode === mode;
+  const currentProgress = isEffectiveProcessing ? progressPercent : 0;
+  const currentLogs = isEffectiveProcessing ? executionLogs : [];
+  const currentElapsedTime = isEffectiveProcessing ? elapsedTime : 0;
 
   return (
     <ConverterPanelShell>
@@ -253,6 +298,14 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               onAddAll={onAddAllSource}
               onClear={onClearSource}
               onRemoveItems={onRemoveSourceItems}
+              // 🛰️ [동적 릴레이] 분할 모드일 때 왼쪽으로 이사 올 터미널/실행 버튼용 엔진 주입!!
+              canExecute={isExecuteEnabled}
+              disabledReason={disabledReason}
+              onExecute={handleExecute}
+              progressPercent={currentProgress}
+              executionLogs={currentLogs}
+              isProcessing={isEffectiveProcessing}
+              elapsedTime={currentElapsedTime} // 📡 타이머 맥동 전송!
             />
           </section>
           <section className="converter-pane">
@@ -274,17 +327,17 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               onChangeSplitCustomValues={setSplitCustomValues}
               splitTotalPages={splitTotalPages}
               onChangeSplitTotalPages={setSplitTotalPages}
+              mergeStrategy={mergeStrategy}
+              onChangeMergeStrategy={setMergeStrategy}
               outputDirectory={outputDirectory}
               onChangeOutputDirectory={setOutputDirectory}
               onPickOutputDirectory={handlePickOutputDirectory}
               canExecute={isExecuteEnabled}
               disabledReason={disabledReason}
               onExecute={handleExecute}
-              progressPercent={progressPercent}
-              executionLogs={executionLogs}
-              isProcessing={isProcessing}
-              mergeComment={mergeComment}
-              onChangeMergeComment={setMergeComment}
+              progressPercent={currentProgress}
+              executionLogs={currentLogs}
+              isProcessing={isEffectiveProcessing}
             />
           </section>
         </div>

@@ -93,10 +93,11 @@ export async function openZip(filePath: string): Promise<ArchiveOpenResult> {
           title: baseName,
           totalPages: 1,
           hasEncryptedEntries: false,
-          fileId
+          fileId,
+          totalUncompressedSizeBytes: stats.size // 💾 [예외처리] 단일 파일은 원본 크기 자체가 총합임!
         },
         pages: [
-          { index: 0, entryName: '__IMAGE_SINGLE_ENTRY__', displayName: baseName }
+          { index: 0, entryName: '__IMAGE_SINGLE_ENTRY__', displayName: baseName, sizeBytes: stats.size }
         ]
       };
     }

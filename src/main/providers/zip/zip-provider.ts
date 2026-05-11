@@ -75,15 +75,19 @@ export class ZipArchiveProvider implements IArchiveProvider {
     const pages: ArchivePage[] = imageEntries.map((entry, index) => ({
       index,
       entryName: entry.fileName,
-      displayName: path.basename(entry.fileName)
+      displayName: path.basename(entry.fileName),
+      sizeBytes: entry.uncompressedSize // 💾 [데이터 확장] 압축 해제 후 용량 주입 완료!
     }));
+
+    const totalUncompressedSizeBytes = imageEntries.reduce((sum, entry) => sum + entry.uncompressedSize, 0);
 
     return {
       meta: {
         title: path.basename(filePath),
         totalPages: pages.length,
         hasEncryptedEntries: entryInfos.some((entry) => (entry.generalPurposeBitFlag & 0x1) !== 0),
-        fileId: ''
+        fileId: '',
+        totalUncompressedSizeBytes // 💾 [집계 완료] 전체 원본 크기 주입!
       },
       pages
     };
