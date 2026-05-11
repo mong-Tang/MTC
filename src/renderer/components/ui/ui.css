@@ -1,0 +1,134 @@
+/* 💎 [핵심] 시인성 1000% 정통 체크마크 슬롯 */
+.check-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  min-width: 18px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--accent);
+  /* 명품 형광 강조색! */
+  margin-right: 6px;
+  opacity: 0;
+  /* 기본은 숨김 */
+  transition: opacity 0.2s;
+}
+
+.ribbon-dropdown-item.active-mode .check-slot,
+.context-item.active-mode .check-slot {
+  opacity: 1;
+  /* 활성 모드일 때만 선명하게 발광!! 💡 */
+}
+
+.ribbon-dropdown-item.active-mode,
+.context-item.active-mode {
+  color: var(--accent);
+  /* 텍스트 전체도 강조색 적용 */
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* 텍스트와 단축키가 끝으로 벌어지도록 래퍼 수정 */
+.item-label-group {
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  justify-content: space-between;
+}
+
+/* ⌨️ [핵심] 고귀한 단축키 레이블 스타일 */
+.ribbon-dropdown-item .shortcut {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.6;
+  font-family: var(--font-sans);
+  letter-spacing: 0.5px;
+}
+
+/* 🔒 [신규] 고품격 비활성화(Disabled) 상태: 구조는 지키고 기능만 봉인! */
+.ribbon-dropdown-item:disabled,
+.context-item:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+  /* 💥 클릭 원천 차단! */
+}
+
+/* 🌌 [신규] 뷰어 전용 전천후 컨텍스트 메뉴 (우클릭 팝업) */
+.custom-context-menu {
+  position: fixed;
+  /* 화면 절대 위치 고수 */
+  z-index: 3000;
+  /* 모든 것을 압도하는 최상위 레벨 */
+  min-width: 180px;
+  background: var(--bg-floating-panel);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  border-radius: 12px;
+  box-shadow: var(--shadow-popup);
+  padding: 8px 0;
+  animation: fadeInPop 0.15s ease-out;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.menu-section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 16px 4px;
+  opacity: 0.8;
+}
+
+.context-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 8px 12px;
+  /* 패딩 통일! */
+  text-align: left;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  /* 💎 슬롯 레이아웃용 최적화!! */
+  transition: all 0.15s;
+}
+
+/* 우클릭 메뉴에도 동일하게 단축키 폰트 흐리게 적용! */
+.context-item .shortcut {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.context-item:hover {
+  background: rgba(var(--rgb-contrast), 0.08);
+}
+
+.context-submenu-wrap {
+  position: relative;
+}
+
+.context-submenu-panel {
+  position: absolute;
+  top: 0;
+  left: calc(100% - 4px);
+  min-width: 150px;
+  background: var(--bg-floating-panel);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  border-radius: 10px;
+  box-shadow: var(--shadow-popup);
+  padding: 6px 0;
+  z-index: 3100;
+}
+
+.context-item.text-danger {
+  color: #ff6b6b;
+}

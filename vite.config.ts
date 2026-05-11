@@ -11,8 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
-        // We can add converter/help here if we keep separate HTMLs, 
-        // but we plan to merge them into main App via Modals later!
+        gallery: path.resolve(__dirname, 'empty_state_preview.html'),
       }
     }
   },

@@ -135,7 +135,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   onRemoveItems,
   canExecute = false,
   disabledReason = null,
-  onExecute = () => {},
+  onExecute = () => { },
   progressPercent = 0,
   executionLogs = [],
   isProcessing = false,
@@ -149,13 +149,13 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   const [internalPages, setInternalPages] = useState<any[]>([]);
   const [selectedInternalIndices, setSelectedInternalIndices] = useState<Set<number>>(new Set()); // 🎯 [신규] 내부 리스트 개별 행 선택 추적기!
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null); // 🖼️ [신규] 내부 이미지 미리보기 메모리 주소 보관소!
-  
+
   // 🧹 [초기화] 외부 파일 목록이 바뀌거나 화면 모드가 바뀌면 즉시 내부 보기 탈출 및 선택/프리뷰 해제!
   useEffect(() => {
     setViewingInternalPath(null);
     setInternalPages([]);
     setSelectedInternalIndices(new Set());
-    
+
     if (previewImageUrl) {
       URL.revokeObjectURL(previewImageUrl);
       setPreviewImageUrl(null);
@@ -176,7 +176,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
 
       const appApi = (window as any).appApi;
       if (!appApi || typeof appApi.openZip !== 'function') return;
-      
+
       const result = await appApi.openZip(filePath);
       if (result.ok) {
         setInternalPages(result.data.pages);
@@ -191,21 +191,21 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       document.body.classList.remove('is-processing');
     }
   };
-  
+
   // 📐 게이지 수학 계산 (Radius 40)
   const r = 40;
   const circ = 2 * Math.PI * r;
   const offset = circ - (progressPercent / 100) * circ;
 
-  
+
   // 🎛️ New Interaction States
   const [isMenuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
-  const [contextMenu, setContextMenu] = useState<{ visible: boolean, x: number, y: number }>({ 
-    visible: false, 
-    x: 0, 
-    y: 0 
+
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean, x: number, y: number }>({
+    visible: false,
+    x: 0,
+    y: 0
   });
 
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -247,12 +247,12 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   useEffect(() => {
     if (!contextMenu.visible) return;
     const closeMenu = () => setContextMenu({ visible: false, x: 0, y: 0 });
-    
+
     // Close on any regular click or window resize
     window.addEventListener('click', closeMenu);
     window.addEventListener('resize', closeMenu);
     window.addEventListener('contextmenu', closeMenu); // Close if right click occurs outside container boundary handled by propagate
-    
+
     return () => {
       window.removeEventListener('click', closeMenu);
       window.removeEventListener('resize', closeMenu);
@@ -283,7 +283,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   // 🎯 [신규] 내부 파일 행 클릭/선택 엔진
   const handleInternalRowClick = (pageIndex: number, e: React.MouseEvent) => {
     e.stopPropagation(); // 부모 클릭으로 상위 전파 차단
-    
+
     setSelectedInternalIndices((prev) => {
       const next = new Set(prev);
       if (e.ctrlKey || e.metaKey) {
@@ -304,21 +304,21 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   // 🖼️ [신규] 내부 이미지 고속 미리보기 핸들러!
   const handleInternalRowDoubleClick = async (page: any) => {
     if (!viewingInternalPath) return;
-    
+
     try {
       const appApi = (window as any).appApi;
       if (!appApi || typeof appApi.getPage !== 'function') return;
-      
+
       // 🛸 백엔드 API를 통해 원본 이미지 버퍼 즉각 탈환!
       const response = await appApi.getPage(viewingInternalPath, page.entryName);
       if (response.ok && response.data) {
         const { bytes, mimeType } = response.data;
-        
+
         // 🧹 이전 메모리 객체는 즉시 소거하여 메모리 누수 방지벽 구축!
         if (previewImageUrl) {
           URL.revokeObjectURL(previewImageUrl);
         }
-        
+
         // 🧬 고속 네이티브 Blob 생성으로 제로 레이턴시 화상 노출!
         const blob = new Blob([bytes], { type: mimeType || 'image/jpeg' });
         const url = URL.createObjectURL(blob);
@@ -333,23 +333,23 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   const handleOpenContextMenu = (e: React.MouseEvent, targetPath?: string) => {
     e.preventDefault();
     e.stopPropagation(); // Kill propagation so parent container doesn't override item handler
-    
+
     setMenuOpen(false); // Close the button menu if open
 
     // 💎 Premium UX: If right-clicking a non-selected item, select ONLY that item first!
     if (targetPath && !selectedPaths.has(targetPath)) {
       onToggleSelection(new Set([targetPath]));
     }
-    
+
     // Smart viewport clamping
     let px = e.clientX;
     let py = e.clientY;
     const approxWidth = 180;
     const approxHeight = 200;
-    
+
     if (px + approxWidth > window.innerWidth) px = px - approxWidth;
     if (py + approxHeight > window.innerHeight) py = py - approxHeight;
-    
+
     setContextMenu({
       visible: true,
       x: px,
@@ -507,7 +507,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           // 🏎️ 초정밀 뷰포트 추적
           setTimeout(() => {
             const elements = document.querySelectorAll('.converter-item-row.selected');
-            const activeTarget = elements[elements.length - 1]; 
+            const activeTarget = elements[elements.length - 1];
             activeTarget?.scrollIntoView({ block: 'nearest' });
           }, 10);
           return;
@@ -524,7 +524,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
             // 기존 선택 목록 중 진행방향에 가장 가까운 피벗 경로 획득
             const pivotPath = isForward ? selectedArr[selectedArr.length - 1] : selectedArr[0];
             const pivotPos = sortedItems.findIndex(i => i.path === pivotPath);
-            
+
             // 안전 밸브: 찾을 수 없는 경우 첫단/끝단으로 부드러운 복귀
             const basePos = pivotPos === -1 ? (isForward ? -1 : sortedItems.length) : pivotPos;
             const finalStep = isForward ? jumpStep : -jumpStep;
@@ -549,12 +549,12 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
-    viewingInternalPath, 
-    internalPages, 
-    selectedInternalIndices, 
-    selectedPaths, 
-    mode, 
-    handleInternalRowDoubleClick, 
+    viewingInternalPath,
+    internalPages,
+    selectedInternalIndices,
+    selectedPaths,
+    mode,
+    handleInternalRowDoubleClick,
     handleViewInternalList,
     sortedItems,
     onToggleSelection,
@@ -566,96 +566,106 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     const isSingle = selectedPaths.size === 1;
     const targetPath = isSingle ? Array.from(selectedPaths)[0] : null;
     const isOpen = targetPath ? viewingInternalPath === targetPath : false;
-    
+
     // 🎯 실행 가능 조건 규격화
     const canToggleList = mode === 'split' && isSingle && !!targetPath;
 
     return (
       <>
         <div className="converter-dropdown-title">목록 편집</div>
-        
+
         {/* 🔮 [컨텍스트 고정] 숨김 대신 '비활성화' 처리하여 항상 유저 인지 가능하도록 구현! */}
         {mode === 'split' && (
           <>
-            <button 
+            <button
               className="converter-dropdown-item"
               style={canToggleList ? { color: 'var(--accent)', fontWeight: 600 } : {}}
               disabled={!canToggleList}
               title={!canToggleList ? "대상을 하나 선택해야 리스트를 볼 수 있습니다." : ""}
-              onClick={() => { 
+              onClick={() => {
                 if (targetPath) {
-                  handleViewInternalList(targetPath); 
-                  closeSource(); 
+                  handleViewInternalList(targetPath);
+                  closeSource();
                 }
               }}
             >
-              {isOpen ? <IconEyeOff /> : <IconEye />} 
+              {isOpen ? <IconEyeOff /> : <IconEye />}
               <span>{isOpen ? '리스트 닫기' : '리스트 보기'}</span>
             </button>
             <div className="converter-dropdown-divider" />
           </>
         )}
-      
-      <button 
-        className="converter-dropdown-item"
-        onClick={() => { onAdd(); closeSource(); }}
-      >
-        <IconPlus /> <span>+ Add</span>
-      </button>
-      
-      <div className="converter-dropdown-divider" />
-      
-      <button 
-        className="converter-dropdown-item"
-        disabled={mode === 'split' || !hasSidebarItems}
-        title={mode === 'split' ? "분할 모드에서는 다중 추가가 비활성화됩니다." : ""}
-        onClick={() => { onAddAll(); closeSource(); }}
-      >
-        <IconLayer /> <span>Add All</span>
-      </button>
-      
-      <button 
-        className="converter-dropdown-item"
-        disabled={items.length === 0}
-        onClick={() => { onClear(); closeSource(); }}
-      >
-        <IconXCircle /> <span>Clear</span>
-      </button>
-      
-      {/* 🗑️ [중복 제거] 분할 모드에서는 Clear 버튼만으로 충분하므로 Delete(Redundant) 숨김 처리! */}
-      {mode !== 'split' && (
-        <>
-          <div className="converter-dropdown-divider" />
-          <button 
-            className="converter-dropdown-item danger"
-            disabled={selectedPaths.size === 0}
-            onClick={handleBatchDelete}
-          >
-            <IconTrash /> <span>Delete ({selectedPaths.size})</span>
-          </button>
-        </>
-      )}
-    </>
+
+        <button
+          className="converter-dropdown-item"
+          onClick={() => { onAdd(); closeSource(); }}
+        >
+          <IconPlus /> <span>+ Add</span>
+        </button>
+
+        <div className="converter-dropdown-divider" />
+
+        <button
+          className="converter-dropdown-item"
+          disabled={mode === 'split' || !hasSidebarItems}
+          title={mode === 'split' ? "분할 모드에서는 다중 추가가 비활성화됩니다." : ""}
+          onClick={() => { onAddAll(); closeSource(); }}
+        >
+          <IconLayer /> <span>Add All</span>
+        </button>
+
+        <button
+          className="converter-dropdown-item"
+          disabled={items.length === 0}
+          onClick={() => { onClear(); closeSource(); }}
+        >
+          <IconXCircle /> <span>Clear</span>
+        </button>
+
+        {/* 🗑️ [중복 제거] 분할 모드에서는 Clear 버튼만으로 충분하므로 Delete(Redundant) 숨김 처리! */}
+        {mode !== 'split' && (
+          <>
+            <div className="converter-dropdown-divider" />
+            <button
+              className="converter-dropdown-item danger"
+              disabled={selectedPaths.size === 0}
+              onClick={handleBatchDelete}
+            >
+              <IconTrash /> <span>Delete ({selectedPaths.size})</span>
+            </button>
+          </>
+        )}
+      </>
     );
   };
 
   const activeViewingItem = viewingInternalPath ? items.find((i) => i.path === viewingInternalPath) : null;
 
   return (
-    <section className="converter-section converter-file-list-section">
+    <section
+      className="converter-section converter-file-list-section"
+      style={{
+        width: '420px',
+        height: '580px',
+        flex: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box'
+      }}
+    >
       <div className="converter-file-list-header">
         <h3 className="converter-section-title">
           {mode === 'merge' ? '입력 파일 목록' : (
             <>
-              <span 
+              <span
                 title={activeViewingItem?.name}
-                style={activeViewingItem ? { 
-                  maxWidth: '320px', 
-                  display: 'inline-block', 
-                  overflow: 'hidden', 
-                  textOverflow: 'ellipsis', 
-                  whiteSpace: 'nowrap', 
-                  verticalAlign: 'bottom' 
+                style={activeViewingItem ? {
+                  maxWidth: '320px',
+                  display: 'inline-block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  verticalAlign: 'bottom'
                 } : {}}
               >
                 {activeViewingItem?.name || '대상 파일'}
@@ -669,17 +679,17 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           )}
         </h3>
         <div className="converter-toolbar-actions">
-          
+
           <div className="converter-menu-wrapper" ref={menuRef}>
-            <button 
-              className="converter-mini-btn" 
+            <button
+              className="converter-mini-btn"
               type="button"
               onClick={() => setMenuOpen(!isMenuOpen)}
               style={{ padding: '0 8px' }}
             >
               <IconMenu />
             </button>
-            
+
             {isMenuOpen && (
               <div className="converter-dropdown-menu">
                 {renderMenuItems(() => setMenuOpen(false))}
@@ -690,7 +700,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         </div>
       </div>
       {items.length === 0 ? (
-        <EmptyState 
+        <EmptyState
           height={100}
           onContextMenu={(e) => handleOpenContextMenu(e)}
         >
@@ -726,14 +736,14 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               크기{getSortIndicator('size')}
             </button>
           </div>
-          <div 
+          <div
             className="converter-item-scroll"
             onContextMenu={(e) => handleOpenContextMenu(e)} // Catch clicks in empty area below rows
           >
             {sortedItems.map((item, index) => {
               const isSelected = selectedPaths.has(item.path);
               const isExpanded = viewingInternalPath === item.path;
-              
+
               return (
                 <React.Fragment key={item.path}>
                   <div
@@ -748,12 +758,12 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                       }
                     }}
                     onContextMenu={(e) => handleOpenContextMenu(e, item.path)} // Item-specific context menu + auto-select
-                    style={isExpanded ? { 
-                      borderLeft: '3px solid var(--accent)', 
+                    style={isExpanded ? {
+                      borderLeft: '3px solid var(--accent)',
                       backgroundColor: 'var(--bg-base)', // 🛡️ [완벽 불투명화] 하위 항목 스크롤 침입 차단!
                       backgroundImage: 'linear-gradient(rgba(255, 107, 0, 0.08), rgba(255, 107, 0, 0.08))', // 🎨 기존 테마 조화
-                      position: 'sticky', 
-                      top: 0, 
+                      position: 'sticky',
+                      top: 0,
                       zIndex: 10, // 🛸 다른 행들을 뚫고 올라오는 고정 좌석 권한 부여!
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)', // 🧱 떠있는 레이어임을 알리는 입체 그림자
                       borderBottom: '1px solid rgba(255, 107, 0, 0.2)' // 📐 하단 경계선 명확화
@@ -763,14 +773,14 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                     <span className="converter-item-name" style={{ fontWeight: isExpanded ? '700' : 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>{isExpanded ? '📂 ' : ''}{item.name}</span>
                       {typeof item.totalPages === 'number' && (
-                        <span style={{ 
-                          fontWeight: '500', 
-                          fontSize: '0.75rem', 
-                          color: 'var(--accent)', 
-                          opacity: 0.85, 
-                          background: 'rgba(255,107,0,0.06)', 
+                        <span style={{
+                          fontWeight: '500',
+                          fontSize: '0.75rem',
+                          color: 'var(--accent)',
+                          opacity: 0.85,
+                          background: 'rgba(255,107,0,0.06)',
                           border: '1px solid rgba(255,107,0,0.25)',
-                          padding: '0px 5px', 
+                          padding: '0px 5px',
                           borderRadius: '3px',
                           whiteSpace: 'nowrap'
                         }}>
@@ -778,7 +788,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                         </span>
                       )}
                     </span>
-                    <span 
+                    <span
                       className="converter-item-size"
                       title={item.uncompressedSizeBytes ? `원본 내용량: ${formatSize(item.uncompressedSizeBytes)} (압축 파일: ${formatSize(item.sizeBytes)})` : undefined}
                     >
@@ -788,19 +798,19 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
 
                   {/* 🌳 [계단식 트리] 분할 모드 전용 중첩 자식 리스트 렌더링! */}
                   {isExpanded && internalPages.length > 0 && (
-                    <div className="converter-nested-items-container" style={{ 
+                    <div className="converter-nested-items-container" style={{
                       // 🔥 [컬럼 사수대] 그리드 파괴범 '전체 여백'을 박멸하여 상단 컬럼과 자와 같이 정렬!
                       backgroundColor: 'rgba(0,0,0,0.15)',
                       boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
                     }}>
                       {internalPages.map((page, pIdx) => {
                         const isPageSelected = selectedInternalIndices.has(pIdx);
-                        
+
                         return (
-                          <div 
+                          <div
                             key={`${item.path}-page-${pIdx}`}
                             className={`converter-item-row ${isPageSelected ? 'selected' : ''}`}
-                            style={{ 
+                            style={{
                               borderBottom: '1px solid rgba(255,255,255,0.03)',
                               cursor: 'pointer' /* 🖱️ 손가락 커서 장착! */
                             }}
@@ -808,9 +818,9 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                             onClick={(e) => handleInternalRowClick(pIdx, e)}
                             onDoubleClick={() => void handleInternalRowDoubleClick(page)} /* 🛸 [최신 패치] 더블 클릭 시 즉각 화상 송출! */
                           >
-                            <span 
-                              className="converter-item-index" 
-                              style={{ 
+                            <span
+                              className="converter-item-index"
+                              style={{
                                 color: 'var(--text-dim)',
                                 borderLeft: '3px solid rgba(255, 107, 0, 0.3)', // 🪜 트리 정체성은 기둥 하나로 완벽 구현!
                                 display: 'flex',
@@ -857,95 +867,101 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       <div className="converter-console-layout">
         {/* 🎮 좌측 (1/3): 실행 버튼 & 사이버네틱 타이머 */}
         <div className="console-control-column">
-          <button
-            className={`primary-btn converter-execute-btn ${isProcessing ? 'processing' : ''}`}
-            type="button"
-            disabled={!canExecute}
-            title={(!canExecute && disabledReason) ? disabledReason : undefined}
-            onClick={onExecute}
-          >
-            <span className="btn-label-text" style={{ fontSize: '0.95rem', fontWeight: 700 }}>
-              {isProcessing ? '중지' : mode === 'merge' ? '병합 실행' : '분할 실행'}
-            </span>
-          </button>
-
-            <div className="console-gauge-wrapper">
-              <div className="console-gauge-container">
-                <svg className="gauge-svg" viewBox="0 0 100 100">
-                  <circle className="gauge-track" cx="50" cy="50" r={r} />
-                  <circle 
-                    className={`gauge-fill ${isProcessing ? 'pulsing' : ''}`} 
-                    cx="50" cy="50" r={r} 
-                    strokeDasharray={circ}
-                    strokeDashoffset={offset}
-                  />
-                </svg>
-                <div className="gauge-center-content">
-                  <span className="gauge-percent-text">{Math.round(progressPercent)}%</span>
-                  {isProcessing && (
-                    <span className="gauge-timer-text">{formatTimer(elapsedTime)}</span>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* 🎁 [구조 개선] 버튼 전용 박스를 신설하여 게이지 박스와 완벽한 상하 구조적 동형성 구현! */}
+          <div className="console-btn-wrapper">
+            <button
+              className={`primary-btn converter-execute-btn ${isProcessing ? 'processing' : ''}`}
+              type="button"
+              disabled={!canExecute}
+              title={(!canExecute && disabledReason) ? disabledReason : undefined}
+              onClick={onExecute}
+              style={{ borderRadius: '8px', height: '27px' }}
+            >
+              <span className="btn-label-text" style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                {isProcessing ? '중지' : mode === 'merge' ? '병합 실행' : '분할 실행'}
+              </span>
+            </button>
           </div>
 
-          {/* 📟 우측 (2/3): 광활한 로그 터미널 */}
-          {/* 📟 우측 (2/3): 광활한 로그 터미널 + 미디어 미리보기 통합 보드 */}
-          <div className="console-log-column">
-            <div className="converter-terminal-panel" style={{ position: 'relative', overflow: 'hidden' }}>
-              
-              {/* 🖼️ [스마트 프리뷰 엔진] 프로세싱이 아닐 때 더블클릭 이미지가 오면 로그판을 이미지 캔버스로 즉각 변환! */}
-              {(!isProcessing && previewImageUrl) ? (
-                <div style={{ 
-                  width: '100%', height: '100%', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  backgroundColor: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px',
-                  position: 'relative'
-                }}>
-                  <img 
-                    src={previewImageUrl || undefined} 
-                    alt="Preview" 
-                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }} 
-                  />
-                  <button 
-                    type="button"
-                    style={{ 
-                      position: 'absolute', top: '8px', right: '8px', width: '24px', height: '24px',
-                      background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                      fontSize: '12px', backdropFilter: 'blur(4px)', zIndex: 5, fontWeight: 'bold'
-                    }}
-                    title="닫기"
-                    onClick={() => setPreviewImageUrl(null)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <div className="terminal-logs-container" ref={terminalRef}>
-                  {executionLogs.length === 0 ? (
-                    <div className="terminal-log-line" style={{ opacity: 0.4 }}>
-                      [SYSTEM] 명령 대기 중...
-                    </div>
-                  ) : (
-                    executionLogs.map((log, idx) => (
-                      <div key={idx} className="terminal-log-line">
-                        {log}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
+          <div className="console-gauge-wrapper">
+            <div className="console-gauge-container" style={{ width: '80px', height: '80px' }}>
+              <svg className="gauge-svg" viewBox="0 0 100 100">
+                <circle className="gauge-track" cx="50" cy="50" r={r} />
+                <circle
+                  className={`gauge-fill ${isProcessing ? 'pulsing' : ''}`}
+                  cx="50" cy="50" r={r}
+                  strokeDasharray={circ}
+                  strokeDashoffset={offset}
+                />
+              </svg>
+              <div className="gauge-center-content">
+                <span className="gauge-percent-text" style={{ fontSize: '0.7rem', fontWeight: '500' }}>
+                  {elapsedTime > 0 ? (progressPercent / elapsedTime).toFixed(1) : '0.0'}%/sec
+                </span>
+                {isProcessing && (
+                  <span className="gauge-timer-text" style={{ fontSize: '0.6rem', fontWeight: '400' }}>{formatTimer(elapsedTime)}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
+        {/* 📟 우측 (2/3): 광활한 로그 터미널 */}
+        {/* 📟 우측 (2/3): 광활한 로그 터미널 + 미디어 미리보기 통합 보드 */}
+        <div className="console-log-column">
+          <div className="converter-terminal-panel" style={{ position: 'relative', overflow: 'hidden' }}>
+
+            {/* 🖼️ [스마트 프리뷰 엔진] 프로세싱이 아닐 때 더블클릭 이미지가 오면 로그판을 이미지 캔버스로 즉각 변환! */}
+            {(!isProcessing && previewImageUrl) ? (
+              <div style={{
+                width: '100%', height: '100%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px',
+                position: 'relative'
+              }}>
+                <img
+                  src={previewImageUrl || undefined}
+                  alt="Preview"
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                />
+                <button
+                  type="button"
+                  style={{
+                    position: 'absolute', top: '8px', right: '8px', width: '24px', height: '24px',
+                    background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    fontSize: '12px', backdropFilter: 'blur(4px)', zIndex: 5, fontWeight: 'bold'
+                  }}
+                  title="닫기"
+                  onClick={() => setPreviewImageUrl(null)}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="terminal-logs-container" ref={terminalRef}>
+                {executionLogs.length === 0 ? (
+                  <div className="terminal-log-line" style={{ opacity: 0.4 }}>
+                    [SYSTEM] 명령 대기 중...
+                  </div>
+                ) : (
+                  executionLogs.map((log, idx) => (
+                    <div key={idx} className="terminal-log-line">
+                      {log}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
 
       {/* 🖱️ Floating Context Menu Engine */}
       {contextMenu.visible && (
-        <div 
-          className="converter-dropdown-menu context-menu-float" 
+        <div
+          className="converter-dropdown-menu context-menu-float"
           style={{
             position: 'fixed',
             top: contextMenu.y,
@@ -955,8 +971,8 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
             transformOrigin: 'top left',
             zIndex: 9999,
             // Minor visual tuning for hovering standalone:
-            boxShadow: '0 15px 35px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.3)', 
-            animation: 'dropdownFadeIn 0.12s cubic-bezier(0,0,0.2,1)' 
+            boxShadow: '0 15px 35px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.3)',
+            animation: 'dropdownFadeIn 0.12s cubic-bezier(0,0,0.2,1)'
           }}
           onClick={(e) => e.stopPropagation()} // Prevent self-close when clicking inside
         >

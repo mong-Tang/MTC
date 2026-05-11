@@ -82,6 +82,9 @@ function App() {
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
   const autoMoveNoticeTimerRef = useRef<number | null>(null);
   
+  // 🛡️ [영속화 방어막] 초기 백엔드 로딩이 끝날 때까지 자동 저장을 일시 봉쇄하는 특수 가드!
+  const isSettingsLoadedRef = useRef(false);
+  
   // 🎬 [신규] 콘텐츠 시연 모드 및 뷰 모드(1쪽/2쪽) 추적기 탑재!
   const [hasActiveFile, setHasActiveFile] = useState(false);
   const [viewMode, setViewMode] = useState<'1' | '2'>(() => readSavedViewMode()); // 기본값: 저장값 우선
@@ -199,14 +202,59 @@ function App() {
     }
   };
 
+  // 🚀 [백엔드 마스터 로더] 앱 구동 즉시 디스크 금고에서 최후의 설정을 가져와 투입합니다.
   useEffect(() => {
-    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
-  }, [viewMode]);
+    const bootstrapSettings = async () => {
+      try {
+        const appApi = (window as any).appApi;
+        if (!appApi?.getAppSettings) return;
+        
+        const settings = await appApi.getAppSettings();
+        if (settings) {
+          // 1:1 매핑 주입 및 복원
+          if (typeof settings.sidebarWidth === 'number') setSidebarWidth(settings.sidebarWidth);
+          if (typeof settings.showSidebarList === 'boolean') setSidebarOpen(settings.showSidebarList);
+          if (settings.theme) {
+            setThemeMode(settings.theme as ThemeMode);
+            document.documentElement.setAttribute('data-theme', settings.theme);
+          }
+          if (settings.pageViewMode) setViewMode(settings.pageViewMode === 'double' ? '2' : '1');
+          if (settings.imageFitMode) setImageFitMode(settings.imageFitMode);
+        }
+      } catch (err) {
+        console.error('[Settings] Failed to restore saved settings from backend:', err);
+      } finally {
+        // 🔓 복원 완료! 이제부터 발생하는 모든 변화는 기록할 가치가 있습니다.
+        isSettingsLoadedRef.current = true;
+      }
+    };
+    bootstrapSettings();
+  }, []);
 
+  // 📡 [오토세이브 엔진] 주요 설정값 변동 즉시 백엔드 원장에 영구 타각!
   useEffect(() => {
-    localStorage.setItem(THEME_MODE_STORAGE_KEY, themeMode);
+    // 🛡️ 아직 불러오기 전이라면 덮어쓰기 참사를 막기 위해 셔터 내림
+    if (!isSettingsLoadedRef.current) return;
+    
+    const appApi = (window as any).appApi;
+    if (!appApi?.updateAppSettings) return;
+    
+    const payload = {
+      sidebarWidth,
+      showSidebarList: isSidebarOpen,
+      theme: themeMode,
+      pageViewMode: viewMode === '2' ? 'double' : 'single' as 'single' | 'double',
+      imageFitMode
+    };
+    
+    // 화면 갱신을 위한 사이드 이펙트 수행 (테마 등)
     document.documentElement.setAttribute('data-theme', themeMode);
-  }, [themeMode]);
+    
+    // 비동기 저장 요청 발신
+    appApi.updateAppSettings(payload).catch((err: any) => {
+      console.error('[Settings] Persistent auto-save failed:', err);
+    });
+  }, [sidebarWidth, isSidebarOpen, themeMode, viewMode, imageFitMode]);
 
   useEffect(() => {
     localStorage.setItem(PAGE_MEMORY_STORAGE_KEY, JSON.stringify(pageMemoryByPath));

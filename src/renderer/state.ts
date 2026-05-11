@@ -215,7 +215,7 @@ const state: AppState = {
   activeError: null,
   viewerRenderInFlight: false,
   queuedPageIndex: null,
-  sidebarWidth: 260,
+  sidebarWidth: 180,
   currentFolderPath: null,
   sidebarItems: [],
   bookNavItems: [],

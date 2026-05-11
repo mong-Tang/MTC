@@ -49,9 +49,6 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className="status-badge idle badge-list">
           LIST
         </span>
-        <span className="status-text">
-          총 : {totalLibraryItems}
-        </span>
       </div>
 
       {/* 🌌 [2구역] 메인 캔버스 하단: 3개 군집으로 분할된 커맨드 센터! */}

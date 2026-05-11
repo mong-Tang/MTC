@@ -26,11 +26,11 @@ export const defaultAppSettings: AppSettings = {
   pageViewMode: 'single',
   imageFitMode: 'auto',
   showSidebarList: false,
-  sidebarWidth: 260,
+  sidebarWidth: 180,
   windowBounds: {
     width: 1200,
     height: 820
   },
   isMaximized: false,
-  theme: 'dark'
+  theme: 'default'
 };

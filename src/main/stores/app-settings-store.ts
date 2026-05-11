@@ -84,7 +84,7 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
     showSidebarList: candidate?.showSidebarList === true,
     sidebarWidth:
       typeof candidate?.sidebarWidth === 'number' && Number.isFinite(candidate.sidebarWidth)
-        ? Math.min(520, Math.max(180, candidate.sidebarWidth))
+        ? Math.min(520, Math.max(150, candidate.sidebarWidth))
         : defaultAppSettings.sidebarWidth,
     windowBounds: {
       x: typeof candidate?.windowBounds?.x === 'number' ? candidate.windowBounds.x : defaultAppSettings.windowBounds.x,
@@ -99,7 +99,10 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
           : defaultAppSettings.windowBounds.height
     },
     isMaximized: candidate?.isMaximized === true,
-    theme: candidate?.theme === 'light' || candidate?.theme === 'system' ? candidate.theme : 'dark'
+    theme:
+      candidate?.theme === 'light' || candidate?.theme === 'system' || candidate?.theme === 'default'
+        ? candidate.theme
+        : 'dark'
   };
 }
 

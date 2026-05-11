@@ -1,0 +1,1119 @@
+.converter-panel-shell {
+  padding: 44px 14px 40px;
+  background: var(--bg-base);
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* 🎯 [고정 레이아웃 정렬] 자식 요소(빅 박스)를 화면 정중앙에 완벽히 배치! */
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.converter-panel {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: none;
+}
+
+.titlebar-converter-header {
+  position: absolute;
+  left: calc(var(--sidebar-width) + 14px);
+  /* 🧩 [동시 수축] 콘텐츠 너비가 넓어진 만큼 상단바 레일도 14px로 좌우 밀착! */
+  right: 14px;
+  /* 📏 우측 레일도 완벽 동기화! */
+  top: 0;
+  height: 40px;
+  display: grid;
+  /* ⚔️ [마스터 클래스] 아래쪽 2열 그리드 아키텍처를 완벽하게 계승 복제! */
+  grid-template-columns: 420px 1fr;
+  /* 🔒 [하드락] 콘텐츠 너비에 영향받지 않는 순수 수학적 비율 강제! */
+  gap: 20px;
+  align-items: center;
+  z-index: 1600;
+  -webkit-app-region: no-drag !important;
+  pointer-events: auto !important;
+  transition: left 0.3s var(--transition-smooth);
+}
+
+.titlebar-converter-title {
+  padding-left: 16px;
+  /* 🎯 첫 번째 박스(입력 파일 목록)의 텍스트 라인과 정렬! */
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 🧬 디자인 시스템 통일성 부여: 컨텐츠 섹션과 동일한 악센트 바 주입! */
+.titlebar-converter-title::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* 📏 [단어형 최적화] 상단바 공간 극대화를 위한 미니멀리스트 텍스트 스위치 */
+.titlebar-converter-header .converter-mode-switch {
+  margin-left: 16px;
+  background: transparent !important;
+  /* 🧱 육중한 배경 박스 제거 */
+  border: none !important;
+  /* 🚫 테두리 박멸 */
+  padding: 0 !important;
+  gap: 18px;
+  /* 💨 가독성을 위한 적절한 글자 간격 */
+  justify-self: start;
+  align-self: center;
+}
+
+.titlebar-converter-header .converter-mode-btn {
+  background: transparent !important;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 4px 0;
+  border-radius: 0;
+  box-shadow: none !important;
+  transition: all 0.2s var(--transition-smooth);
+  display: flex;
+  /* 🏛️ 기둥 세우기 위한 정렬 기지 구축 */
+  align-items: center;
+}
+
+.titlebar-converter-header .converter-mode-btn:hover {
+  color: var(--text-main);
+}
+
+.titlebar-converter-header .converter-mode-btn.active {
+  color: var(--accent);
+  font-weight: 700;
+  background: transparent !important;
+}
+
+/* 🏛️ [궁극의 동기화] 단어 앞의 액센트 기둥 주입! 공간 예약을 통해 화면 떨림 방지 */
+.titlebar-converter-header .converter-mode-btn::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 1px;
+  margin-right: 6px;
+  opacity: 0;
+  /* 🌫️ 평소에는 유령처럼 공간만 지키고 있음 */
+  transform: scaleY(0.5);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.titlebar-converter-header .converter-mode-btn.active::before {
+  opacity: 1;
+  /* 🌟 활성화 즉시 영롱한 오렌지 기둥 강림! */
+  transform: scaleY(1);
+  box-shadow: 0 0 8px rgba(var(--theme-def-accent-rgb), 0.4);
+}
+
+.converter-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.converter-source-count {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  padding-right: 6px;
+  letter-spacing: 0.02em;
+}
+
+.converter-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  background: rgba(var(--rgb-contrast), 0.04);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.converter-mini-btn:hover {
+  background: rgba(var(--rgb-contrast), 0.08);
+  border-color: rgba(var(--rgb-contrast), 0.2);
+  transform: translateY(-1px);
+}
+
+.converter-mode-switch {
+  display: inline-flex;
+  background: rgba(var(--rgb-contrast), 0.04);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  justify-self: start;
+}
+
+.converter-mode-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 6px 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.converter-mode-btn:hover {
+  color: var(--text-main);
+}
+
+.converter-mode-btn.active {
+  color: #ffffff;
+  background: var(--accent);
+  box-shadow: 0 4px 12px rgba(var(--theme-def-accent-rgb), 0.3);
+}
+
+.converter-panel-body {
+  /* 🧱 [성역 기준] 컴포넌트의 고정 규격(620px)을 절대 기준으로 삼아 앱 전체 규격을 강제 복속! */
+  width: 1080px;
+  height: 620px;
+  flex: none;
+  /* 💥 부모의 늘림(Grow) 본성 억제 */
+
+  /* 📦 시각적 스타일 유지 */
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(var(--rgb-contrast), 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  box-sizing: border-box;
+
+  /* 스크롤 넘침 방지용 안전 레일 */
+  overflow: hidden;
+}
+
+.converter-workbench-grid {
+  display: grid;
+  /* 🧱 [유저 칙령] 비율 기반 본성을 타파하고, 420px 절대 고정값 규격으로 봉인! */
+  grid-template-columns: 420px 1fr;
+  /* 🔒 [상단바 동기화] 상단 그리드와 동일하게 콘텐츠 자동 팽창(Auto-Grow) 차단! */
+  gap: 20px;
+  height: 100%;
+}
+
+.converter-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.converter-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* 🔥 [긴급] 자식이 늘어나도 부모가 비대해지는 것을 막는 절대 잠금장치! */
+  padding: 16px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.12);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.02), 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 👑 [시각적 피날레] 설정의 마침표를 찍는 하단 고정형 액션 버퍼 */
+.converter-action-footer {
+  margin-top: 20px;
+  /* 🛸 [수정] 터미널이 아래에 있으므로 auto-margin 제거하여 자연스럽게 배치 */
+  padding-top: 16px;
+  border-top: 1px solid rgba(var(--rgb-contrast), 0.04);
+  /* 세련된 초박형 분리선 */
+}
+
+/* ⚡ [집행 버튼] 궁극의 정화를 완료한 초슬림 & 제로 알값 전용 디자인 */
+.primary-btn.converter-execute-btn {
+  position: relative;
+  overflow: hidden;
+  /* 📐 [황금비 수호] 순수한 클래스 체계로 120x36 고정 제어권을 확보! */
+  width: 120px;
+  height: 36px;
+  padding: 0 8px;
+  flex: none;
+  
+  /* 📐 [명령 이행] 알값(R)을 완전히 8px로 복원하여 둥근 미학 완성 */
+  border-radius: 8px;
+  
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(var(--theme-def-accent-rgb), 0.3);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-label-text {
+  position: relative;
+  z-index: 2;
+  /* 텍스트가 게이지 위로 올라오도록 보호 */
+}
+
+/* 🌑 [가동 중인 슬레이트 모드] 작업 중일 때는 희뿌연 회색이 아닌, 테마 고유의 컬러가 살짝 도는 '탁하고 진한 테크 배경'으로 변신! */
+.primary-btn.converter-execute-btn.processing {
+  opacity: 1;
+  /* 불투명도 강제 복원 */
+  /* 🔥 [개혁] 밋밋한 검정 대신, 테마의 액센트 컬러를 아주 탁하게 섞어 '살아있는 가동 색상'으로 업그레이드! */
+  background: linear-gradient(to bottom,
+      rgba(var(--theme-def-accent-rgb), 0.15),
+      rgba(var(--theme-def-accent-rgb), 0.05)), #1a1a1a;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(var(--theme-def-accent-rgb), 0.2);
+  /* 테두리에도 은은한 오렌지 테크 라인 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transform: none;
+  cursor: wait;
+}
+
+.primary-btn.converter-execute-btn:hover:not(:disabled):not(.processing) {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 8px 24px rgba(var(--theme-def-accent-rgb), 0.5);
+  filter: brightness(1.1);
+}
+
+.primary-btn.converter-execute-btn:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.99);
+  box-shadow: 0 2px 8px rgba(var(--theme-def-accent-rgb), 0.4);
+}
+
+/* 📟 [터미널 센터] 버튼 아래 광활한 공간에 펼쳐질 실시간 연산 상황판 */
+.converter-terminal-panel {
+  margin-top: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  /* 🔥 [수정] 최소높이 강제를 해제하여 절대적인 화면 높이 준수 강제! */
+  overflow: hidden;
+  /* 하단 이탈 절대 방지 */
+  animation: slideDownFade 0.3s ease-out forwards;
+}
+
+/* 📊 [게이지 트랙] */
+.terminal-progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(var(--rgb-contrast), 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 🚀 [차오르는 빛] 프로그레스 실시간 필러 */
+.terminal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ff9f68);
+  /* 테마 액센트 그라데이션 */
+  box-shadow: 0 0 10px rgba(var(--theme-def-accent-rgb), 0.6);
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 📜 [스크롤 로그] 유닉스 터미널 감성의 로깅 컨테이너 */
+.terminal-logs-container {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: transparent;
+  /* 🔥 [단일화] 이중 상자 효과 제거를 위해 배경 투명 처리 */
+  padding: 0;
+  /* 바깥 패널의 패딩만 활용 */
+}
+
+.terminal-logs-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terminal-logs-container::-webkit-scrollbar-thumb {
+  background: rgba(var(--rgb-contrast), 0.1);
+  border-radius: 3px;
+}
+
+.terminal-log-line {
+  word-break: break-all;
+  white-space: pre-wrap;
+  margin-bottom: 2px;
+  opacity: 0.85;
+  animation: logAppear 0.2s ease-out forwards;
+}
+
+.terminal-log-line:last-child {
+  color: #ffffff;
+  opacity: 1;
+  font-weight: 500;
+}
+
+/* ✍️ [메시지 작성창] 사용자가 병합 시 메모를 남기는 입력 구역 */
+.converter-message-area {
+  margin-top: 16px;
+  flex: 1;
+  /* 남은 공간 전체 사용 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.converter-file-list-section {
+  min-height: 0;
+}
+
+.converter-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.converter-section-title::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+.converter-file-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 28px;
+  margin-bottom: 12px;
+}
+
+.converter-section-text {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.converter-empty-list {
+  min-height: 96px;
+  border: 2px dashed rgba(var(--rgb-contrast), 0.06);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  flex: 1;
+  background: rgba(var(--rgb-contrast), 0.01);
+  transition: background 0.3s ease;
+}
+
+.converter-empty-list:hover {
+  background: rgba(var(--rgb-contrast), 0.03);
+  border-color: rgba(var(--rgb-contrast), 0.1);
+}
+
+.converter-help-block {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.converter-help-line {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.converter-item-list {
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  border-radius: 10px;
+  max-height: none;
+  /* 🌊 [최종 해결] 유저 지시 29px 데드 스페이스 박멸: flex: 1 주입으로 남는 잔여 공간을 자동 흡수! */
+  width: 100%;
+  height: 0;
+  /* 플렉스 기준점 제공 */
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.converter-item-table-head {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  padding-right: 6px;
+  /* 💡 스크롤바 두께(6px)만큼 예약하여 완벽한 칼각 정렬 달성 */
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(var(--rgb-contrast), 0.08);
+  background: rgba(var(--rgb-contrast), 0.03);
+}
+
+.converter-item-head-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.converter-item-head-btn:hover {
+  color: var(--text-main);
+  background: rgba(var(--rgb-contrast), 0.06);
+}
+
+.converter-item-head-btn:active {
+  background: rgba(var(--rgb-contrast), 0.1);
+}
+
+.converter-item-head-name {
+  padding: 10px 12px;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.converter-item-head-size {
+  padding: 10px 12px;
+  text-align: right;
+  border-left: 1px solid rgba(var(--rgb-contrast), 0.08);
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.converter-item-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid rgba(var(--rgb-contrast), 0.04);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.converter-item-row:hover {
+  background: rgba(var(--rgb-contrast), 0.05);
+}
+
+.converter-item-row:last-child {
+  border-bottom: none;
+}
+
+.converter-item-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.converter-item-index {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: var(--text-dim);
+  opacity: 0.6;
+  text-align: center;
+}
+
+.converter-item-name {
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.converter-item-size {
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-family: monospace;
+  color: var(--text-dim);
+  text-align: right;
+  white-space: nowrap;
+  opacity: 0.9;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.converter-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(var(--rgb-contrast), 0.06);
+  background: rgba(var(--rgb-contrast), 0.02);
+}
+
+.converter-item-footer-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.converter-item-footer-label {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+
+.converter-item-footer-sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+.converter-item-footer-value {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 600;
+  font-family: monospace;
+  white-space: nowrap;
+  background: rgba(var(--rgb-contrast), 0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.converter-option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(var(--rgb-contrast), 0.025);
+  border-radius: 12px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.04);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.converter-option-stack+.converter-option-stack {
+  margin-top: 12px;
+}
+
+.converter-option-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.converter-option-row>span {
+  white-space: nowrap;
+}
+
+.converter-option-row input:not([type='radio']),
+.converter-option-block input:not([type='radio']) {
+  height: 30px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  background: rgba(var(--rgb-contrast), 0.03);
+  color: var(--text-main);
+  padding: 0 10px;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  transition: all 0.2s ease;
+}
+
+.converter-option-row select,
+.converter-option-block select {
+  height: 30px;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.15);
+  background: rgba(var(--rgb-contrast), 0.04);
+  color: var(--text-main);
+  padding: 0 10px;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.converter-option-stack select option {
+  background: var(--bg-floating-panel);
+  color: var(--text-main);
+  font-size: 0.76rem;
+}
+
+.converter-option-row input:not([type='radio']):focus,
+.converter-option-row select:focus,
+.converter-option-block input:not([type='radio']):focus,
+.converter-option-block select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(var(--rgb-contrast), 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--theme-def-accent-rgb), 0.1);
+}
+
+.converter-option-path-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.converter-option-suffix {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  opacity: 0.8;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.converter-option-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.converter-option-block-label {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.converter-option-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(var(--rgb-contrast), 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.04);
+}
+
+.converter-option-radio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 4px;
+  transition: opacity 0.2s;
+  width: 100%;
+  overflow: hidden;
+}
+
+.converter-option-radio-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.converter-option-radio-item:hover {
+  opacity: 0.85;
+}
+
+.converter-option-radio-item input[type='radio'] {
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.converter-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0 0 0;
+  background: transparent;
+  border-top: none;
+}
+
+.converter-footer-hint {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.converter-footer-hint::before {
+  content: 'ⓘ';
+  opacity: 0.7;
+}
+
+.converter-footer .primary-btn {
+  background: var(--accent);
+  color: #ffffff;
+  padding: 10px 28px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(var(--theme-def-accent-rgb), 0.25);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.converter-footer .primary-btn:hover:not(:disabled) {
+  background: var(--accent);
+  box-shadow: 0 6px 20px rgba(var(--theme-def-accent-rgb), 0.4);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.converter-footer .primary-btn:disabled {
+  background: rgba(var(--rgb-contrast), 0.08);
+  color: var(--text-dim);
+  box-shadow: none;
+  opacity: 0.5;
+  transform: none;
+}
+
+.primary-btn {
+  padding: 10px 24px;
+  background: var(--accent);
+  /* 🔥 [개혁] 테마의 혼이 담긴 고품격 액센트 컬러 투입! */
+  color: #ffffff;
+  /* 💡 강렬한 액센트 위에서 빛나는 선명한 화이트 텍스트 */
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(var(--theme-def-accent-rgb), 0.25);
+  /* 🪐 은은한 컬러 광륜 장착 */
+  transition: all 0.25s var(--transition-smooth);
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  /* 세련된 발광 광채 효과 */
+  box-shadow: 0 6px 18px rgba(var(--theme-def-accent-rgb), 0.4);
+}
+
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  background: rgba(var(--rgb-contrast), 0.12) !important;
+  /* 🌫️ 중립적 비활성화 상태로 즉시 격하 */
+  color: rgba(var(--rgb-contrast), 0.5) !important;
+  box-shadow: none !important;
+}
+
+/* 📋 Converter Top-Action Dropdown Menu */
+.converter-menu-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.converter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: rgba(25, 25, 25, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  min-width: 180px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  padding: 6px;
+  z-index: 1000;
+  transform-origin: top right;
+  animation: dropdownFadeIn 0.2s cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+.converter-dropdown-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 6px 12px 8px;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+
+.converter-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  gap: 8px;
+}
+
+.converter-dropdown-item:hover:not(:disabled) {
+  background: rgba(var(--rgb-contrast), 0.06);
+  transform: translateX(2px);
+}
+
+.converter-dropdown-item:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.converter-dropdown-item.danger {
+  color: #ff6b6b;
+}
+
+.converter-dropdown-item.danger:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.converter-dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 4px 0;
+}
+
+/* 🎯 File Row Selection State */
+.converter-item-row {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.converter-item-row:hover {
+  background: rgba(var(--rgb-contrast), 0.03);
+}
+
+.converter-item-row.selected {
+  background: rgba(var(--theme-def-accent-rgb), 0.12) !important;
+  position: relative;
+}
+
+.converter-item-row.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+}
+
+.converter-item-row.selected .converter-item-index {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 🚀 [Master Dashboard V2] New Console Dashboard Styling */
+.converter-console-layout {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  height: 135px;
+  /* 📐 [고정] 하단 관제패널의 여유롭고 정갈한 절대 높이 최적화 */
+  flex-shrink: 0;
+  /* 🔒 공간 압박에도 절대 수축 거부! */
+}
+
+.console-control-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  /* ↕️ 상단(버튼)과 하단(게이지) 공간 배분 */
+  gap: 8px;
+  height: 100%;
+
+  /* 🧱 [동기화] 우측 터미널 패널과 완벽히 동일한 대시보드 카드 아키텍처 부여 */
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(var(--rgb-contrast), 0.06);
+  border-radius: 12px;
+  padding: 8px;
+  /* 📏 내부 패딩 통일 */
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.02), 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: slideDownFade 0.3s ease-out forwards;
+  /* 🎬 등장 애니메이션 동시성 확보 */
+}
+
+.console-log-column {
+  flex: 2.2;
+  /* 📊 황금비 배분 (로그 터미널을 좀 더 광활하게!) */
+  height: 100%;
+  min-width: 0;
+  /* 🧱 플렉스 하위 요소 무한팽창 방지용 보루 */
+}
+
+.console-log-column .converter-terminal-panel {
+  margin-top: 0 !important;
+  /* 🧹 부모 그리드 레이아웃 통제를 위한 마진 리셋 */
+  height: 100%;
+  flex: 1;
+}
+
+/* 🎮 버튼 구역 레이아웃 통합 컨트롤러 */
+.console-btn-wrapper {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* 🎮 사이버네틱 타이머 & 게이지 스타일 통합 아키텍처 */
+.console-gauge-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 🧹 [정리] 불필요해진 중복 백그라운드 및 테두리 파괴, 카드 내부에 자연스럽게 안착! */
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.console-gauge-container {
+  position: relative;
+  width: 56px;
+  /* 🧬 통합된 레이아웃에 최적화된 직경 튜닝 */
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  /* ⌚ 12시 방향 기점 정렬 */
+  display: block;
+  /* 🚫 블록 지정으로 SVG 유령 마진 차단! */
+}
+
+.gauge-track {
+  fill: none;
+  stroke: rgba(var(--rgb-contrast), 0.08);
+  stroke-width: 7;
+  /* ⚖️ 안정감을 주는 선 두께 */
+}
+
+.gauge-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gauge-fill.pulsing {
+  filter: drop-shadow(0 0 4px var(--accent));
+  animation: gaugePulse 2s infinite ease-in-out;
+}
+
+.gauge-center-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gauge-percent-text {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.gauge-timer-text {
+  font-size: 0.62rem;
+  font-family: 'Consolas', monospace;
+  font-weight: 600;
+  color: var(--accent);
+  opacity: 0.9;
+  margin-top: -1px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 4px;
+  border-radius: 4px;
+}

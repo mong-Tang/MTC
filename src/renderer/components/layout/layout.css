@@ -1,0 +1,1103 @@
+/* ============================================================ */
+/* ✨ AUTO-MIGRATED LAYOUT STYLES FROM index.css                */
+/* ============================================================ */
+
+/* ⚓ Floating Top Bar (절대 숨지 않는 최후의 보루) */
+.floating-control-anchor {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 2000;
+  /* 🚀 레이어 격상: 절대 우위의 클릭 우선순위 확보 */
+  -webkit-app-region: no-drag !important;
+  /* 🛡️ [앵커 수호단] 좌측 상단 드래그 영역의 마수를 차단하고 100% 완벽한 호버/클릭 반응성 복구! */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-floating-bar);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 🎭 미적 트랜지션 가속 곡선 튜닝 */
+}
+
+/* 🌫️ [단아의 미학 V2] 사이드바 폐쇄 시, 콘트롤 패널을 좌측 벽 너머로 6px+100% 숨기고 '딱 10px' 센서만 꼬리처럼 남깁니다. */
+.floating-control-anchor.immersive-mode {
+  opacity: 1;
+  /* 투명화 중단: 10px 꼬리를 선명하게 노출하여 존재감 신호 발신 */
+  /* 📐 [황금비 좌표연산] 16px 여백 + 자기너비 100% - 10px 노출 = calc(-100% - 6px) 좌측 철수! */
+  transform: translateX(calc(-100% - 6px));
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.5);
+  /* 10px 꼬리에 입체적 그림자 부여 */
+  cursor: pointer;
+
+  /* 🎨 [시인성 부활] 배경색을 테마 액센트 색상으로 강제 발광시켜 '당겨주세요' 시그널 전달! */
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  opacity: 0.85;
+  /* 살짝의 투명도로 고급스러움 가미 */
+}
+
+/* 📡 [초감각 레이더] 4px의 좁은 물리 판정을 극복하기 위해 우측으로 30px 확장된 '투명 유도 히트박스' 자동 생성! */
+.floating-control-anchor.immersive-mode::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  /* 상하 조준 범위를 넓혀 더욱 쾌적한 접근성 부여 */
+  bottom: -10px;
+  left: 0;
+  right: -36px;
+  /* 우측 감지 센서 확장! */
+  background: transparent;
+  z-index: -1;
+  /* 본체 뒤에서 안전하게 히트박스 역할 수행 */
+}
+
+.floating-control-anchor.immersive-mode:hover {
+  transform: translateX(0);
+  /* 🚀 [출격] 은폐를 해제하고 원래의 16px 정위치로 부드럽게 글라이딩 출격! */
+  box-shadow: var(--shadow-popup);
+
+  /* 🔮 [원상 복구] 출격과 동시에 원래의 단아한 반투명 유리 재질로 부드럽게 모핑(Morphing) */
+  background: var(--bg-floating-bar) !important;
+  border-color: var(--border-subtle) !important;
+  opacity: 1;
+}
+
+.anchor-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s var(--transition-smooth);
+}
+
+.anchor-control-btn:hover {
+  color: var(--text-main);
+  background: rgba(var(--rgb-contrast), 0.05);
+}
+
+.anchor-control-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.anchor-control-btn:disabled:hover {
+  color: var(--text-dim);
+  background: transparent;
+}
+
+/* 🚀 [버튼 내장 트랙] 하단에 밀착하여 숨죽이고 있는 레이저 레일 */
+.btn-inner-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  /* 초박형 레이저 두께 */
+  background: rgba(0, 0, 0, 0.2);
+  /* 트랙은 살짝 어둡게 음각 효과 */
+  z-index: 1;
+}
+
+/* 💡 [최고존엄 게이지 필러] 액센트 테마 컬러가 폭포처럼 흐르며 에너지를 충전! */
+.btn-inner-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ff9f68);
+  /* 🔥 테마 액센트 용암 컬러 */
+  box-shadow: 0 0 15px rgba(var(--theme-def-accent-rgb), 0.8), 0 0 5px #ffffff inset;
+  border-radius: 0 4px 4px 0;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* ✨ [빛의 파동] 게이지 끝자락에 살짝 맺히는 영롱한 스파크 */
+.btn-inner-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  background: #ffffff;
+  box-shadow: 0 0 10px 2px #ffffff;
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes logAppear {
+  from {
+    opacity: 0;
+    transform: translateX(5px);
+  }
+
+  to {
+    opacity: 0.85;
+    transform: translateX(0);
+  }
+}
+
+.message-area-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  padding-left: 4px;
+}
+
+.message-textarea {
+  flex: 1;
+  min-height: 160px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(var(--rgb-contrast), 0.08);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-main);
+  resize: none;
+  outline: none;
+  transition: all 0.3s var(--transition-smooth);
+}
+
+.message-textarea:focus {
+  background: rgba(0, 0, 0, 0.25);
+  border-color: rgba(var(--theme-def-accent-rgb), 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.message-textarea::placeholder {
+  color: rgba(var(--rgb-contrast), 0.25);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* 📂 Sidebar Structure */
+.app-sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  color: var(--text-sidebar);
+  /* 재색 바탕 위에서 극강의 가독성을 확보합니다 */
+  border-right: 1px solid var(--border-subtle);
+  /* 🛡️ 칼날 같은 경계선 부여 */
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.4s var(--transition-smooth);
+  z-index: 500;
+}
+
+/* 📏 Layout Splitter Bar (The Handle) */
+.layout-resizer {
+  width: 2px;
+  height: 100%;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 1000;
+  position: relative;
+  transition: background 0.2s;
+  /* 사이드바가 닫혀 있을 때는 리사이저도 함께 숨겨져야 합니다! */
+}
+
+.layout-resizer:hover,
+.layout-resizer.active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* 리사이징 중 텍스트 드래그 방지용 유틸리티 */
+.app-container.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* 사이드바 닫힐 때의 우아한 마진 트랜지션 */
+.app-sidebar.collapsed {
+  margin-left: calc(var(--sidebar-width) * -1);
+}
+
+.sidebar-header {
+  padding: 70px 20px 16px;
+  /* 상단 플로팅 버튼 비켜주기 */
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* 🚀 [신규] 스르륵 열리며 아래를 밀어내는 통합 메뉴판 */
+.sidebar-menu-panel {
+  max-height: 0;
+  /* 기본 상태는 닫힘 */
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 0px solid var(--border-subtle);
+}
+
+.sidebar-menu-panel.open {
+  max-height: 220px;
+  /* 메뉴 높이만큼 확 열리며 밀어냄 */
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-menu-list {
+  padding: 8px 0;
+  /* 좌우 여백 완전히 제거! 💥 */
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* 버튼 간의 간격도 없애서 연속된 면으로 만듭니다. */
+}
+
+.sidebar-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  /* 좌측 시작점을 적절히 확보 */
+  width: 100%;
+  /* 무조건 100% 꽉 차게! */
+  background: transparent;
+  border: none;
+  /* 테두리 제거 */
+  border-radius: 0;
+  /* 박스 형태 파괴! 완벽한 평면! 💥 */
+  color: var(--text-main);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.sidebar-menu-btn:hover {
+  background: rgba(var(--rgb-contrast), 0.06);
+  /* 이제 칸 전체가 칠해집니다! */
+  transform: none;
+  /* 밀려 나가는 효과도 정갈하게 제거 */
+}
+
+.sidebar-menu-btn svg {
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+
+.menu-btn:hover svg {
+  color: var(--accent);
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 8px 0;
+  /* 여기도 좌우 여백 파괴! 통일성 부여! 💥 */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 📂 [신규] 라이브러리 그룹(폴더) 헤더 스타일 */
+.sidebar-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  user-select: none;
+}
+
+.sidebar-folder-header svg {
+  color: var(--accent);
+  /* 폴더 아이콘은 포인트 컬러로 강조! */
+  min-width: 16px;
+}
+
+.sidebar-folder-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 📜 하위 트리 리스트 들여쓰기 구조 */
+.sidebar-file-list-nested .sidebar-file-item {
+  padding-left: 38px;
+  /* 📂 폴더 밑으로 쏙 들어가는 리드미컬한 들여쓰기 */
+  border-left: 1px solid transparent;
+}
+
+.sidebar-file-list-nested .sidebar-file-item:hover {
+  border-left-color: rgba(var(--rgb-contrast), 0.15);
+}
+
+.sidebar-file-list-nested .sidebar-file-item.active {
+  border-left-color: var(--accent);
+  /* 활성화 시 좌측 가이드라인 발광 */
+}
+
+.sidebar-file-name-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 📄 [완성] 일체화된 풀 와이드 리스트 항목 */
+.sidebar-file-item {
+  padding: 8px 20px;
+  /* 📐 [피드백] 가독성과 한계 밀도(Density)를 극대화하기 위해 12px -> 8px로 최적 압축! */
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 장문 자동 생략 */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  /* 완벽한 가로 점령 */
+}
+
+.sidebar-file-item:hover {
+  background: rgba(var(--rgb-contrast), 0.05);
+  /* 메뉴판 호버와 정확히 동일한 톤 */
+  color: var(--text-main);
+}
+
+.sidebar-file-item.active {
+  background: rgba(var(--rgb-contrast), 0.08);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* 🖼️ Main Content (The Vast Canvas) */
+.app-main-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  position: relative;
+}
+
+.viewer-placeholder {
+  text-align: center;
+  max-width: 600px;
+}
+
+.viewer-placeholder h1 {
+  font-weight: 300;
+  font-size: 2rem;
+  letter-spacing: -0.5px;
+  color: var(--text-main);
+  margin-bottom: 12px;
+}
+
+.viewer-placeholder p {
+  color: var(--text-dim);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 🪟 Window Frame Controls (Frameless Mode Support) */
+.titlebar-draggable-region {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 200px;
+  /* 🛡️ [방공구역 선포] 우측 컨트롤 버튼 영역(약 184px)을 드래그 영역에서 완전히 배제하여 호버링 간섭 100% 원천 차단! */
+  height: 40px;
+  /* 드래그 가능한 상단 높이 */
+  -webkit-app-region: drag;
+  /* 창을 잡고 움직일 수 있게 함 */
+  z-index: 900;
+  pointer-events: none;
+  /* 자식 요소인 버튼들이 클릭되도록 함 */
+}
+
+.window-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  z-index: 1500;
+  -webkit-app-region: no-drag !important;
+  pointer-events: auto !important;
+  align-items: center;
+  overflow: visible !important;
+  /* 🛡️ 이중 안전장치: 어떠한 경우에도 자식이 잘리지 않도록! */
+}
+
+/* 🎀 [신규] 좌측으로 촤르륵 펼쳐지는 타이틀바 확장 리본 */
+.title-menu-ribbon {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition: max-width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+  -webkit-app-region: no-drag !important;
+  /* 🚨 3차 방어막: 내부 리본도 무조건 해제! */
+}
+
+.title-menu-ribbon.expanded {
+  max-width: 500px;
+  /* 🚀 4개 이상의 메뉴(이동, 목록편집, 보기, 편집)를 넉넉히 품도록 확장! */
+  opacity: 1;
+  padding-right: 8px;
+  overflow: visible !important;
+  /* 🚨 결정적 핵심: 드롭다운 메뉴가 아래로 쏟아져 나오도록 봉인 해제!!! 🌊 */
+}
+
+.ribbon-item {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 400;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  -webkit-app-region: no-drag !important;
+  /* 🚨 4차 방어막: 텍스트 메뉴도 해제! */
+}
+
+.ribbon-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+/* 🫧 [신규] 날개 밑으로 쏟아져 내릴 유리알 드롭다운 */
+.ribbon-dropdown-container {
+  position: relative;
+  -webkit-app-region: no-drag !important;
+  /* 🚨 5차 방어막 */
+}
+
+.ribbon-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  /* 🚀 단축키 공간을 위해 너비 상향 조정! */
+  background: var(--bg-floating-panel);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: var(--shadow-popup);
+  padding: 6px 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInSlideDown 0.2s ease-out;
+  -webkit-app-region: no-drag !important;
+  /* 🚨 6차 방어막 */
+}
+
+.ribbon-dropdown-item {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 8px 12px;
+  /* 패딩 최적화 */
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  -webkit-app-region: no-drag !important;
+}
+
+.ribbon-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ribbon-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+}
+
+@keyframes fadeInSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.win-btn {
+  width: 46px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-app-region: no-drag !important;
+  /* 🚨 최종 결정타: 완벽 방출! */
+}
+
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.win-btn.btn-close:hover {
+  background: #e81123;
+  /* 윈도우 표준 종료 버튼 레드 */
+  color: white;
+}
+
+.win-btn svg {
+  stroke-width: 1.5;
+}
+
+/* 🎨 [신규] 초절정 럭셔리 커스텀 토글 (사이드바 옵션용) */
+.sidebar-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.sidebar-toggle-label:hover {
+  opacity: 0.8;
+}
+
+.sidebar-invisible-check {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* 🟩 체크박스 상자 그 자체 */
+.sidebar-checkbox-ui {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(var(--rgb-contrast), 0.3);
+  border-radius: 4px;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(var(--rgb-contrast), 0.05);
+}
+
+/* 🎯 체크됐을 때의 영롱한 변화 */
+.sidebar-invisible-check:checked~.sidebar-checkbox-ui {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(64, 224, 208, 0.4);
+  /* 은은한 후광 효과 */
+}
+
+/* 📍 내부의 작고 귀여운 체크(✓) 표시 */
+.sidebar-checkbox-ui::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid white;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s ease;
+}
+
+.sidebar-invisible-check:checked~.sidebar-checkbox-ui::after {
+  transform: rotate(45deg) scale(1);
+}
+
+/* 📝 옵션 텍스트 스타일 */
+.sidebar-option-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+.sidebar-invisible-check:checked~.sidebar-option-text {
+  color: var(--text-main);
+}
+
+@keyframes fadeInPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.win-btn:hover {
+  background: rgba(var(--rgb-contrast), 0.08);
+  color: var(--text-main);
+}
+
+.win-btn.btn-close:hover {
+  background: #e81123;
+  /* 윈도우 표준 종료 버튼 레드 */
+  color: white;
+}
+
+.win-btn svg {
+  stroke-width: 1.5;
+}
+
+/* ─────────────────────────────────────────
+   🌌 [신규] Premium Custom Status Bar 
+   ───────────────────────────────────────── */
+.custom-status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  background: rgba(var(--theme-def-sidebar-rgb), var(--theme-def-status-glass-opacity));
+  /* 🌌 [ThemeDef] 보존된 사이드바 DNA 주입 */
+  backdrop-filter: blur(var(--theme-def-status-blur));
+  /* 🔮 보존된 기억의 블러링 */
+  border-top: 1px solid rgba(var(--rgb-contrast), 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  /* 📏 내부 요소가 직접 폭을 관리하도록 패딩 해제 */
+  font-size: 11px;
+  color: var(--text-dim);
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 999;
+  flex-shrink: 0;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  /* 📏 사이드바 스플릿과 운명을 같이하는 물리적 동기화! */
+  width: var(--sidebar-width);
+  padding: 0 16px;
+  box-sizing: border-box;
+
+  /* ⚔️ 수직 분할선 하단 연장 해제 (유저 명시) */
+  border-right: none;
+
+  /* 🌊 사이드바 접힐 때의 애니메이션 타이밍까지 완벽 싱크! */
+  transition: width 0.4s var(--transition-smooth), border-right-color 0.4s var(--transition-smooth);
+  flex-shrink: 0;
+}
+
+/* 🧱 사이드바가 닫혔을 때의 상태바 좌측 영역 극초소형 압축! */
+.sidebar-collapsed .status-left {
+  width: 0 !important;
+  padding: 0;
+  border-right-color: transparent;
+  /* 선도 함께 조용히 증발 */
+}
+
+.status-text {
+  color: var(--accent);
+  /* 🌟 사용자 지정 Canon Chestnut 색상을 텍스트에 전격 반영!! */
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  opacity: 0.95;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 🌌 메인 영역 전체 레이아웃 재건 */
+.status-main-content-zone {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px;
+  overflow: hidden;
+  position: relative;
+  /* ⚓ [필수] 중앙 절대 좌표 고정을 위한 기준 닻 설정! */
+}
+
+/* ⬅️ 2구역 좌측 군락 (배지 + 파일명 합체) */
+.status-content-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  /* 자식 요소인 파일명이 넘칠 경우 대비 */
+  flex-shrink: 1;
+}
+
+/* 📄 파일명 전용 텍스트 스타일링 (2구역용) */
+.filename-text {
+  /* status-text의 특성을 물려받으며, 길어질 경우 우아하게 말줄임 처리 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+  /* 메인 영역이라 훨씬 넉넉하게 할당 */
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* 🏷️ 스테이터스 배지 (알림 램프) */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.status-badge.filename {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: none;
+  /* 파일명 대소문자 원본 보존 */
+  letter-spacing: 0;
+}
+
+.status-badge.idle {
+  background: rgba(var(--rgb-contrast), 0.04);
+  color: var(--text-dim);
+  border: 1px solid rgba(var(--rgb-contrast), 0.12);
+}
+
+/* 🏛️ LIST 전용 테마: 기술적이고 지적인 메탈릭 실버 톤 */
+.badge-list {
+  background: rgba(var(--theme-def-list-badge-rgb), 0.07) !important;
+  /* 🌌 [ThemeDef] 계승 */
+  border-color: rgba(var(--theme-def-list-badge-rgb), 0.22) !important;
+  color: #A0B2C2 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 💤 STANDBY 전용 테마: 웜톤 배경과 녹아드는 초저전력 대기광 */
+.badge-engine.idle {
+  background: rgba(var(--theme-def-accent-rgb), 0.03) !important;
+  /* 🌌 [ThemeDef] 계승 */
+  border-color: rgba(var(--theme-def-accent-rgb), 0.15) !important;
+  color: var(--text-dim) !important;
+  opacity: 0.8;
+}
+
+.status-badge.active {
+  background: rgba(var(--theme-def-accent-rgb), 0.08);
+  /* 🌌 [ThemeDef] 계승 */
+  color: var(--accent);
+  border: 1px solid rgba(var(--theme-def-accent-rgb), 0.3);
+  box-shadow: 0 0 10px rgba(var(--theme-def-accent-rgb), 0.12);
+  animation: activePulse 2.5s infinite alternate ease-in-out;
+  font-weight: 700;
+}
+
+@keyframes activePulse {
+  from {
+    opacity: 0.85;
+    box-shadow: 0 0 6px rgba(var(--theme-def-accent-rgb), 0.1);
+    border-color: rgba(var(--theme-def-accent-rgb), 0.25);
+  }
+
+  to {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(var(--theme-def-accent-rgb), 0.2);
+    border-color: rgba(var(--theme-def-accent-rgb), 0.45);
+  }
+}
+
+/* 🔢 페이지 인디케이터 */
+.page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: monospace;
+  /* 숫자 간격 일관성을 위한 고정폭 */
+  font-size: 12px;
+  color: var(--text-main);
+}
+
+.page-indicator .divider {
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.page-indicator .total {
+  color: var(--text-dim);
+}
+
+.page-indicator .unit {
+  font-size: 9px;
+  margin-left: 2px;
+  color: var(--accent);
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+/* 🧱 상태바가 화면을 가로지르게 되었으므로 전체 하단 완충 여백 확보! */
+.app-sidebar {
+  padding-bottom: 26px;
+  /* 사이드바는 스크롤을 품어야 하므로 패딩 방식 유지 */
+}
+
+.app-main-content {
+  /* 🚀 [정렬 최적화] 패딩 대신 마진을 사용하여 박스의 물리적 크기를 상태바 직전에서 
+     칼같이 단절시킵니다. 이로써 Flexbox의 내부 정렬 왜곡이 100% 완벽 소멸됩니다! */
+  margin-bottom: 26px;
+}
+
+/* 🎨 메인 콘텐츠 기본 박스 레이아웃 보정 */
+.app-main-content {
+  flex: 1;
+  height: 100%;
+  box-sizing: border-box;
+  position: relative;
+  /* 🧭 [필수] 내비게이션 오버레이의 기준점 생성! */
+}
+
+/* 🧭 뷰어 오버레이 내비게이션 (시네마틱 글래스 화살표) */
+.viewer-nav-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 80px;
+  /* 🔍 [피드백 반영] 최적의 가시성과 오작동 방지를 위한 정밀 폭 조정! */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 90;
+  /* 스테이터스바 보단 아래, 콘텐츠보단 위 */
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: all;
+}
+
+.viewer-nav-overlay.left {
+  left: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.15), transparent);
+}
+
+.viewer-nav-overlay.right {
+  right: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.15), transparent);
+}
+
+.viewer-nav-overlay:hover {
+  opacity: 1;
+}
+
+.viewer-nav-circle-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 튕기는 듯한 고급진 애니메이션 */
+  user-select: none;
+}
+
+/* 🚀 화살표 아이콘 세부 보정 */
+.viewer-nav-circle-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.viewer-nav-overlay:hover .viewer-nav-circle-btn {
+  background: rgba(var(--theme-def-accent-rgb), 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 12px 40px rgba(var(--theme-def-accent-rgb), 0.5);
+}
+
+/* 🚫 비활성화 상태 (목록 끝) */
+.viewer-nav-overlay.disabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   🧭 STATUS BAR NAVIGATION CLUSTER (상태바 중앙 조종석)
+   ========================================================================== */
+.status-content-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+
+  /* 📍 [유저 격분 방지] 절대 좌표 강제 구속 레이아웃 (요동 방지) */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  /* 좌우 요소보다 상위에 위치하여 클릭 보장 */
+}
+
+.status-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 18px;
+  background: rgba(var(--rgb-contrast), 0.04);
+  border: 1px solid rgba(var(--rgb-contrast), 0.15);
+  border-radius: 4px;
+  color: var(--text-main);
+  font-size: 16px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-bottom: 2px;
+  /* 꺽쇠 기호 세로 정렬 미세 보정 */
+  outline: none;
+}
+
+.status-nav-btn:hover:not(:disabled) {
+  background: rgba(var(--theme-def-accent-rgb), 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(var(--theme-def-accent-rgb), 0.2);
+  transform: translateY(-1px);
+}
+
+.status-nav-btn:active:not(:disabled) {
+  transform: translateY(0px) scale(0.95);
+  background: var(--accent);
+  color: white;
+}
+
+.status-nav-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background: transparent;
+  border-color: rgba(var(--rgb-contrast), 0.08);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gaugePulse {
+  0% {
+    opacity: 0.85;
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+
+  100% {
+    opacity: 0.85;
+  }
+}

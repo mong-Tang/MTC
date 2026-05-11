@@ -17,6 +17,7 @@ interface SidebarProps {
   libraryFolderName?: string | null; // 📂 [추가] 라이브러리 그룹 폴더 명칭
   workspaceMode?: 'viewer' | 'converter'; // 🛰️ [신규] 현재 탑승 중인 차원(모드) 정보
   onShowViewer?: () => void; // 🏡 [신규] 메인 'MTC Center'로의 회귀 신호 발생기
+  sidebarWidth?: number; // 📏 [추가] 현재 사이드바의 리사이즈 실측 너비 정보
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -25,7 +26,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   libraryItems = [], activeLibraryPath = null, selectedLibraryPaths = [], onLibraryItemClick,
   libraryFolderName = null, // 📂 기본값 설정
   workspaceMode = 'viewer',
-  onShowViewer
+  onShowViewer,
+  sidebarWidth = 180
 }) => {
   const selectedPathSet = new Set(selectedLibraryPaths);
   return (

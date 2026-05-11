@@ -167,10 +167,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
         </div>
       ) : (
         <div className="viewer-placeholder">
-          <h1>단아(端雅)의 미학</h1>
           <p>
-            오직 작품만이 당신의 시야에 머물 수 있도록,<br /> 
-            불필요한 소음을 걷어내었습니다.<br /><br />
             <small style={{ opacity: 0.5 }}>(💡 사이드바 메뉴 ➡️ '파일 열기'를 클릭하세요.)</small>
           </p>
         </div>

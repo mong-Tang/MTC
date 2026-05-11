@@ -435,10 +435,10 @@ button, input, select, a, .launcher-recent-item, .launcher-btn, .custom-menu-tri
    Workspace Layout
 ───────────────────────────────────────── */
 .workspace {
-  --sidebar-width: 260px;
+  --sidebar-width: 180px;
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(180px, var(--sidebar-width)) 1px minmax(0, 1fr);
+  grid-template-columns: minmax(150px, var(--sidebar-width)) 1px minmax(0, 1fr);
   min-height: 0;
   height: calc(100% - 56px);
   position: relative;
