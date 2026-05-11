@@ -77,7 +77,7 @@ function createMainWindow(): BrowserWindow {
     width: currentSettings.windowBounds.width,
     height: currentSettings.windowBounds.height,
     minWidth: 1354,
-    minHeight: 840,
+    minHeight: 727,
     frame: false,
     icon: appIcon,
     webPreferences: {

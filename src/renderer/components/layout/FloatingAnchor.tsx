@@ -8,6 +8,7 @@ interface FloatingAnchorProps {
   onShowConverter: () => void;
   canShowViewer: boolean;
   canShowConverter: boolean;
+  isSidebarOpen: boolean; // 🧬 [신규] 사이드바 개폐 상태 주입 수신!
 }
 
 export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({
@@ -16,10 +17,11 @@ export const FloatingAnchor: React.FC<FloatingAnchorProps> = ({
   onShowViewer,
   onShowConverter,
   canShowViewer,
-  canShowConverter
+  canShowConverter,
+  isSidebarOpen
 }) => {
   return (
-    <header className="floating-control-anchor">
+    <header className={`floating-control-anchor ${!isSidebarOpen ? 'immersive-mode' : ''}`}>
       <button 
         className="anchor-control-btn" 
         onClick={onToggleSidebar} 

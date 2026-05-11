@@ -8,7 +8,7 @@ import type { SerializableAppError } from '../../shared/ipc/ipc-result';
 import type { UpsertRecentInput } from '../../shared/stores/reading-state';
 import en from '../../locales/en.json';
 import ko from '../../locales/ko.json';
-import { applyZipEditInTemp, convertArchiveToZipWorkflow, type ZipEditRequest } from '../services/archive-workflow';
+import { applyZipEditInTemp, convertArchiveToZipWorkflow, mergeArchivesWorkflow, type ZipEditRequest } from '../services/archive-workflow';
 import { getZipPage, openZip } from '../services/zip-index-service';
 import { getProgress, getRecentItems, removeRecentItemByZipPath, setProgress, upsertRecentItem } from '../stores/reading-state-store';
 
@@ -435,6 +435,49 @@ export function registerIpcHandlers(): void {
       await setProgress(fileId, pageIndex);
       return { ok: true, data: true } as const;
     } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
+  ipcMain.handle('converter:merge-files', async (_event, sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension: string = '.zip', comment?: string) => {
+    try {
+      if (!sourcePaths || sourcePaths.length === 0) {
+        throw new AppError('UNKNOWN', 'No source files selected for merge.');
+      }
+
+      await ensureDirectoryExists(outputDirectory);
+
+      // 🎯 유니크한 파일명 생성
+      const effectiveFilename = outputFilename.trim() || 'merged_output';
+      const finalExtension = targetExtension.startsWith('.') ? targetExtension : `.${targetExtension}`;
+      const destinationPath = await resolveUniquePath(outputDirectory, `${effectiveFilename}${finalExtension}`);
+
+      const logs: string[] = [
+        `[Merge Engine Init] Destination: ${destinationPath}`,
+        `[Items Count] ${sourcePaths.length}`
+      ];
+
+      // 🔥 코어 머지 엔진 가동 & 실시간 로그 전송선 연결!
+      const workflowResult = await mergeArchivesWorkflow(
+        sourcePaths, 
+        destinationPath,
+        (event) => {
+          // 📡 실시간으로 렌더러(UI)에게 진행상황 송신
+          _event.sender.send('converter:progress', event);
+        },
+        comment // 📝 사용자가 작성한 병합 메시지 주입!
+      );
+
+      return {
+        ok: true,
+        data: {
+          outputPath: destinationPath,
+          logs: [...logs, ...workflowResult.logs]
+        }
+      } as const;
+
+    } catch (error) {
+      console.error('[IPC] Converter Merge Failed:', error);
       return { ok: false, error: toSerializableError(error) } as const;
     }
   });

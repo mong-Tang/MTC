@@ -605,6 +605,7 @@ function App() {
         onShowConverter={() => setWorkspaceMode('converter')}
         canShowViewer={workspaceMode !== 'viewer'}
         canShowConverter={workspaceMode !== 'converter'}
+        isSidebarOpen={isSidebarOpen} // 🧬 [동기화] 최신형 라이브 상태 동기화 완료!
       />
 
       {/* 📂 서고 */}
@@ -626,6 +627,11 @@ function App() {
         onLibraryItemClick={handleLibraryItemClick}
         // onLibraryItemDoubleClick는 다시 역사속으로 사라집니다.
         libraryFolderName={libraryFolderName} // 📂 [전송] 라이브러리 그룹 이름!
+        workspaceMode={workspaceMode} // 🛸 [연동] 현재 차원 정보 송신!
+        onShowViewer={() => { // 🏡 [복귀] MTC Center로의 귀환 명령 생성!
+          setWorkspaceMode('viewer');
+          setSidebarMenuOpen(false);
+        }}
       />
 
       {/* 📏 리사이저 */}

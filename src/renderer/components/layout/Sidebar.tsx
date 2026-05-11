@@ -15,13 +15,17 @@ interface SidebarProps {
   selectedLibraryPaths?: string[];
   onLibraryItemClick?: (path: string) => void;
   libraryFolderName?: string | null; // 📂 [추가] 라이브러리 그룹 폴더 명칭
+  workspaceMode?: 'viewer' | 'converter'; // 🛰️ [신규] 현재 탑승 중인 차원(모드) 정보
+  onShowViewer?: () => void; // 🏡 [신규] 메인 'MTC Center'로의 회귀 신호 발생기
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   isOpen, isMenuOpen, onOpenConverter, onOpenFile, onOpenFolder, onFileSelect,
   loadSameBook, onToggleLoadSameBook,
   libraryItems = [], activeLibraryPath = null, selectedLibraryPaths = [], onLibraryItemClick,
-  libraryFolderName = null // 📂 기본값 설정
+  libraryFolderName = null, // 📂 기본값 설정
+  workspaceMode = 'viewer',
+  onShowViewer
 }) => {
   const selectedPathSet = new Set(selectedLibraryPaths);
   return (
@@ -67,11 +71,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <IconFolder />
             폴더 열기
           </button>
-          {/* 💎 컨버터 모달을 여는 핵심 진입로! */}
-          <button className="sidebar-menu-btn" onClick={onOpenConverter}>
-            <IconPlay />
-            콘텐츠 변환
-          </button>
+          {/* 💎 [공간 초월 연동] 컨버터와 뷰어(MTC Center)를 자재로 넘나드는 디멘션 스위치! */}
+          {workspaceMode === 'converter' ? (
+            <button className="sidebar-menu-btn" onClick={onShowViewer}>
+              <IconImage />
+              MTC Center 실행
+            </button>
+          ) : (
+            <button className="sidebar-menu-btn" onClick={onOpenConverter}>
+              <IconPlay />
+              컨버터 실행
+            </button>
+          )}
           <button className="sidebar-menu-btn" onClick={() => console.log('Settings open')}>
             <IconSettings />
             설정

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import type { ConverterMode } from '../layout/ConverterPanel';
 import type { CompressionPolicy } from '../layout/ConverterPanel';
 import type { OutputNamePattern } from '../layout/ConverterPanel';
@@ -28,6 +28,12 @@ interface ConverterOptionsProps {
   // 🛸 [신규 계승] 최종 집행 권한 통합!
   canExecute: boolean;
   disabledReason: string | null;
+  onExecute: () => void;
+  progressPercent: number;
+  executionLogs: string[];
+  isProcessing: boolean;
+  mergeComment: string;
+  onChangeMergeComment: (val: string) => void;
 }
 
 export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
@@ -52,8 +58,23 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   onChangeOutputDirectory,
   onPickOutputDirectory,
   canExecute,
-  disabledReason
+  disabledReason,
+  onExecute,
+  progressPercent,
+  executionLogs,
+  isProcessing,
+  mergeComment,
+  onChangeMergeComment
 }) => {
+  const terminalRef = useRef<HTMLDivElement>(null);
+
+  // 📜 [자동 스크롤 매직] 로그가 들어올 때마다 자동으로 최하단으로 스르륵 스크롤
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [executionLogs]);
+
   const customSplitPreview = useMemo(() => {
     if (splitCriterion !== 'custom') return '';
     const cutPoints = splitCustomValues
@@ -278,13 +299,43 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       {/* 🚀 [마스터 클라이맥스] 모든 옵션 설정의 종착역, 강력한 실행 엔진 통합! */}
       <div className="converter-action-footer">
         <button
-          className="primary-btn converter-execute-btn"
+          className={`primary-btn converter-execute-btn ${isProcessing ? 'processing' : ''}`}
           type="button"
           disabled={!canExecute}
           title={!canExecute && disabledReason ? disabledReason : ''}
+          onClick={onExecute}
         >
-          {mode === 'merge' ? '병합 실행' : '분할 실행'}
+          {/* ⚡ [버튼 내장 레이저 프로그레스] 버튼 내부에 탑재된 초박형 네온 게이지 */}
+          {isProcessing && (
+            <div className="btn-inner-progress-track">
+              <div 
+                className="btn-inner-progress-fill" 
+                style={{ width: `${progressPercent}%` }} 
+              />
+            </div>
+          )}
+          
+          <span className="btn-label-text">
+            {isProcessing ? `처리 중 (${progressPercent}%)` : (mode === 'merge' ? '병합 실행' : '분할 실행')}
+          </span>
         </button>
+      </div>
+
+      {/* 📟 [실시간 통신창 / 터미널 센터] 버튼 아래에 상주하며 연산 중 발생하는 시스템 메시지를 그대로 노출! */}
+      <div className="converter-terminal-panel">
+        <div className="terminal-logs-container" ref={terminalRef}>
+          {executionLogs.length === 0 ? (
+            <div className="terminal-log-line" style={{ opacity: 0.4 }}>
+              [SYSTEM] 명령 대기 중... 병합을 실행하면 작업 내역이 여기에 표시됩니다.
+            </div>
+          ) : (
+            executionLogs.map((log, idx) => (
+              <div key={idx} className="terminal-log-line">
+                {log}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </section>
   );

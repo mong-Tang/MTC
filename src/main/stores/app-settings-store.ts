@@ -95,7 +95,7 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
           : defaultAppSettings.windowBounds.width,
       height:
         typeof candidate?.windowBounds?.height === 'number' && Number.isFinite(candidate.windowBounds.height)
-          ? Math.max(840, candidate.windowBounds.height)
+          ? Math.max(727, candidate.windowBounds.height)
           : defaultAppSettings.windowBounds.height
     },
     isMaximized: candidate?.isMaximized === true,

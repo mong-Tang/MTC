@@ -50,6 +50,10 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const [splitCustomValues, setSplitCustomValues] = useState<string>('100,100');
   const [splitTotalPages, setSplitTotalPages] = useState<number>(1000);
   const [outputDirectory, setOutputDirectory] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false); // 🛰️ [작업 잠금] 병합 중 중복 클릭 및 UI 오작동 방지
+  const [progressPercent, setProgressPercent] = useState(0); // 📊 현재 진행률 게이지
+  const [executionLogs, setExecutionLogs] = useState<string[]>([]); // 📝 실시간 로깅 스트림
+  const [mergeComment, setMergeComment] = useState<string>(''); // 📝 사용자가 작성하는 병합 메모/메시지
 
   useEffect(() => {
     if (sourceItems.length === 0) {
@@ -89,6 +93,21 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     }
   };
 
+  // 📡 [실시간 백엔드 청취자] 백엔드에서 쏴주는 작업 진행상황을 즉각 감지!
+  useEffect(() => {
+    const appApi = (window as any).appApi;
+    if (!appApi || typeof appApi.onConverterProgress !== 'function') return;
+
+    const unsubscribe = appApi.onConverterProgress((data: { percent: number; message: string }) => {
+      setProgressPercent(data.percent);
+      setExecutionLogs((prev) => [...prev, data.message]);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   const customCutPoints = splitCustomValues
     .split(',')
     .map((token) => Number(token.trim()))
@@ -108,9 +127,11 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     hasOutputDirectory &&
     (splitCriterion !== 'custom' || hasValidCustomCutPoints);
   const isMergeReady = hasSourceItems && hasOutputName && hasOutputDirectory;
-  const isExecuteEnabled = mode === 'merge' ? isMergeReady : isSplitReady;
+  const isExecuteEnabled = (mode === 'merge' ? isMergeReady : isSplitReady) && !isProcessing;
 
-  const disabledReason = !hasSourceItems
+  const disabledReason = isProcessing
+    ? '현재 변환 작업이 진행 중입니다...'
+    : !hasSourceItems
     ? '입력 파일을 먼저 추가하세요.'
     : !hasOutputDirectory
       ? '출력 위치를 지정하세요.'
@@ -146,6 +167,74 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     isExecuteEnabled, 
     disabledReason
   ]);
+
+  // 🚀 [최종 실행 관제] 병합/분할 작업을 백엔드 엔진으로 발사!
+  const handleExecute = async () => {
+    if (!isExecuteEnabled || isProcessing) return;
+
+    setIsProcessing(true);
+    setProgressPercent(0); // 게이지 초기화
+    setExecutionLogs([]); // 로그 리셋
+    const startTime = Date.now();
+    
+    if (onUpdateStatusText) {
+      onUpdateStatusText(`[처리 중] ${mode === 'merge' ? '병합' : '분할'} 작업을 실행하고 있습니다...`);
+    }
+
+    try {
+      if (mode === 'merge') {
+        const sourcePaths = sourceItems.map(item => item.path);
+        
+        // 🛸 백엔드 프리로드 API 호출 (새로 뚫린 파이프라인)
+        const appApi = (window as any).appApi;
+        if (!appApi || !appApi.mergeFiles) {
+          throw new Error('머지 엔진 연결에 실패했습니다.');
+        }
+
+        const result = await appApi.mergeFiles(
+          sourcePaths, 
+          outputDirectory, 
+          outputNameBase, 
+          outputFormat,
+          mergeComment // 📝 사용자가 작성한 메시지 탑재!
+        );
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        if (result.ok) {
+          setProgressPercent(100); // 💯 최후의 방어선: 무조건 100% 완료 상태 강제 고정
+          if (onUpdateStatusText) {
+            onUpdateStatusText(`[완료] 병합 완료 (${elapsed}초 소요): ${outputNameBase}.${outputFormat}`);
+          }
+          // 🚨 얼럿창은 렌더링을 멈추므로, 약간의 시차를 두어 UI가 100%로 바뀌는 것을 보여준 뒤 띄움
+          setTimeout(() => {
+            alert(`✅ 병합 성공!\n\n파일명: ${outputNameBase}.${outputFormat}\n위치: ${outputDirectory}\n소요시간: ${elapsed}초`);
+          }, 200);
+        } else {
+          const err = result.error?.message || '알 수 없는 오류 발생';
+          if (onUpdateStatusText) {
+            onUpdateStatusText('[실패] 병합 과정 중 오류가 발생했습니다.');
+          }
+          setTimeout(() => {
+            alert(`❌ 병합 실패\n\n${err}`);
+          }, 200);
+        }
+      } else {
+        // 🚧 Split 모드는 아직 구현 중으로 안전 가이드
+        alert('🚧 분할(Split) 기능은 현재 준비 중입니다. 곧 지원될 예정입니다.');
+        if (onUpdateStatusText) onUpdateStatusText('[알림] 분할 기능 준비 중');
+      }
+    } catch (error: any) {
+      const errMsg = error.message || String(error);
+      if (onUpdateStatusText) {
+        onUpdateStatusText(`[치명적 오류] ${errMsg}`);
+      }
+      alert(`🚨 치명적 오류 발생\n\n${errMsg}`);
+    } finally {
+      // 🔐 작업 잠금 해제하여 UI 다시 복구
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <ConverterPanelShell>
@@ -190,6 +279,12 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               onPickOutputDirectory={handlePickOutputDirectory}
               canExecute={isExecuteEnabled}
               disabledReason={disabledReason}
+              onExecute={handleExecute}
+              progressPercent={progressPercent}
+              executionLogs={executionLogs}
+              isProcessing={isProcessing}
+              mergeComment={mergeComment}
+              onChangeMergeComment={setMergeComment}
             />
           </section>
         </div>

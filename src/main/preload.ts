@@ -159,8 +159,18 @@ const api = {
       ipcRenderer.removeListener(channel, handler);
     };
   },
+  onConverterProgress: (listener: (data: { percent: number; message: string }) => void) => {
+    const channel = 'converter:progress';
+    const handler = (_event: Electron.IpcRendererEvent, data: { percent: number; message: string }) => listener(data);
+    ipcRenderer.on(channel, handler);
+    return () => {
+      ipcRenderer.removeListener(channel, handler);
+    };
+  },
   convertArchiveToZip: (sourcePath: string, outputDirectory: string, targetExtension?: string, customFilename?: string) =>
     ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory, targetExtension, customFilename) as Promise<IpcResult<ConverterResult>>,
+  mergeFiles: (sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension?: string, comment?: string) =>
+    ipcRenderer.invoke('converter:merge-files', sourcePaths, outputDirectory, outputFilename, targetExtension, comment) as Promise<IpcResult<ConverterResult>>,
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,
