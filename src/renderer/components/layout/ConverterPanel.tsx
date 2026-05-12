@@ -301,7 +301,9 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
       <div className="converter-panel-body">
         {/* 🛸 [원점 회귀 완료] 사용자의 엄명에 따라 외곽 판넬 박스 내부 최상단으로 복귀한 컨트롤 타워! */}
         <div className="titlebar-converter-header">
-          <h2 className="titlebar-converter-title">컨버터</h2>
+          <h2 className="titlebar-converter-title">
+            {mode === 'split' ? '컨버터 - 문서 분할하기' : '컨버터 - 도서 병합하기'}
+          </h2>
 
           <div className="converter-mode-switch" role="tablist" aria-label="컨버터 모드">
             <button

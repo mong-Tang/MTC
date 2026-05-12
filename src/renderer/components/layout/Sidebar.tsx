@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconFile, IconFolder, IconPlay, IconSettings, IconImage, IconZip } from '../ui/Icons';
+import { IconFile, IconFolder, IconPlay, IconSettings, IconImage, IconZip, IconDots, IconHome } from '../ui/Icons';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -18,6 +18,8 @@ interface SidebarProps {
   workspaceMode?: 'viewer' | 'converter'; // 🛰️ [신규] 현재 탑승 중인 차원(모드) 정보
   onShowViewer?: () => void; // 🏡 [신규] 메인 'MTC Center'로의 회귀 신호 발생기
   sidebarWidth?: number; // 📏 [추가] 현재 사이드바의 리사이즈 실측 너비 정보
+  onLibraryItemContextMenu?: (e: React.MouseEvent, path: string) => void; // 🖱️ [유저 특명] 우클릭 팝업 시동 엔진!
+  sidebarViewMode?: 'library' | 'recent'; // 🛸 [신규] 사이드바 현재 뷰 모드 판별자
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -27,13 +29,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   libraryFolderName = null, // 📂 기본값 설정
   workspaceMode = 'viewer',
   onShowViewer,
-  sidebarWidth = 180
+  sidebarWidth = 180,
+  onLibraryItemContextMenu,
+  sidebarViewMode = 'library' // ✨ 기본값은 평화로운 라이브러리
 }) => {
   const selectedPathSet = new Set(selectedLibraryPaths);
   return (
     <aside className={`app-sidebar ${!isOpen ? 'collapsed' : ''}`}>
       <header className="sidebar-header">
-        라이브러리
+        {sidebarViewMode === 'recent' ? '최근 열람 기록' : '라이브러리'}
       </header>
 
       {/* 🚀 [신규] 스르륵 열리며 아래 리스트를 밀어내는 메뉴판 패널 */}
@@ -73,18 +77,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <IconFolder />
             폴더 열기
           </button>
-          {/* 💎 [공간 초월 연동] 컨버터와 뷰어(MTC Center)를 자재로 넘나드는 디멘션 스위치! */}
-          {workspaceMode === 'converter' ? (
-            <button className="sidebar-menu-btn" onClick={onShowViewer}>
-              <IconImage />
-              MTC Center 실행
-            </button>
-          ) : (
-            <button className="sidebar-menu-btn" onClick={onOpenConverter}>
-              <IconPlay />
-              컨버터 실행
-            </button>
-          )}
+
+          {/* 🏠 [통합 홈 버튼] 사이드바에서는 언제나 초기 화면(MTC Center) 복귀 경로만 상시 개방합니다. */}
+          <button className="sidebar-menu-btn" onClick={onShowViewer}>
+            <IconHome />
+            MTC Center
+          </button>
           <button className="sidebar-menu-btn" onClick={() => console.log('Settings open')}>
             <IconSettings />
             설정
@@ -111,21 +109,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {libraryItems.map((item) => (
                 <div 
                   key={item.path} 
-                  className={`sidebar-file-item ${(activeLibraryPath === item.path || selectedPathSet.has(item.path)) ? 'active' : ''}`}
+                  className={`sidebar-file-item ${(activeLibraryPath === item.path || selectedPathSet.has(item.path)) ? 'active' : ''} ${item.type === 'recent' ? 'is-recent' : ''}`}
                   onClick={() => onLibraryItemClick && onLibraryItemClick(item.path)}
+                  onContextMenu={(e) => {
+                    e.preventDefault(); // 기본 브라우저 메뉴 차단
+                    onLibraryItemContextMenu && onLibraryItemContextMenu(e, item.path);
+                  }}
                   title={item.name}
                 >
                   {/* 🚥 [유저 피드백 반영] 파일 타입별 동적 이모지(아이콘) 교체 엔진 가동! */}
-                  {item.type === 'zip' || item.type === 'archive' ? (
+                  {item.type === 'recent' ? (
+                    <IconPlay /> // ✨ 아우라는 CSS가 담당합니다!
+                  ) : item.type === 'zip' || item.type === 'archive' ? (
                     <IconZip />
                   ) : item.type === 'image' ? (
                     <IconImage />
                   ) : (
                     <IconFile />
                   )}
-                  <span className="sidebar-file-name-text">
+                  <span className="sidebar-file-name-text" style={{ flex: 1 }}>
                     {item.name}
                   </span>
+                  
+                  {/* 🍔 [유저 특명] 파일 관리 햄버거 팝업 호출용 막둥이 버튼 탑재! */}
+                  <button 
+                    className="sidebar-item-action-btn"
+                    title="파일 관리 메뉴"
+                    onClick={(e) => {
+                      e.stopPropagation(); // 부모 클릭(파일 열기) 이벤트 간섭 차단!
+                      onLibraryItemContextMenu && onLibraryItemContextMenu(e as any, item.path);
+                    }}
+                  >
+                    <IconDots />
+                  </button>
                 </div>
               ))}
             </div>

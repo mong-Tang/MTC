@@ -180,7 +180,10 @@ const api = {
   closeWindow: () => ipcRenderer.send('window:close'),
   showViewerContextMenu: () => ipcRenderer.send('window:show-viewer-context-menu'),
   openConverterWindow: () => ipcRenderer.send('window:open-converter'),
-  openHelpWindow: () => ipcRenderer.send('window:open-help')
+  openHelpWindow: () => ipcRenderer.send('window:open-help'),
+  // 🛰️ [초정밀 드래그 통신망 개방]
+  startWindowDrag: (data: { screenX: number; screenY: number }) => ipcRenderer.send('window:drag-start', data),
+  moveWindow: (data: { screenX: number; screenY: number }) => ipcRenderer.send('window:drag-move', data)
 };
 
 contextBridge.exposeInMainWorld('appApi', api);

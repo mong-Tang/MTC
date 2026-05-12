@@ -9,6 +9,7 @@ import type { ConverterSourceItem } from './components/layout/ConverterPanel';
 import { TitleBarControls } from './components/layout/TitleBarControls';
 import type { ConverterMode } from './components/layout/ConverterPanel'; // 🚀 [신규] 모드 상태 상위 격상
 import { ContextMenu } from './components/ui/ContextMenu'; // 🌌 [신규] 우클릭 부품
+import { SidebarContextMenu } from './components/ui/SidebarContextMenu'; // 📂 [신규] 사이드바 전용 메뉴
 import { StatusBar } from './components/layout/StatusBar'; // 🌌 [신규] 실시간 현황판
 
 // 🛠️ [신규] 파일 경로 및 시리즈 매칭 헬퍼 유틸리티
@@ -81,6 +82,7 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(false); // 🛡️ [유저 고안] 철통 보안 마이크로 락 스테이트!
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
   const autoMoveNoticeTimerRef = useRef<number | null>(null);
+  const lastWheelTimeRef = useRef<number>(0); // 🎡 [신규] 휠 페이지 넘김 연속 난사 방지 타이머
   
   // 🛡️ [영속화 방어막] 초기 백엔드 로딩이 끝날 때까지 자동 저장을 일시 봉쇄하는 특수 가드!
   const isSettingsLoadedRef = useRef(false);
@@ -102,12 +104,22 @@ function App() {
   const [loadSameBook, setLoadSameBook] = useState(true);
   const [libraryItems, setLibraryItems] = useState<ConverterSourceItem[]>([]);
   const [libraryFolderName, setLibraryFolderName] = useState<string | null>(null); // 📂 라이브러리 루트 폴더명
+  const [libraryFolderPath, setLibraryFolderPath] = useState<string | null>(null); // 📂 라이브러리 루트 절대 경로 (최근기록 실체)
   const [converterSourceItems, setConverterSourceItems] = useState<ConverterSourceItem[]>([]);
   const [selectedConverterPaths, setSelectedConverterPaths] = useState<Set<string>>(new Set());
+  
+  // 🛰️ [신규] 사이드바 다중 페르소나(뷰) 통제소
+  const [sidebarViewMode, setSidebarViewMode] = useState<'library' | 'recent'>('library');
+  const [recentSidebarItems, setRecentSidebarItems] = useState<any[]>([]); // 📜 최근 항목용 전용 데이터 파이프
 
   // 📍 [신규] 컨텍스트 메뉴 좌표 및 활성화 상태
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; show: boolean }>({
     x: 0, y: 0, show: false
+  });
+
+  // 📂 [유저 특명] 사이드바 아이템 전용 컨텍스트 메뉴 상태
+  const [sidebarCtxMenu, setSidebarCtxMenu] = useState<{ x: number; y: number; show: boolean; targetPath: string | null }>({
+    x: 0, y: 0, show: false, targetPath: null
   });
 
   // 📏 사이드바 가변 너비 상태
@@ -142,6 +154,11 @@ function App() {
       window.removeEventListener('mouseup', stopResizing);
     };
   }, [isResizing, resize, stopResizing]);
+  
+  // ⏳ [글로벌 통합 커서 제어] 시스템 연산 중(isAppLoading)일 시, 전체 화면 마우스 커서를 'Wait'로 강제 잠금!
+  useEffect(() => {
+    document.body.style.cursor = isAppLoading ? 'wait' : '';
+  }, [isAppLoading]);
 
   // --- 💡 핸들러 모음 ---
   const toggleSidebarMenu = () => {
@@ -159,6 +176,59 @@ function App() {
       show: true
     });
   };
+
+  // 🛡️ 사이드바 아이템 우클릭 유입 및 연동 제어
+  const handleSidebarItemContextMenu = (e: React.MouseEvent, path: string) => {
+    setSidebarCtxMenu({
+      x: e.clientX,
+      y: e.clientY,
+      show: true,
+      targetPath: path
+    });
+  };
+
+  // 🧹 [사이드바 작업 로직 1] 문서 닫기 (해당 문서가 활성 문서일 때만 초기화)
+  const handleCloseDocFromSidebar = useCallback((targetPath: string) => {
+    if (zipPath === targetPath) {
+      setHasActiveFile(false);
+      setZipPath(null);
+      setSelectedPath(null);
+    }
+  }, [zipPath]);
+
+  // 🧹 [사이드바 작업 로직 2] 리스트에서만 보이지 않게 추방 (하드디스크는 무결)
+  const handleRemoveDocFromSidebar = useCallback((targetPath: string) => {
+    setLibraryItems(prev => prev.filter(item => item.path !== targetPath));
+  }, []);
+
+  // 💣 [사이드바 작업 로직 3] 물리적 공간 반환 - 디스크에서 파일 자체를 소각!
+  const handleDeleteFileFromSidebar = useCallback(async (targetPath: string) => {
+    const confirmed = window.confirm(`[🚨 영구 삭제 경고]\n\n파일을 하드디스크에서 완전히 소각하시겠습니까?\n(주의: 휴지통 이동 혹은 영구 삭제가 진행됩니다.)`);
+    if (!confirmed) return;
+
+    setIsAppLoading(true);
+    try {
+      const appApi = (window as any).appApi;
+      const result = await appApi.deleteFile(targetPath);
+      if (result.ok) {
+        // 1. 리스트에서 제거하여 시각적으로 소각 완료 각인
+        setLibraryItems(prev => prev.filter(item => item.path !== targetPath));
+        // 2. 혹시 내가 열어놓은 파일이었다면 뷰어도 치운다
+        if (zipPath === targetPath) {
+          setHasActiveFile(false);
+          setZipPath(null);
+          setSelectedPath(null);
+        }
+      } else {
+        alert(`[삭제 실패] ${result.error?.message || '파일 삭제 명령이 거부되었습니다.'}`);
+      }
+    } catch (err) {
+      console.error('Physical file deletion failed:', err);
+      alert('파일 소각 중 치명적 오류가 발생했습니다.');
+    } finally {
+      setIsAppLoading(false);
+    }
+  }, [zipPath]);
 
   // 📂 [핵심 헬퍼] 단일 압축파일을 통째로 뷰어 레일에 장전!
   // 🚀 [업그레이드] initialIndex를 받아 책 전환 시 특정 페이지(예: -1이면 마지막) 착륙 지원!
@@ -202,6 +272,69 @@ function App() {
     }
   };
 
+  // 🗑️ [페이지 삭제 시스템] 열려있는 압축파일 내부의 페이지를 직접 소각하는 기능!
+  const handleDeletePage = useCallback(async (target: 'left' | 'right') => {
+    if (!hasActiveFile || !zipPath || pages.length === 0) return;
+
+    const targetIdx = target === 'right' ? currentIndex + 1 : currentIndex;
+    const targetPage = pages[targetIdx];
+
+    if (!targetPage) {
+      alert('삭제할 대상을 찾을 수 없습니다.');
+      return;
+    }
+
+    // ☢️ [경고 & 안내] 유저에게 최종 승인 절차 및 백업 정책 자동 고지!
+    const confirmed = window.confirm(
+      `[🚨 페이지 삭제]\n\n` +
+      `"${targetPage.displayName || targetPage.entryName}"\n\n` +
+      `정말로 이 페이지를 영구적으로 삭제하시겠습니까?\n\n` +
+      `💡 (안내) 원본은 안전하게 백업 보관되며, 삭제가 반영된 최신 수정본으로 즉시 화면을 새롭게 펼칩니다.`
+    );
+    if (!confirmed) return;
+
+    setIsAppLoading(true); // 🛡️ 작업 중 조작 차단
+    try {
+      const appApi = (window as any).appApi;
+      // 🛡️ [UX 최적화] 너무 빨라서 마우스가 안 보일 정도이므로, 최소 400ms의 가시적 피드백 시간을 확보한다!
+      const [result] = await Promise.all([
+        appApi.editZipPages(zipPath, {
+          kind: 'delete',
+          targetEntryName: targetPage.entryName
+        }),
+        new Promise(resolve => setTimeout(resolve, 400)) // ⏳ 인지 유도용 인위적 지연
+      ]);
+
+      if (result.ok) {
+        // 🔥 [초긴급 수정] 기존 zipPath가 아닌 백엔드에서 반환한 editedZipPath로 경로를 갈아끼운다!
+        const newZipPath = result.data.editedZipPath;
+        
+        // 📚 [유저 특명: 사이드바 실시간 등록 엔진] 새로 탄생한 가공 파일을 목록에 즉시 투입!
+        try {
+          const newFileName = await appApi.getBasename(newZipPath);
+          setLibraryItems(prev => {
+            if (prev.some(item => item.path === newZipPath)) return prev; // 중복 방어
+            const newItem = { name: newFileName, path: newZipPath, type: 'zip' as const };
+            // 기존 목록에 탑승시키고 가나다/숫자 순으로 완벽한 서열 정렬 수행!
+            return [...prev, newItem].sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+          });
+        } catch (err) {
+          console.warn('[Sidebar sync failed]', err);
+        }
+
+        const nextIdx = Math.max(0, Math.min(currentIndex, pages.length - 2));
+        await loadZipIntoViewer(newZipPath, nextIdx);
+      } else {
+        alert(`[삭제 실패]\n${result.error?.message || '알 수 없는 오류'}`);
+      }
+    } catch (err) {
+      console.error('Page deletion failed:', err);
+      alert('삭제 수행 중 치명적 오류가 발생했습니다.');
+    } finally {
+      setIsAppLoading(false);
+    }
+  }, [hasActiveFile, zipPath, pages, currentIndex, loadZipIntoViewer]);
+
   // 🚀 [백엔드 마스터 로더] 앱 구동 즉시 디스크 금고에서 최후의 설정을 가져와 투입합니다.
   useEffect(() => {
     const bootstrapSettings = async () => {
@@ -230,6 +363,18 @@ function App() {
     };
     bootstrapSettings();
   }, []);
+
+  // ⏳ [글로벌 커서 컨트롤러] 전체 로딩 혹은 비동기 파일 추출 시 전체 앱 커서를 대기 상태로 전환!
+  useEffect(() => {
+    if (isAppLoading) {
+      document.body.classList.add('is-processing');
+    } else {
+      document.body.classList.remove('is-processing');
+    }
+    return () => {
+      document.body.classList.remove('is-processing');
+    };
+  }, [isAppLoading]);
 
   // 📡 [오토세이브 엔진] 주요 설정값 변동 즉시 백엔드 원장에 영구 타각!
   useEffect(() => {
@@ -268,6 +413,74 @@ function App() {
     });
   }, [zipPath, currentIndex, hasActiveFile, pages.length]);
 
+  // 📜 [유저 특명] 최근 열람 목록(Recent Items) 지능형 조건부 기록 엔진
+  useEffect(() => {
+    const appApi = (window as any).appApi;
+    if (!appApi?.upsertRecent) return;
+
+    const executeRecentUpsert = async () => {
+      try {
+        // 💡 [초고급 하이브리드 분기 시스템]
+        
+        // ✅ 분기 1: 라이브러리 폴더 컨텍스트가 존재할 때 (최우선순위 🏆)
+        if (libraryFolderPath && libraryFolderName) {
+          await appApi.upsertRecent({
+            fileId: libraryFolderPath,    // 📂 폴더 전체를 고유 식별자로 각인!
+            zipPath: libraryFolderPath,  // 물리 경로도 폴더로 지정!
+            title: libraryFolderName,    // 👑 타이틀도 웅장한 폴더명으로 명명!
+            lastPageIndex: 0             // 폴더 레벨의 초기 진입점
+          });
+          console.log('[Recent Engine] Master record logged as FOLDER:', libraryFolderName);
+          return; // 폴더가 최우선이므로 이대로 종료!
+        }
+
+        // ✅ 분기 2: 독립형 단일 파일 로딩 컨텍스트 (차선순위 🥈)
+        if (zipPath && hasActiveFile) {
+          const fileName = await appApi.getBasename(zipPath);
+          await appApi.upsertRecent({
+            fileId: zipPath,             // 📄 단일 파일 경로를 식별자로!
+            zipPath: zipPath,
+            title: fileName,            // 파일명을 수수하게 등재
+            lastPageIndex: currentIndex
+          });
+          console.log('[Recent Engine] Individual record logged as FILE:', fileName);
+        }
+      } catch (error) {
+        console.error('[Recent Engine] History sync operation failed:', error);
+      }
+    };
+
+    executeRecentUpsert();
+    // 🛸 [전략적 센서 감지] 폴더 주소, 파일 주소, 활성 상태가 요동칠 때마다 즉시 판독 개시!
+  }, [libraryFolderPath, libraryFolderName, zipPath, hasActiveFile]);
+
+  // 📜 [유저 특명] 최근 열람 기록 사이드바 소환술!
+  const handleShowRecentList = async () => {
+    try {
+      const appApi = (window as any).appApi;
+      if (!appApi?.getRecent) return;
+      
+      const result = await appApi.getRecent();
+      if (result.ok && Array.isArray(result.data)) {
+        // 🎨 사이드바 렌더링 스펙에 맞춰 데이터를 다듬어 탑재!
+        const mapped = result.data.map((item: any) => ({
+          name: item.title,
+          path: item.zipPath,
+          type: 'recent' // ✨ '최근 항목' 전용 페르소나 부여
+        }));
+        setRecentSidebarItems(mapped);
+        
+        // 🚀 사이드바 모드를 전환하고 강제 개방!!
+        setSidebarViewMode('recent');
+        setSidebarOpen(true);
+        
+        console.log(`[System] Triggered Recent sidebar with ${mapped.length} items.`);
+      }
+    } catch (err) {
+      console.error('[Recent Handler] Failed to load sidebar items:', err);
+    }
+  };
+
   // 📂 [핵심] 진짜 파일 열기 실전 배치!!
   const handleOpenFileClick = async () => {
     try {
@@ -284,6 +497,9 @@ function App() {
       // 🚀 뷰어에는 선택한 파일 '하나'만 고고하게 적재!
       const loaded = await loadZipIntoViewer(filePath);
       if (!loaded) return;
+      
+      // 🏰 [안전장치] 수동으로 새 파일을 열면 사이드바를 즉각 라이브러리 모드로 환원!
+      setSidebarViewMode('library');
 
       const fileName = await appApi.getBasename(filePath);
 
@@ -303,13 +519,10 @@ function App() {
           console.log('[System] Filtered Library Items:', siblings);
           setLibraryItems(siblings);
 
-          // 🤝 [핵심 규칙] 시리즈 형제가 1개 이상이면 상위 '진짜 폴더명'을 헤더로 하사!
-          if (siblings.length > 1) {
-            const parentFolderName = await appApi.getBasename(dirPath);
-            setLibraryFolderName(parentFolderName);
-          } else {
-            setLibraryFolderName(null);
-          }
+          // 🤝 [유저 특명 강화] '같은 책' 로딩 시에는 개수 상관없이 무조건 폴더를 최종 각인하여 히스토리 상위권을 보장합니다!
+          const parentFolderName = await appApi.getBasename(dirPath);
+          setLibraryFolderName(parentFolderName);
+          setLibraryFolderPath(dirPath); // 🛰️ [절대주소 동반 각인]
         } else {
           console.error('[System] Failed to list folder items:', listResult.error);
         }
@@ -317,6 +530,7 @@ function App() {
         // 단일 모드면 라이브러리엔 본인 하나만 존재감 있게 표시
         setLibraryItems([{ name: fileName, path: filePath, type: 'zip' }]);
         setLibraryFolderName(null); // 단일 파일은 폴더 헤더 불필요
+        setLibraryFolderPath(null);
       }
 
       setSidebarMenuOpen(false); // 기분 좋게 메뉴 닫기!
@@ -336,6 +550,9 @@ function App() {
       }
       const folderPath = await appApi.openFolderDialog('폴더 열기');
       if (!folderPath) return;
+      
+      // 🏰 [안전장치] 새 폴더를 여는 즉시 사이드바를 본연의 라이브러리 모드로 즉각 환원!
+      setSidebarViewMode('library');
 
       const result = await appApi.listFolderItems(folderPath);
       if (result.ok) {
@@ -346,6 +563,7 @@ function App() {
         // 📂 폴더명 추출하여 라이브러리 대장으로 임명!
         const folderName = await appApi.getBasename(folderPath);
         setLibraryFolderName(folderName);
+        setLibraryFolderPath(folderPath); // 🛰️ [폴더 열기 시의 마스터 주소 고착화!]
         
         setSidebarOpen(true); // 폴더 열었으니 사이드바 당당히 공개!
       } else {
@@ -368,8 +586,80 @@ function App() {
     return null; // 중간은 비워둠
   };
 
+  // 🔮 [신규 궁극의 해법] 사이드바 든 캔버스 든, 어디서든 '최근 기록'을 눌렀을 때 공통 발동할 만능 열쇠!
+  const handleRecentItemSelect = async (filePath: string) => {
+    try {
+      const appApi = (window as any).appApi;
+      if (!appApi) return;
+      setIsAppLoading(true);
+
+      // 🛰️ 1. 폴더 여부 원격 정찰 (성공 시 폴더 라이브러리 모드 전개)
+      const folderScan = await appApi.listFolderItems(filePath);
+      if (folderScan.ok) {
+        const rawItems = folderScan.data as any[];
+        const sorted = rawItems.sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+        
+        setLibraryItems(sorted);
+        setLibraryFolderName(await appApi.getBasename(filePath));
+        setLibraryFolderPath(filePath);
+        
+        // 🏰 왕의 귀환: 어떤 루트로 왔든 임무 완료 후 '라이브러리 뷰'로 평화 귀속!
+        setSidebarViewMode('library');
+        console.log('[System] Loaded Entity as Folder Library.');
+        return;
+      }
+
+      // 🛰️ 2. 폴더 로딩 실패 시 -> 파일로 간주!
+      console.log('[System] Path is not a folder, initiating smart contextual loading...');
+      const loaded = await loadZipIntoViewer(filePath);
+      if (!loaded) return;
+
+      // 🏰 [유저 특명 1] 파일을 열자마자 사이드바를 '라이브러리' 모드로 전환하고 즉각 개방!
+      setSidebarViewMode('library');
+      setSidebarOpen(true); // 📂 즉각 시각화!
+
+      const fileName = await appApi.getBasename(filePath);
+
+      // 🤝 [유저 특명 2] '같은 책 불러오기' 체크 상태라면, 존재하던 폴더 내 형제들을 색출해 서고를 채웁니다!
+      if (loadSameBook) {
+        const dirPath = await appApi.getDirectory(filePath);
+        const listResult = await appApi.listFolderItems(dirPath);
+        if (listResult.ok) {
+          const currentKey = getSeriesKeyFromName(fileName);
+          const siblings = (listResult.data as any[])
+            .filter((item) => (item.type === 'zip' || item.type === 'archive' || item.type === 'image') && getSeriesKeyFromName(item.name) === currentKey)
+            .sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+          
+          setLibraryItems(siblings);
+
+          // 🤝 [유저 특명 강화] 형제가 몇 개든 상관없이 부모 폴더 컨텍스트를 마스터로 승격하여 향후 폴더 위주 히스토리 적립 유도!
+          const parentFolderName = await appApi.getBasename(dirPath);
+          setLibraryFolderName(parentFolderName);
+          setLibraryFolderPath(dirPath);
+        }
+      } else {
+        // 단일 모드라도, 사이드바에 본인은 당당하게 등재!
+        const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+        const targetType = ['zip','cbz','7z','rar'].includes(ext) ? 'archive' : (['png','jpg','jpeg','webp'].includes(ext) ? 'image' : 'zip');
+        setLibraryItems([{ name: fileName, path: filePath, type: targetType }]);
+        setLibraryFolderName(null);
+        setLibraryFolderPath(null);
+      }
+      
+    } catch (err) {
+      console.error('[Universal Loader] Critical failure loading path:', err);
+    } finally {
+      setIsAppLoading(false);
+    }
+  };
+
   // 📚 사이드바 라이브러리 항목 클릭 핸들러
   const handleLibraryItemClick = async (filePath: string) => {
+    // 🕵️‍♂️ [리팩토링 완료] 최근 열람 기록 뷰모드일 경우 만능 공통 처리기로 토스!
+    if (sidebarViewMode === 'recent') {
+      return handleRecentItemSelect(filePath);
+    }
+
     const item = libraryItems.find((candidate) => candidate.path === filePath);
     if (!item) return;
 
@@ -382,6 +672,7 @@ function App() {
 
       if (needsSize || needsPages || needsUncompressed) {
         try {
+          setIsAppLoading(true); // ⏳ [긴급 가동] 메타데이터 로딩 시 가드 가동!
           let { sizeBytes, totalPages, uncompressedSizeBytes } = normalizedItem;
           if (needsSize) sizeBytes = await appApi.getFileSize(filePath);
           if (needsPages || needsUncompressed) {
@@ -398,6 +689,8 @@ function App() {
           setLibraryItems((prev) => prev.map((entry) => (entry.path === filePath ? normalizedItem : entry)));
         } catch (error) {
           console.error('Failed to resolve metadata from sidebar item', error);
+        } finally {
+          setIsAppLoading(false); // 🏁 작전 해제
         }
       }
 
@@ -457,43 +750,50 @@ function App() {
         }
       }
 
-      const items = await Promise.all(
-        filePaths.map(async (filePath: string) => {
-          const name = await appApi.getBasename(filePath);
-          const sizeBytes = await appApi.getFileSize(filePath);
-          const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
-          const type = ['zip', 'cbz', '7z', 'rar'].includes(ext) ? 'archive' : 'image';
-          let totalPages = 0;
-          let uncompressedSizeBytes = sizeBytes;
-          try {
-            if (type === 'archive') {
-              const info = await appApi.openZip(filePath);
-              totalPages = info?.data?.meta?.totalPages ?? 0;
-              uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
-            } else {
-              totalPages = 1;
-              uncompressedSizeBytes = sizeBytes;
-            }
-          } catch { totalPages = 0; }
-          return { name, path: filePath, type, sizeBytes, totalPages, uncompressedSizeBytes } as ConverterSourceItem;
-        })
-      );
+      if (!filePaths || filePaths.length === 0) return;
 
-      setConverterSourceItems((prev) => {
-        if (isSplitMode) {
-          // [분할 모드 특권] 기존 리스트를 무조건 덮어쓰고 오직 '하나'만 왕좌에 안착!
-          return items;
-        }
-        const existing = new Set(prev.map((entry) => entry.path));
-        const next = [...prev];
-        for (const item of items) {
-          if (!existing.has(item.path)) {
-            next.push(item);
+      setIsAppLoading(true); // ⏳ [작전 개시] 대량 파일 메타데이터 연산 가드 발동!
+      try {
+        const items = await Promise.all(
+          filePaths.map(async (filePath: string) => {
+            const name = await appApi.getBasename(filePath);
+            const sizeBytes = await appApi.getFileSize(filePath);
+            const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+            const type = ['zip', 'cbz', '7z', 'rar'].includes(ext) ? 'archive' : 'image';
+            let totalPages = 0;
+            let uncompressedSizeBytes = sizeBytes;
+            try {
+              if (type === 'archive') {
+                const info = await appApi.openZip(filePath);
+                totalPages = info?.data?.meta?.totalPages ?? 0;
+                uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+              } else {
+                totalPages = 1;
+                uncompressedSizeBytes = sizeBytes;
+              }
+            } catch { totalPages = 0; }
+            return { name, path: filePath, type, sizeBytes, totalPages, uncompressedSizeBytes } as ConverterSourceItem;
+          })
+        );
+
+        setConverterSourceItems((prev) => {
+          if (isSplitMode) {
+            // [분할 모드 특권] 기존 리스트를 무조건 덮어쓰고 오직 '하나'만 왕좌에 안착!
+            return items;
           }
-        }
-        return next;
-      });
-      setWorkspaceMode('converter');
+          const existing = new Set(prev.map((entry) => entry.path));
+          const next = [...prev];
+          for (const item of items) {
+            if (!existing.has(item.path)) {
+              next.push(item);
+            }
+          }
+          return next;
+        });
+        setWorkspaceMode('converter');
+      } finally {
+        setIsAppLoading(false); // 🏁 해제
+      }
     } catch (error) {
       console.error('Failed to add converter source', error);
     }
@@ -503,36 +803,41 @@ function App() {
     setWorkspaceMode('converter');
     const appApi = (window as any).appApi;
 
-    const normalizedItems = await Promise.all(
-      libraryItems.map(async (item) => {
-        const needsSize = typeof item.sizeBytes !== 'number';
-        const needsPages = typeof item.totalPages !== 'number';
-        const needsUncompressed = typeof item.uncompressedSizeBytes !== 'number';
-        if (!needsSize && !needsPages && !needsUncompressed) return item;
+    setIsAppLoading(true); // ⏳ [작전 개시] 전수 로딩 연산 돌입!
+    try {
+      const normalizedItems = await Promise.all(
+        libraryItems.map(async (item) => {
+          const needsSize = typeof item.sizeBytes !== 'number';
+          const needsPages = typeof item.totalPages !== 'number';
+          const needsUncompressed = typeof item.uncompressedSizeBytes !== 'number';
+          if (!needsSize && !needsPages && !needsUncompressed) return item;
 
-        try {
-          let { sizeBytes, totalPages, uncompressedSizeBytes } = item;
-          if (needsSize) sizeBytes = await appApi.getFileSize(item.path);
-          if (needsPages || needsUncompressed) {
-            if (item.type === 'image') {
-              totalPages = 1;
-              uncompressedSizeBytes = sizeBytes;
-            } else {
-              const info = await appApi.openZip(item.path);
-              totalPages = info?.data?.meta?.totalPages ?? 0;
-              uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+          try {
+            let { sizeBytes, totalPages, uncompressedSizeBytes } = item;
+            if (needsSize) sizeBytes = await appApi.getFileSize(item.path);
+            if (needsPages || needsUncompressed) {
+              if (item.type === 'image') {
+                totalPages = 1;
+                uncompressedSizeBytes = sizeBytes;
+              } else {
+                const info = await appApi.openZip(item.path);
+                totalPages = info?.data?.meta?.totalPages ?? 0;
+                uncompressedSizeBytes = info?.data?.meta?.totalUncompressedSizeBytes ?? sizeBytes;
+              }
             }
+            return { ...item, sizeBytes, totalPages, uncompressedSizeBytes };
+          } catch (error) {
+            console.error('Failed to resolve metadata for Add All item', error);
+            return item;
           }
-          return { ...item, sizeBytes, totalPages, uncompressedSizeBytes };
-        } catch (error) {
-          console.error('Failed to resolve metadata for Add All item', error);
-          return item;
-        }
-      })
-    );
+        })
+      );
 
-    setLibraryItems(normalizedItems);
-    setConverterSourceItems(normalizedItems);
+      setLibraryItems(normalizedItems);
+      setConverterSourceItems(normalizedItems);
+    } finally {
+      setIsAppLoading(false); // 🏁 종료 해제
+    }
   };
 
   const handleClearConverterSource = () => {
@@ -592,14 +897,20 @@ function App() {
       setCurrentIndex(prev => Math.max(0, prev - pageStep)); // 1. 내부 페이지 뒤로
     } else if (canGoPrevLibrary) {
       // 2. 이전 책으로 넘어가서 '마지막 페이지(-1)'에 소프트 랜딩!
-      setAutoMoveNotice('이전 권으로 이동합니다');
-      if (autoMoveNoticeTimerRef.current !== null) {
-        window.clearTimeout(autoMoveNoticeTimerRef.current);
+      const targetItem = libraryItems[currentLibraryIndex - 1];
+      // 🖼️ [유저 명령] 이미지는 권 이동 개념이 아니므로 알림 통과!
+      const isImageTarget = targetItem?.type === 'image' || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(targetItem?.path || '');
+
+      if (!isImageTarget) {
+        setAutoMoveNotice('이전 권으로 이동합니다');
+        if (autoMoveNoticeTimerRef.current !== null) {
+          window.clearTimeout(autoMoveNoticeTimerRef.current);
+        }
+        autoMoveNoticeTimerRef.current = window.setTimeout(() => {
+          setAutoMoveNotice(null);
+        }, 3000);
       }
-      autoMoveNoticeTimerRef.current = window.setTimeout(() => {
-        setAutoMoveNotice(null);
-      }, 3000);
-      void loadZipIntoViewer(libraryItems[currentLibraryIndex - 1].path, -1);
+      void loadZipIntoViewer(targetItem.path, -1);
     }
   }, [currentIndex, pageStep, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
 
@@ -611,14 +922,19 @@ function App() {
       setCurrentIndex(prev => Math.min(pages.length - 1, prev + pageStep)); // 1. 내부 페이지 앞으로
     } else if (canGoNextLibrary) {
       // 2. 다음 책으로 넘어가서 '첫 페이지(0)'부터 시작!
-      setAutoMoveNotice('다음 권으로 이동합니다');
-      if (autoMoveNoticeTimerRef.current !== null) {
-        window.clearTimeout(autoMoveNoticeTimerRef.current);
+      const targetItem = libraryItems[currentLibraryIndex + 1];
+      const isImageTarget = targetItem?.type === 'image' || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(targetItem?.path || '');
+
+      if (!isImageTarget) {
+        setAutoMoveNotice('다음 권으로 이동합니다');
+        if (autoMoveNoticeTimerRef.current !== null) {
+          window.clearTimeout(autoMoveNoticeTimerRef.current);
+        }
+        autoMoveNoticeTimerRef.current = window.setTimeout(() => {
+          setAutoMoveNotice(null);
+        }, 3000);
       }
-      autoMoveNoticeTimerRef.current = window.setTimeout(() => {
-        setAutoMoveNotice(null);
-      }, 3000);
-      void loadZipIntoViewer(libraryItems[currentLibraryIndex + 1].path, 0);
+      void loadZipIntoViewer(targetItem.path, 0);
     }
   }, [currentIndex, pages.length, pageStep, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
 
@@ -641,9 +957,9 @@ function App() {
     [viewMode, pages, currentIndex]
   );
 
-  // 🎹 [유저 특명] 키보드 '좌/우' 화살표 텔레파시 시스템 주입!
+  // 🎹 [유저 특명] 키보드 화살표 & 🎡 마우스 휠 지능형 텔레파시 시스템 연동!
   useEffect(() => {
-    // 활성화된 파일이 없거나 컨버터가 떠있으면 키보드 차단
+    // 활성화된 파일이 없거나 컨버터가 떠있으면 키보드/휠 차단
     if (!hasActiveFile || workspaceMode === 'converter') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -652,10 +968,14 @@ function App() {
 
       switch (e.key) {
         case 'ArrowLeft':
+        case 'ArrowUp':
+        case 'Backspace':
           e.preventDefault();
           handleNavPrev();
           break;
         case 'ArrowRight':
+        case 'ArrowDown':
+        case ' ': // Spacebar
           e.preventDefault();
           handleNavNext();
           break;
@@ -675,19 +995,98 @@ function App() {
           e.preventDefault();
           if (pages.length > 0) {
             if (viewMode === '2') {
-              // 2쪽 보기에서는 마지막 펼침 기준으로 이동
               setCurrentIndex(Math.max(0, pages.length - (pages.length % 2 === 0 ? 2 : 1)));
             } else {
               setCurrentIndex(pages.length - 1);
             }
           }
           break;
+        // 💎 [유저 특명] 쪽보기 즉시 스왑 시스템!
+        case '1':
+          e.preventDefault();
+          setViewMode('1');
+          break;
+        case '2':
+          e.preventDefault();
+          setViewMode('2');
+          break;
+        // 🔍 [보너스] 메뉴판에 기재된 알파벳 스케일 스왑 엔진 가동!
+        case 'f': case 'F':
+          e.preventDefault();
+          setImageFitMode('auto');
+          break;
+        case 'h': case 'H':
+          e.preventDefault();
+          setImageFitMode('height');
+          break;
+        case 'w': case 'W':
+          e.preventDefault();
+          setImageFitMode('width');
+          break;
+        case 'o': case 'O':
+          e.preventDefault();
+          setImageFitMode('actual');
+          break;
+        // 🗑️ [핵심 단축키] 메뉴판에 예고된 페이지 즉시 소각 프로세스 연동!
+        case 'Delete':
+          e.preventDefault();
+          if (e.shiftKey) {
+            handleDeletePage('left');
+          } else if (e.altKey) {
+            handleDeletePage('right');
+          } else {
+            handleDeletePage('left'); // 기본 Del 키는 현재/왼쪽 대상
+          }
+          break;
+      }
+    };
+
+    // 🎡 [명품 휠 리스너] 스크롤이 있으면 스크롤링을 먼저 돕고, 바닥에 닿으면 페이지를 넘기는 명품 알고리즘!
+    const handleWheel = (e: WheelEvent) => {
+      // 스페이스바 스크롤링 중 등 기본 폼 활성화 상태면 방해하지 않음
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+      const viewerArea = document.querySelector('.viewer-render-area');
+      if (!viewerArea) return;
+
+      const isScrollable = viewerArea.scrollHeight > viewerArea.clientHeight;
+      const deltaY = e.deltaY;
+      const now = Date.now();
+      const throttle = 400; // ⏱️ 0.4초 쿨다운 (스팸 연사 방지)
+
+      if (deltaY > 0) { // ⬇️ 휠 아래로 (다음)
+        // 이미지가 짧아 스크롤바가 없거나, 바닥 끝까지 내려간 상태라면 페이지 넘김 허용!
+        const isAtBottom = !isScrollable || (viewerArea.scrollTop + viewerArea.clientHeight >= viewerArea.scrollHeight - 10);
+        if (isAtBottom) {
+          if (now - lastWheelTimeRef.current > throttle) {
+            lastWheelTimeRef.current = now;
+            handleNavNext();
+          }
+          // 브라우저 밖으로 휠 이벤트가 빠져나가지 않게 봉쇄
+          e.preventDefault();
+        }
+      } else if (deltaY < 0) { // ⬆️ 휠 위로 (이전)
+        // 스크롤바가 없거나, 천장 끝에 닿은 상태라면 이전 페이지로!
+        const isAtTop = !isScrollable || (viewerArea.scrollTop <= 10);
+        if (isAtTop) {
+          if (now - lastWheelTimeRef.current > throttle) {
+            lastWheelTimeRef.current = now;
+            handleNavPrev();
+          }
+          e.preventDefault();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hasActiveFile, workspaceMode, handleNavPrev, handleNavNext, pages.length, viewMode]);
+    // ⚠️ passive: false를 주어야 e.preventDefault()를 통해 브라우저 동작을 온전히 제어 가능합니다.
+    window.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('wheel', handleWheel);
+    };
+  }, [hasActiveFile, workspaceMode, handleNavPrev, handleNavNext, pages.length, viewMode, setViewMode, setImageFitMode, handleDeletePage]);
 
   return (
     <div 
@@ -731,16 +1130,26 @@ function App() {
         onFileSelect={handleFileSelect}
         loadSameBook={loadSameBook}
         onToggleLoadSameBook={setLoadSameBook}
-        libraryItems={libraryItems}
+        
+        // 🚀 [지능형 분기] 현재 뷰 모드에 따라 '실시간 데이터 스트림'을 자동 스위칭!
+        libraryItems={sidebarViewMode === 'recent' ? recentSidebarItems : libraryItems}
+        
         activeLibraryPath={workspaceMode === 'viewer' ? selectedPath : null}
         selectedLibraryPaths={[]}
         onLibraryItemClick={handleLibraryItemClick}
-        // onLibraryItemDoubleClick는 다시 역사속으로 사라집니다.
-        libraryFolderName={libraryFolderName} // 📂 [전송] 라이브러리 그룹 이름!
+        
+        // 🛸 [전달] 폴더 헤더는 라이브러리 모드일 때만 투사!
+        libraryFolderName={sidebarViewMode === 'recent' ? null : libraryFolderName} 
+        
+        sidebarViewMode={sidebarViewMode} // ✨ 현재 사이드바의 영혼(모드)을 주입
         workspaceMode={workspaceMode} // 🛸 [연동] 현재 차원 정보 송신!
-        onShowViewer={() => { // 🏡 [복귀] MTC Center로의 귀환 명령 생성!
+        onLibraryItemContextMenu={handleSidebarItemContextMenu} // 🖱️ [신규] 사이드바 우클릭 관문 연결!
+        onShowViewer={() => { // 🏡 [무조건 복귀] 태초의 MTC Center(초기 화면)로 강제 송환!
           setWorkspaceMode('viewer');
           setSidebarMenuOpen(false);
+          setHasActiveFile(false); // 🚫 [초기화] 활성 파일 레일 비우기
+          setZipPath(null);       // 🧼 [청소] 경로 데이터 소각
+          setSelectedPath(null);  // 🧹 [선택 해제] 라이브러리 포커스 아웃
         }}
       />
 
@@ -768,6 +1177,9 @@ function App() {
             canGoNext={canGoNextLibrary}
             onPrev={handleNavPrev}
             onNext={handleNavNext}
+            
+            // 🚀 [유저 특명] 캔버스 내부 '최근 패널'에서 아이템 클릭 시의 최종 타격 연결!!
+            onSelectRecentItem={handleRecentItemSelect}
 
             onClick={() => {
               if (isSidebarMenuOpen) setSidebarMenuOpen(false);
@@ -821,7 +1233,28 @@ function App() {
         onChangeThemeMode={setThemeMode}
         imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */
         onChangeImageFitMode={setImageFitMode} /* ⚡ [트리거] 스케일 스왑 엔진 */
+        onDeletePage={handleDeletePage} /* 🗑️ [연결] 페이지 소각 처리 엔진 */
         onClose={() => setContextMenu(prev => ({ ...prev, show: false }))} 
+      />
+
+      {/* 📂 [유저 특명] 사이드바 전용 파일 관리 메뉴 탑재 */}
+      <SidebarContextMenu 
+        x={sidebarCtxMenu.x}
+        y={sidebarCtxMenu.y}
+        show={sidebarCtxMenu.show}
+        onClose={() => setSidebarCtxMenu(prev => ({ ...prev, show: false }))}
+        onOpen={() => {
+          if (sidebarCtxMenu.targetPath) loadZipIntoViewer(sidebarCtxMenu.targetPath);
+        }}
+        onCloseDoc={() => {
+          if (sidebarCtxMenu.targetPath) handleCloseDocFromSidebar(sidebarCtxMenu.targetPath);
+        }}
+        onRemove={() => {
+          if (sidebarCtxMenu.targetPath) handleRemoveDocFromSidebar(sidebarCtxMenu.targetPath);
+        }}
+        onDeleteFile={() => {
+          if (sidebarCtxMenu.targetPath) handleDeleteFileFromSidebar(sidebarCtxMenu.targetPath);
+        }}
       />
 
       {/* 🛡️ [유저 인벤션: Micro Safety Lock] 초단위 클릭 연사 무지개반사 실드!! */}

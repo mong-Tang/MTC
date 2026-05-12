@@ -14,32 +14,32 @@
    🌓 THEME ENGINE (테마 컨트롤 타워)
    ========================================================================== */
 
-/* 🌘 1. THEME: DEFAULT (초기 디자인 팔레트) -------------------------- */
+/* 🌘 1. THEME: DEFAULT (리터칭: 화사한 모카 밤색 팔레트) -------------------------- */
 :root,
 [data-theme='default'] {
-  /* 🏛️ Dan-a Deep Warm Chestnut Palette */
-  --bg-base: #2F2A28;
-  --bg-panel: rgba(47, 42, 40, 0.97);
-  --bg-sidebar: #1E1E1F;
+  /* 🏛️ Refined Warm Mocha Chestnut Palette */
+  --bg-base: #3E3430;
+  --bg-panel: rgba(62, 52, 48, 0.97);
+  --bg-sidebar: #212121;
   --text-sidebar: #EAE6E2;
-  --text-main: #EAE6E2;
-  --text-dim: #A59C96;
-  --accent: #CE743E;
-  --accent-muted: rgba(206, 116, 62, 0.15);
-  --border-subtle: rgba(255, 255, 255, 0.1);
-
+  --text-main: #EFEBE8;
+  --text-dim: #BBAFA7;
+  --accent: #DA8552;
+  --accent-muted: rgba(218, 133, 82, 0.16);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  
   /* 🔗 [LINK] 시맨틱 컬러 레이어 (하드코딩 추방용 엔진) */
   --rgb-contrast: 255, 255, 255;
   /* 💡 다크에선 투명 레이어가 '흰색' 기반 */
-  --bg-floating-bar: rgba(24, 24, 24, 0.6);
-  --bg-floating-panel: rgba(28, 28, 28, 0.95);
-  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --bg-floating-bar: rgba(32, 26, 24, 0.6);
+  --bg-floating-panel: rgba(38, 30, 28, 0.95);
+  --shadow-popup: 0 10px 30px rgba(0, 0, 0, 0.45);
   --modal-backdrop: rgba(0, 0, 0, 0.6);
-
+  
   /* 🌌 THEME_DEF: DARK */
-  --theme-def-sidebar-rgb: 30, 30, 31;
-  --theme-def-accent-rgb: 206, 116, 62;
-  --theme-def-list-badge-rgb: 140, 160, 180;
+  --theme-def-sidebar-rgb: 33, 33, 33;
+  --theme-def-accent-rgb: 218, 133, 82;
+  --theme-def-list-badge-rgb: 145, 165, 185;
   --theme-def-status-glass-opacity: 0.85;
   --theme-def-status-blur: 12px;
 }
@@ -237,4 +237,10 @@ body {
   height: 100vh;
   width: 100vw;
   position: relative;
+}
+
+/* ⏳ Global Processing State */
+body.is-processing,
+body.is-processing * {
+  cursor: wait !important;
 }

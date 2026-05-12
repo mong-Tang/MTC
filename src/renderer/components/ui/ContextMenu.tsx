@@ -11,14 +11,16 @@ interface ContextMenuProps {
   onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
   imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
   onChangeImageFitMode: (mode: 'auto' | 'actual' | 'width' | 'height') => void; // ⚡ 스케일 변경 위임
+  onDeletePage?: (target: 'left' | 'right') => void; // 🗑️ [신규] 페이지 소각 처리기 수신!
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode
+  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode, onDeletePage
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: y, left: x });
   const [isThemeSubmenuOpen, setThemeSubmenuOpen] = useState(false);
+  const [isNavSubmenuOpen, setNavSubmenuOpen] = useState(false); // 🧭 [신규] 이동 서브메뉴 상태 추가!
 
   useLayoutEffect(() => {
     if (!show || !menuRef.current) return;
@@ -50,7 +52,10 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   }, [show, onClose]);
 
   useEffect(() => {
-    if (!show) setThemeSubmenuOpen(false);
+    if (!show) {
+      setThemeSubmenuOpen(false);
+      setNavSubmenuOpen(false); // 🧹 [리셋] 메뉴가 닫히면 서브메뉴 상태도 초기화!
+    }
   }, [show]);
 
   if (!show) return null;
@@ -61,33 +66,56 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       className="custom-context-menu"
       style={{ top: coords.top, left: coords.left }}
     >
-      {/* 🧭 [1번 타자] 이동 */}
-      <div className="menu-section-title">이동</div>
-      <button className="context-item" onClick={onClose}>
-        <span className="check-slot">✓</span>
-        <div className="item-label-group">
-          <span>⏭️ 다음 페이지</span> <span className="shortcut">Space / → / ↓</span>
-        </div>
-      </button>
-      <button className="context-item" onClick={onClose}>
-        <span className="check-slot">✓</span>
-        <div className="item-label-group">
-          <span>⏮️ 이전 페이지</span> <span className="shortcut">BkSpc / ← / ↑</span>
-        </div>
-      </button>
-      <div className="ribbon-divider" />
-      <button className="context-item" onClick={onClose}>
-        <span className="check-slot">✓</span>
-        <div className="item-label-group">
-          <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
-        </div>
-      </button>
-      <button className="context-item" onClick={onClose}>
-        <span className="check-slot">✓</span>
-        <div className="item-label-group">
-          <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
-        </div>
-      </button>
+      {/* 🧭 [1번 타자] 이동 (서브메뉴로 콤팩트하게 수납) */}
+      <div className="menu-section-title">내비게이션</div>
+      <div
+        className="context-submenu-wrap"
+        onMouseEnter={() => setNavSubmenuOpen(true)}
+        onMouseLeave={() => setNavSubmenuOpen(false)}
+      >
+        <button
+          className="context-item"
+          onClick={(e) => {
+            e.stopPropagation();
+            setNavSubmenuOpen((prev) => !prev);
+          }}
+        >
+          <span className="check-slot"></span>
+          <div className="item-label-group">
+            <span>🧭 이동</span> <span className="shortcut">▶</span>
+          </div>
+        </button>
+
+        {isNavSubmenuOpen && (
+          <div className="context-submenu-panel" style={{ top: 0 }}>
+            <button className="context-item" onClick={onClose}>
+              <span className="check-slot"></span>
+              <div className="item-label-group">
+                <span>⏭️ 다음 페이지</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>Space / → / ↓</span>
+              </div>
+            </button>
+            <button className="context-item" onClick={onClose}>
+              <span className="check-slot"></span>
+              <div className="item-label-group">
+                <span>⏮️ 이전 페이지</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>BkSpc / ← / ↑</span>
+              </div>
+            </button>
+            <div className="ribbon-divider" />
+            <button className="context-item" onClick={onClose}>
+              <span className="check-slot"></span>
+              <div className="item-label-group">
+                <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
+              </div>
+            </button>
+            <button className="context-item" onClick={onClose}>
+              <span className="check-slot"></span>
+              <div className="item-label-group">
+                <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="ribbon-divider" />
       
@@ -108,7 +136,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>↕️ 높이 맞춤</span> <span className="shortcut">H</span>
+          <span>↕️ 높이 맞춤 (Height)</span> <span className="shortcut">H</span>
         </div>
       </button>
       <button 
@@ -117,7 +145,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
+          <span>↔️ 폭 맞춤 (Width)</span> <span className="shortcut">W</span>
         </div>
       </button>
       <button 
@@ -126,7 +154,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>💎 1:1 보기 (원본)</span> <span className="shortcut">O</span>
+          <span>💎 1:1 보기 (Original)</span> <span className="shortcut">O</span>
         </div>
       </button>
 
@@ -219,19 +247,31 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       
       {/* ✏️ [3번 타자] 편집 */}
       <div className="menu-section-title">편집 (🔒 모드 잠금)</div>
-      <button className="context-item" disabled={viewMode !== '1'} onClick={onClose}>
+      <button 
+        className="context-item" 
+        disabled={viewMode !== '1'} 
+        onClick={() => { if (onDeletePage) onDeletePage('left'); onClose(); }}
+      >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
           <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Del</span>
         </div>
       </button>
-      <button className="context-item" disabled={viewMode !== '2'} onClick={onClose}>
+      <button 
+        className="context-item" 
+        disabled={viewMode !== '2'} 
+        onClick={() => { if (onDeletePage) onDeletePage('left'); onClose(); }}
+      >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
           <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
         </div>
       </button>
-      <button className="context-item" disabled={viewMode !== '2'} onClick={onClose}>
+      <button 
+        className="context-item" 
+        disabled={viewMode !== '2'} 
+        onClick={() => { if (onDeletePage) onDeletePage('right'); onClose(); }}
+      >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
           <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>

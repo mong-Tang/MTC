@@ -321,6 +321,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     if (!viewingInternalPath) return;
 
     try {
+      document.body.classList.add('is-processing'); // ⏳ [시각적 피드백] 로딩 개시
       const appApi = (window as any).appApi;
       if (!appApi || typeof appApi.getPage !== 'function') return;
 
@@ -342,6 +343,8 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       }
     } catch (error) {
       console.error('Failed to load internal image preview:', error);
+    } finally {
+      document.body.classList.remove('is-processing'); // 🏁 로딩 종료
     }
   };
 

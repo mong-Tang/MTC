@@ -103,6 +103,34 @@ async function resolveTempOverwritePath(targetZipPath: string): Promise<string> 
 }
 
 export async function applyZipEditInTemp(zipPath: string, request: ZipEditRequest): Promise<{ editedZipPath: string }> {
+  // 1. 🎯 타겟 결과 경로 조기 확정
+  const overwriteEditedSource = isEditedZipPath(zipPath);
+  const editedZipPath = overwriteEditedSource ? zipPath : await resolveEditedZipPath(zipPath);
+
+  // 🚀 [유저 인사이트 반영: 초고속 다이렉트 소각 모드]
+  if (request.kind === 'delete') {
+    try {
+      // (안전) 원본을 덮어쓰는 경우가 아니라면, 먼저 원본을 대상 경로로 고속 복제한 뒤 거기서 도려낸다!
+      if (!overwriteEditedSource) {
+        await fs.copyFile(zipPath, editedZipPath);
+      }
+      
+      // 🔥 [하이라이트] 7-Zip의 'd' 명령어를 통해, 압축을 일절 풀지 않고 대상 항목만 정밀 타격 소각!
+      // 엔트리 경로는 백슬래시(/) 처리가 견고해야 하므로 정규화 처리
+      const targetEntry = request.targetEntryName.replace(/\\/g, '/');
+      await run7zCommand(['d', editedZipPath, targetEntry]);
+
+      return { editedZipPath };
+    } catch (error) {
+      // 실패 시 생성된 복제본이 있다면 롤백
+      if (!overwriteEditedSource) {
+        await fs.rm(editedZipPath, { force: true }).catch(() => {});
+      }
+      throw error;
+    }
+  }
+
+  // --- 🧳 [Legacy / Insert 모드] 기존의 정통 Unpack-Repack 로직 잔류 ---
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'zip-edit-'));
   const tempExtractPath = path.join(tempRoot, 'work');
   await fs.mkdir(tempExtractPath, { recursive: true });
@@ -110,34 +138,27 @@ export async function applyZipEditInTemp(zipPath: string, request: ZipEditReques
   try {
     await run7zCommand(['x', zipPath, `-o${tempExtractPath}`, '-y']);
 
-    if (request.kind === 'delete') {
-      const targetPath = resolveEntryPath(tempExtractPath, request.targetEntryName);
-      await fs.rm(targetPath, { force: true });
-    } else {
-      const afterPath = resolveEntryPath(tempExtractPath, request.afterEntryName);
-      const afterDirectory = path.dirname(afterPath);
-      const afterExtension = path.extname(afterPath);
-      const afterBaseName = path.basename(afterPath, afterExtension);
-      const preferredExtension = path.extname(request.insertFileName) || afterExtension || '.png';
-      let insertPath = path.join(afterDirectory, `${afterBaseName}--ins-01${preferredExtension}`);
-      for (let index = 2; index < 1000; index += 1) {
-        try {
-          await fs.access(insertPath);
-          insertPath = path.join(afterDirectory, `${afterBaseName}--ins-${String(index).padStart(2, '0')}${preferredExtension}`);
-        } catch (error) {
-          const fsError = error as NodeJS.ErrnoException;
-          if (fsError.code === 'ENOENT') {
-            break;
-          }
-          throw error;
+    // (request.kind === 'delete' 케이스는 상단에서 이미 얼리 리턴 처리되었으므로 insert 로직만 수행)
+    const afterPath = resolveEntryPath(tempExtractPath, request.afterEntryName);
+    const afterDirectory = path.dirname(afterPath);
+    const afterExtension = path.extname(afterPath);
+    const afterBaseName = path.basename(afterPath, afterExtension);
+    const preferredExtension = path.extname(request.insertFileName) || afterExtension || '.png';
+    let insertPath = path.join(afterDirectory, `${afterBaseName}--ins-01${preferredExtension}`);
+    for (let index = 2; index < 1000; index += 1) {
+      try {
+        await fs.access(insertPath);
+        insertPath = path.join(afterDirectory, `${afterBaseName}--ins-${String(index).padStart(2, '0')}${preferredExtension}`);
+      } catch (error) {
+        const fsError = error as NodeJS.ErrnoException;
+        if (fsError.code === 'ENOENT') {
+          break;
         }
+        throw error;
       }
-
-      await fs.writeFile(insertPath, Buffer.from(request.insertBytes));
     }
+    await fs.writeFile(insertPath, Buffer.from(request.insertBytes));
 
-    const overwriteEditedSource = isEditedZipPath(zipPath);
-    const editedZipPath = overwriteEditedSource ? zipPath : await resolveEditedZipPath(zipPath);
     const zipOutPath = overwriteEditedSource ? await resolveTempOverwritePath(zipPath) : editedZipPath;
 
     await run7zCommand(['a', '-tzip', zipOutPath, '*'], tempExtractPath);

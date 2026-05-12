@@ -15,7 +15,7 @@ type ProgressMap = Record<string, ProgressEntry>;
 
 const recentFileName = 'recent.json';
 const progressFileName = 'progress.json';
-const maxRecentItems = 100;
+const maxRecentItems = 15;
 
 function getUserDataDirectory(): string {
   return app.getPath('userData');
@@ -84,7 +84,29 @@ export async function upsertRecentItem(input: UpsertRecentInput): Promise<Recent
     lastOpenedAt: nowIso
   };
 
-  const deduplicated = previousItems.filter((item) => item.fileId !== input.fileId && item.zipPath !== input.zipPath);
+  // 🧹 [유저 특명: 중복 숙청] 폴더와 파일은 개념적으로 하나씩만 존재해야 함!
+  const deduplicated = previousItems.filter((item) => {
+    // 1️⃣ 물리적 동일 객체 제거
+    if (item.fileId === input.fileId || item.zipPath === input.zipPath) return false;
+
+    // 2️⃣ 상호 포함 관계 파괴 (폴더와 그 내부 파일의 공존을 불허함)
+    const inputIsFolder = !/\.[a-zA-Z0-9]+$/.test(input.zipPath); // 확장자가 없으면 폴더로 간주하는 명품 룰베이스!
+    const itemIsFolder = !/\.[a-zA-Z0-9]+$/.test(item.zipPath);
+
+    // ✅ 폴더가 들어올 때 -> 기존에 있던 그 하위 파일들을 가차없이 처단!
+    if (inputIsFolder && item.zipPath.startsWith(input.zipPath)) {
+      return false;
+    }
+
+    // ✅ 파일이 들어올 때 -> 이미 상위 폴더가 기록에 있다면, 신규 파일 기록을 거부하여 폴더의 권위를 유지!
+    // (다만, 이번 파일 로딩이 폴더 기록으로 귀결될 거라면 애초에 input이 폴더일 것이므로, 이 경우는 개별 파일로 굳이 넣을 때만 발동)
+    if (!inputIsFolder && itemIsFolder && input.zipPath.startsWith(item.zipPath)) {
+      return false; // 폴더가 이미 존재하므로, 굳이 파일을 따로 추가 기록하지 않음! (폴더 최우선주의)
+    }
+
+    return true; // 안전한 생존자
+  });
+
   const nextItems = [nextItem, ...deduplicated].slice(0, maxRecentItems);
   await writeJsonAtomic(getRecentFilePath(), nextItems);
   return nextItems;

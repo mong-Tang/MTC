@@ -56,9 +56,44 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
     if (activeMenu !== null) setActiveMenu(menuName);
   };
 
+  // 🏎️ [초정밀 고성능 JS 드래그 엔진 가동] 
+  const handleDragMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // 좌클릭만 허용
+    
+    // 1. Main 프로세스에 시작 신호탄 발사 (오프셋 캡처)
+    appApi?.startWindowDrag?.({ screenX: e.screenX, screenY: e.screenY });
+
+    let rafId: number | null = null;
+
+    const handleGlobalMouseMove = (moveEvent: MouseEvent) => {
+      // ⚡ GPU 가속 프레임 유실을 막기 위해 RAF로 쓰로틀링
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        appApi?.moveWindow?.({ screenX: moveEvent.screenX, screenY: moveEvent.screenY });
+        rafId = null;
+      });
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+
+    // 🌎 윈도우 창 밖으로 마우스가 튀어 나가도 부드럽게 추적하기 위해 전역 리스너 장착!
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+  };
+
   return (
     <>
-      <div className="titlebar-draggable-region"></div>
+      {/* 🚀 [궁극의 하이브리드 아키텍처] CSS drag를 걷어내고, 100% 완벽한 커서 컨트롤과 초정밀 JS 드래그 엔진이 통합된 구역 */}
+      <div 
+        className="titlebar-draggable-region"
+        onMouseDown={handleDragMouseDown}
+        onDoubleClick={handleMaximize}
+        title="창 잡고 끌기 (더블클릭 시 최대화)"
+      ></div>
 
       {/* 🛸 [이동 완수] 컨버터 통합 헤더는 ConverterPanelShell로 귀환 조치됨! */}
       

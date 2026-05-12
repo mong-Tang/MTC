@@ -680,6 +680,7 @@ app.on('second-instance', () => {
 });
 
 app.whenReady().then(async () => {
+  let dragOffset = { x: 0, y: 0 }; // 🛰️ [JS 드래그 엔진] 변위 계산용 메모리 캐시
   app.setAppUserModelId('com.mongtang.zipbookviewer');
   currentSettings = await getAppSettings();
   currentLocale = currentSettings.locale;
@@ -712,6 +713,27 @@ app.whenReady().then(async () => {
     reloadHelpWindowForLocale();
     applyApplicationMenu();
     return true;
+  });
+
+  ipcMain.on('window:drag-start', (event, data: { screenX: number; screenY: number }) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+    const bounds = win.getBounds();
+    dragOffset = { x: data.screenX - bounds.x, y: data.screenY - bounds.y };
+  });
+
+  ipcMain.on('window:drag-move', (event, data: { screenX: number; screenY: number }) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || win.isMaximized()) return; // 🛡️ 최대화 상태에서는 이동 방지
+    win.setBounds(
+      {
+        x: Math.floor(data.screenX - dragOffset.x),
+        y: Math.floor(data.screenY - dragOffset.y),
+        width: win.getBounds().width,
+        height: win.getBounds().height
+      },
+      false // ⚡ 플리커 방지를 위한 애니메이션 비활성화
+    );
   });
 
   ipcMain.on('window:minimize', (event) => {
