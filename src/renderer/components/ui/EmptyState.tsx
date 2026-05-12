@@ -2,12 +2,14 @@ import React from 'react';
 
 interface EmptyStateProps {
   height?: string | number;
+  style?: React.CSSProperties; // 🎨 [신규] 커스텀 레이아웃 스타일 주입 허용
   children: React.ReactNode;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({ 
-  height = '100px', 
+  height, // 💡 [개혁] 기본값 폐지하여 순수 속성 존중
+  style, 
   children, 
   onContextMenu 
 }) => {
@@ -24,7 +26,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     background: 'rgba(var(--rgb-contrast), 0.01)',
     transition: 'all 0.3s ease',
     width: '100%',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    ...style // 🎯 [최종 계승] 외부에서 주입한 스타일로 모든 기본 규칙 덮어쓰기 허용!
   };
 
   const blockStyle: React.CSSProperties = {

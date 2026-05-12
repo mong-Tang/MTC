@@ -100,9 +100,12 @@ function sanitizeSettings(candidate: Partial<AppSettings> | null | undefined): A
     },
     isMaximized: candidate?.isMaximized === true,
     theme:
-      candidate?.theme === 'light' || candidate?.theme === 'system' || candidate?.theme === 'default'
+      candidate?.theme === 'dark' ||
+      candidate?.theme === 'light' ||
+      candidate?.theme === 'system' ||
+      candidate?.theme === 'default'
         ? candidate.theme
-        : 'dark'
+        : defaultAppSettings.theme
   };
 }
 

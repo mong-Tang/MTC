@@ -123,7 +123,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
     if (outputNamePattern === 'name_underscore_index') return `${outputNameBase}_${sampleIndex}`;
     return `${sampleIndex}_${outputNameBase}`;
   }, [outputNameBase, outputNamePattern]);
-  const outputLabelBase = outputNameBase.trim() || 'output';
+  const outputLabelBase = outputNameBase.trim() || '예제 파일명';
 
   return (
     <section className="converter-section converter-options-section">
@@ -143,7 +143,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           </select>
         </label>
         <label className="converter-option-row">
-          <span>{mode === 'merge' ? '출력 파일명' : '출력 접두어'}</span>
+          <span>출력 파일명</span>
           <div className="converter-option-path-row">
             <input
               type="text"
@@ -190,7 +190,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           <>
             <div className="converter-option-block">
               <p className="converter-option-block-label">출력 파일명 옵션</p>
-              <div className="converter-option-radio-group">
+              <div className="converter-option-radio-group grid-2-col">
                 <label className="converter-option-radio-item">
                   <input
                     type="radio"

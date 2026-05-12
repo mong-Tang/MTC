@@ -705,8 +705,6 @@ function App() {
         // 🚀 [New] Global Workspace Integration
         workspaceMode={workspaceMode}
         hasActiveFile={hasActiveFile}
-        converterMode={converterMode} // 🛸 [신규] 타이틀바에 실시간 주입!!
-        onChangeConverterMode={handleConverterModeChange} // ⚡ 통합 리모컨 연결!
       />
       
       {/* ⚓ 관제탑 (앵커바) */}
@@ -782,6 +780,7 @@ function App() {
       ) : (
         <ConverterPanel
           mode={converterMode} // 🛸 [격상 완수] 하향식 주입!
+          onChangeMode={handleConverterModeChange} // ⚡ [신규] 통합 리모컨 연결!
           sourceItems={converterSourceItems}
           hasSidebarItems={libraryItems.length > 0}
           selectedPaths={selectedConverterPaths}

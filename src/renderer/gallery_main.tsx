@@ -14,7 +14,7 @@ import { ConverterPanel } from './components/layout/ConverterPanel';
 import { ConverterFileList } from './components/converter/ConverterFileList';
 import { ConverterOptions } from './components/converter/ConverterOptions';
 import { ConverterFooter } from './components/converter/ConverterFooter';
-import { ConverterToolbar } from './components/converter/ConverterToolbar';
+
 import { ConverterPanelShell } from './components/converter/ConverterPanelShell';
 import { ConverterModal } from './components/modals/ConverterModal';
 
@@ -24,7 +24,7 @@ import './index.css';
 // 🏗️ Global Config for Demos
 const mockSelected = new Set<string>();
 const mockItems: ConverterSourceItem[] = [
-  { name: 'Volume_001.zip', path: '/mock/p1', type: 'zip', sizeBytes: 1024*1024*5, totalPages: 200 },
+  { name: 'EXP 08(완).cbz', path: '/mock/p1', type: 'cbz', sizeBytes: 10.7 * 1024 * 1024, totalPages: 150 },
 ];
 
 // 🗺️ Central Registry Definition
@@ -57,12 +57,49 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'ConverterPanel': {
     label: 'ConverterPanel',
     desc: '컨버터 최종 취합 메인 컨테이너',
-    render: () => <div style={{ height: '100vh' }}><ConverterPanel sourceItems={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} mode="merge" onAddSource={()=>{}} onAddAllSource={()=>{}} onClearSource={()=>{}} onRemoveSourceItems={()=>{}} /></div>
+    render: () => <div style={{ height: '100vh' }}><ConverterPanel sourceItems={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} mode="merge" onChangeMode={()=>{}} onAddSource={()=>{}} onAddAllSource={()=>{}} onClearSource={()=>{}} onRemoveSourceItems={()=>{}} /></div>
   },
   'ConverterOptions': {
     label: 'ConverterOptions',
     desc: '변환 세부 옵션 설정 컨트롤 타워',
-    render: () => <div style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}><ConverterOptions mode="split" outputFormat="cbz" onChangeOutputFormat={()=>{}} outputNameBase="out" onChangeOutputNameBase={()=>{}} outputNamePattern="index-name" onChangeOutputNamePattern={()=>{}} compressionPolicy="auto" onChangeCompressionPolicy={()=>{}} splitCriterion="pages" onChangeSplitCriterion={()=>{}} splitValue={100} onChangeSplitValue={()=>{}} splitCustomValues="" onChangeSplitCustomValues={()=>{}} splitTotalPages={300} onChangeSplitTotalPages={()=>{}} outputDirectory="/dummy" onChangeOutputDirectory={()=>{}} onPickOutputDirectory={()=>{}} mergeStrategy="unpack" onChangeMergeStrategy={()=>{}} canExecute={true} disabledReason={null} onExecute={()=>{}} progressPercent={0} executionLogs={[]} isProcessing={false} /></div>
+    render: () => (
+      <div className="converter-panel-body" style={{ width: '450px', padding: '20px', margin: '40px auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+        <div className="converter-workbench-grid" style={{ display: 'block', height: 'auto' }}>
+          <section className="converter-pane" style={{ height: 'auto', minHeight: 'auto' }}>
+            <ConverterOptions
+              mode="split"
+              outputFormat="cbz"
+              onChangeOutputFormat={() => { }}
+              outputNameBase="예제 파일명"
+              onChangeOutputNameBase={() => { }}
+              outputNamePattern="name-index"
+              onChangeOutputNamePattern={() => { }}
+              compressionPolicy="auto"
+              onChangeCompressionPolicy={() => { }}
+              splitCriterion="custom"
+              onChangeSplitCriterion={() => { }}
+              splitValue={100}
+              onChangeSplitValue={() => { }}
+              splitCustomValues="0,0"
+              onChangeSplitCustomValues={() => { }}
+              splitTotalPages={150}
+              onChangeSplitTotalPages={() => { }}
+              outputDirectory="/dummy/path"
+              onChangeOutputDirectory={() => { }}
+              onPickOutputDirectory={() => { }}
+              mergeStrategy="unpack"
+              onChangeMergeStrategy={() => { }}
+              canExecute={true}
+              disabledReason={null}
+              onExecute={() => { }}
+              progressPercent={0}
+              executionLogs={[]}
+              isProcessing={false}
+            />
+          </section>
+        </div>
+      </div>
+    )
   },
   'ConverterFileList': {
     label: 'ConverterFileList',
@@ -74,11 +111,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
     desc: '실행/취소 및 퍼센테이지 하단 제어',
     render: () => <div style={{ padding:'40px' }}><ConverterFooter mode="merge" outputFormat="zip" splitCriterion="pages" splitValue={100} splitCustomValues="" canExecute={true} disabledReason={null} /></div>
   },
-  'ConverterToolbar': {
-    label: 'ConverterToolbar',
-    desc: '병합/분할 전환 서브 헤더',
-    render: () => <div style={{ padding:'40px' }}><ConverterToolbar mode="merge" onChangeMode={()=>{}} /></div>
-  },
+
   'ConverterPanelShell': {
     label: 'ConverterPanelShell',
     desc: '컨버터 외곽 프레임 래퍼',

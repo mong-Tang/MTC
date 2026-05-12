@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom'; // 🛰️ [긴급 투입] 팝업 공간 전송 장치
 import type { ConverterMode } from '../layout/ConverterPanel';
 import type { ConverterSourceItem } from '../layout/ConverterPanel';
 import type { CompressionPolicy } from '../layout/ConverterPanel';
@@ -149,6 +150,12 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   const [internalPages, setInternalPages] = useState<any[]>([]);
   const [selectedInternalIndices, setSelectedInternalIndices] = useState<Set<number>>(new Set()); // 🎯 [신규] 내부 리스트 개별 행 선택 추적기!
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null); // 🖼️ [신규] 내부 이미지 미리보기 메모리 주소 보관소!
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false); // 🔭 [라이트박스] 전체화면 확대경 활성 상태
+
+  // 🛰️ [초경량 가상화 엔진 스택] 1만건 이상 초거대 리스트 렌더링 부하를 0에 가깝게 수렴시키는 하이퍼 코어
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(600); // 안전 기본 높이
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 🧹 [초기화] 외부 파일 목록이 바뀌거나 화면 모드가 바뀌면 즉시 내부 보기 탈출 및 선택/프리뷰 해제!
   useEffect(() => {
@@ -159,8 +166,16 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     if (previewImageUrl) {
       URL.revokeObjectURL(previewImageUrl);
       setPreviewImageUrl(null);
+      setIsLightboxOpen(false);
     }
   }, [items, mode]);
+
+  // 📐 [뷰포트 탐지기] 컨테이너 크기 변경 시 가상화 렌더링 영역 즉각 리사이징!
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      setViewportHeight(scrollContainerRef.current.clientHeight);
+    }
+  }, [viewingInternalPath]); // 내부 리스트가 열리고 닫힐 때마다 동적 재측정
 
   const handleViewInternalList = async (filePath: string) => {
     // 🔄 [토글 매커니즘] 이미 펼쳐져 있다면 닫고 종료하여 유연한 작동 보장!
@@ -323,6 +338,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         const blob = new Blob([bytes], { type: mimeType || 'image/jpeg' });
         const url = URL.createObjectURL(blob);
         setPreviewImageUrl(url);
+        setIsLightboxOpen(false); // 🚀 신규 프리뷰 로드 시 기존 라이트박스 해제
       }
     } catch (error) {
       console.error('Failed to load internal image preview:', error);
@@ -344,11 +360,16 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     // Smart viewport clamping
     let px = e.clientX;
     let py = e.clientY;
-    const approxWidth = 180;
-    const approxHeight = 200;
+    const approxWidth = 200; // 📏 [안전 확보] 드롭다운 메뉴의 실제 너비 확보
+    const approxHeight = 260; // 📏 [안전 확보] 메뉴 항목 증설 대비 높이 여유 증강
+    const safeMargin = 12; // 🛡️ 화면 가장자리 뚫림 방지용 완충지대
 
-    if (px + approxWidth > window.innerWidth) px = px - approxWidth;
-    if (py + approxHeight > window.innerHeight) py = py - approxHeight;
+    if (px + approxWidth + safeMargin > window.innerWidth) {
+      px = Math.max(safeMargin, px - approxWidth); // 🛸 좌측 쏠림 방지 하한선 탑재
+    }
+    if (py + approxHeight + safeMargin > window.innerHeight) {
+      py = Math.max(safeMargin, py - approxHeight); // 🛸 상단 쏠림 방지 하한선 탑재
+    }
 
     setContextMenu({
       visible: true,
@@ -631,7 +652,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               disabled={selectedPaths.size === 0}
               onClick={handleBatchDelete}
             >
-              <IconTrash /> <span>Delete ({selectedPaths.size})</span>
+              <IconTrash /> <span>Remove ({selectedPaths.size})</span>
             </button>
           </>
         )}
@@ -701,7 +722,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       </div>
       {items.length === 0 ? (
         <EmptyState
-          height={100}
+          style={{ flex: 1, height: 'auto' }} // 🚀 [완전 복구] 빈 화면일 때도 '100% 점유'를 강제하여 아이템 리스트 박스 크기 완전 고정!
           onContextMenu={(e) => handleOpenContextMenu(e)}
         >
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
@@ -737,7 +758,9 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
             </button>
           </div>
           <div
+            ref={scrollContainerRef}
             className="converter-item-scroll"
+            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
             onContextMenu={(e) => handleOpenContextMenu(e)} // Catch clicks in empty area below rows
           >
             {sortedItems.map((item, index) => {
@@ -748,7 +771,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                 <React.Fragment key={item.path}>
                   <div
                     className={`converter-item-row ${isSelected ? 'selected' : ''} ${isExpanded ? 'is-expanded-parent' : ''}`}
-                    title={`${item.path}\n클릭하여 선택 (더블 클릭 시 ${mode === 'split' ? '내부 파일 열기/닫기' : '삭제'})`}
+                    title={`${item.path}\n클릭하여 선택 (더블 클릭 시 ${mode === 'split' ? '내부 파일 열기/닫기' : '제거'})`}
                     onClick={(e) => handleRowClick(item.path, e)}
                     onDoubleClick={() => {
                       if (mode === 'split') {
@@ -758,16 +781,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                       }
                     }}
                     onContextMenu={(e) => handleOpenContextMenu(e, item.path)} // Item-specific context menu + auto-select
-                    style={isExpanded ? {
-                      borderLeft: '3px solid var(--accent)',
-                      backgroundColor: 'var(--bg-base)', // 🛡️ [완벽 불투명화] 하위 항목 스크롤 침입 차단!
-                      backgroundImage: 'linear-gradient(rgba(255, 107, 0, 0.08), rgba(255, 107, 0, 0.08))', // 🎨 기존 테마 조화
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: 10, // 🛸 다른 행들을 뚫고 올라오는 고정 좌석 권한 부여!
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)', // 🧱 떠있는 레이어임을 알리는 입체 그림자
-                      borderBottom: '1px solid rgba(255, 107, 0, 0.2)' // 📐 하단 경계선 명확화
-                    } : {}}
+                    style={{}}
                   >
                     <span className="converter-item-index">{mode === 'split' ? '' : index + 1}</span>
                     <span className="converter-item-name" style={{ fontWeight: isExpanded ? '700' : 'inherit', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -796,53 +810,78 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                     </span>
                   </div>
 
-                  {/* 🌳 [계단식 트리] 분할 모드 전용 중첩 자식 리스트 렌더링! */}
-                  {isExpanded && internalPages.length > 0 && (
-                    <div className="converter-nested-items-container" style={{
-                      // 🔥 [컬럼 사수대] 그리드 파괴범 '전체 여백'을 박멸하여 상단 컬럼과 자와 같이 정렬!
-                      backgroundColor: 'rgba(0,0,0,0.15)',
-                      boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
-                    }}>
-                      {internalPages.map((page, pIdx) => {
-                        const isPageSelected = selectedInternalIndices.has(pIdx);
+                  {/* 🌳 [계단식 트리] 분할 모드 전용 중첩 자식 리스트 렌더링! (초고속 가상화 슬라이싱 탑재) */}
+                  {isExpanded && internalPages.length > 0 && (() => {
+                    const ROW_H = 38; // CSS 기반 고정 높이 상수 📐
+                    const overscan = 15; // 🚀 스크롤 부드러움을 위한 버퍼 버텍스 수량
 
-                        return (
-                          <div
-                            key={`${item.path}-page-${pIdx}`}
-                            className={`converter-item-row ${isPageSelected ? 'selected' : ''}`}
-                            style={{
-                              borderBottom: '1px solid rgba(255,255,255,0.03)',
-                              cursor: 'pointer' /* 🖱️ 손가락 커서 장착! */
-                            }}
-                            title={page.entryName}
-                            onClick={(e) => handleInternalRowClick(pIdx, e)}
-                            onDoubleClick={() => void handleInternalRowDoubleClick(page)} /* 🛸 [최신 패치] 더블 클릭 시 즉각 화상 송출! */
-                          >
-                            <span
-                              className="converter-item-index"
+                    // 1️⃣ 부모 파일 위치에 따른 절대 오프셋 산출
+                    const pIdxInSorted = sortedItems.findIndex(si => si.path === item.path);
+                    const parentOffset = (pIdxInSorted + 1) * ROW_H;
+                    
+                    // 2️⃣ 현재 스크롤 대비 상대 위치 추적
+                    const relativeST = Math.max(0, scrollTop - parentOffset);
+                    
+                    // 3️⃣ 윈도우 범위 (Start ~ End) 계산
+                    const start = Math.max(0, Math.floor(relativeST / ROW_H) - overscan);
+                    const end = Math.min(internalPages.length, Math.ceil((relativeST + viewportHeight) / ROW_H) + overscan);
+                    
+                    // 4️⃣ 물리적 패딩 보존 (스크롤바 널뛰기 방지용 지지대)
+                    const padTop = start * ROW_H;
+                    const padBottom = (internalPages.length - end) * ROW_H;
+
+                    // 5️⃣ 대상 범위 조각(Slice) 추출
+                    const slice = internalPages.slice(start, end);
+
+                    return (
+                      <div className="converter-nested-items-container" style={{
+                        backgroundColor: 'rgba(0,0,0,0.15)',
+                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
+                        paddingTop: `${padTop}px`, // 🧱 위쪽 공간 예약
+                        paddingBottom: `${padBottom}px` // 🧱 아래쪽 공간 예약
+                      }}>
+                        {slice.map((page, localIdx) => {
+                          const pIdx = start + localIdx; // 🎯 실시간 가상 인덱스 -> 리얼 인덱스 복원
+                          const isPageSelected = selectedInternalIndices.has(pIdx);
+
+                          return (
+                            <div
+                              key={`${item.path}-page-${pIdx}`}
+                              className={`converter-item-row ${isPageSelected ? 'selected' : ''}`}
                               style={{
-                                color: 'var(--text-dim)',
-                                borderLeft: '3px solid rgba(255, 107, 0, 0.3)', // 🪜 트리 정체성은 기둥 하나로 완벽 구현!
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '100%'
+                                borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                cursor: 'pointer' /* 🖱️ 손가락 커서 장착! */
                               }}
+                              title={page.entryName}
+                              onClick={(e) => handleInternalRowClick(pIdx, e)}
+                              onDoubleClick={() => void handleInternalRowDoubleClick(page)} /* 🛸 [최신 패치] 더블 클릭 시 즉각 화상 송출! */
                             >
-                              {pIdx + 1}
-                            </span>
-                            <span className="converter-item-name" style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '18px' }}>
-                              {/* 🎯 내용물만 살짝 밀어서 계층감은 유지하고 컬럼 라인은 100% 직결! */}
-                              📄 {page.displayName || page.entryName}
-                            </span>
-                            <span className="converter-item-size" style={{ opacity: 0.7, fontSize: '0.85rem' }}>
-                              {formatSize(page.sizeBytes)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                              <span
+                                className="converter-item-index"
+                                style={{
+                                  color: 'var(--text-dim)',
+                                  borderLeft: '3px solid rgba(255, 107, 0, 0.3)', // 🪜 트리 정체성은 기둥 하나로 완벽 구현!
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  height: '100%'
+                                }}
+                              >
+                                {pIdx + 1}
+                              </span>
+                              <span className="converter-item-name" style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '18px' }}>
+                                {/* 🎯 내용물만 살짝 밀어서 계층감은 유지하고 컬럼 라인은 100% 직결! */}
+                                📄 {page.displayName || page.entryName}
+                              </span>
+                              <span className="converter-item-size" style={{ opacity: 0.7, fontSize: '0.85rem' }}>
+                                {formatSize(page.sizeBytes)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </React.Fragment>
               );
             })}
@@ -922,7 +961,17 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                 <img
                   src={previewImageUrl || undefined}
                   alt="Preview"
-                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                  title="더블 클릭하여 크게 보기"
+                  onDoubleClick={() => setIsLightboxOpen(true)}
+                  style={{ 
+                    maxWidth: '100%', maxHeight: '100%', 
+                    objectFit: 'contain', 
+                    borderRadius: '4px', 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    cursor: 'zoom-in', // 🛸 클릭하면 커진다는 시각적 넛지
+                    transition: 'transform 0.2s ease'
+                  }}
+                  className="converter-mini-preview-img"
                 />
                 <button
                   type="button"
@@ -933,7 +982,11 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                     fontSize: '12px', backdropFilter: 'blur(4px)', zIndex: 5, fontWeight: 'bold'
                   }}
                   title="닫기"
-                  onClick={() => setPreviewImageUrl(null)}
+                  onClick={() => {
+                    if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
+                    setPreviewImageUrl(null);
+                    setIsLightboxOpen(false);
+                  }}
                 >
                   ✕
                 </button>
@@ -958,8 +1011,8 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
       </div>
 
 
-      {/* 🖱️ Floating Context Menu Engine */}
-      {contextMenu.visible && (
+      {/* 🛰️ [궁극의 포탈 개방] 상위 요소의 위치 변환(Backdrop-Filter/Center)에 오염되지 않도록 Body 최상단으로 차원 전송! */}
+      {contextMenu.visible && createPortal(
         <div
           className="converter-dropdown-menu context-menu-float"
           style={{
@@ -977,7 +1030,25 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           onClick={(e) => e.stopPropagation()} // Prevent self-close when clicking inside
         >
           {renderMenuItems(() => setContextMenu({ visible: false, x: 0, y: 0 }))}
-        </div>
+        </div>,
+        document.body // 🛸 최종 착륙 좌표: 전역 뷰포트의 최상층!
+      )}
+
+      {/* 🌌 [라이트박스 오버레이] 썸네일 더블클릭 시 폭발하는 몰입형 초대형 캔버스! */}
+      {isLightboxOpen && previewImageUrl && createPortal(
+        <div 
+          className="converter-lightbox-overlay"
+          onDoubleClick={() => setIsLightboxOpen(false)}
+        >
+          <img 
+            src={previewImageUrl} 
+            alt="Full Preview" 
+            className="converter-lightbox-img"
+            // 🧱 전체 오버레이가 더블클릭 이벤트를 수집하므로 이미지 역시 자연스럽게 버블링되어 기능합니다.
+          />
+          <div className="converter-lightbox-hint">더블클릭하여 닫기</div>
+        </div>,
+        document.body
       )}
     </section>
   );

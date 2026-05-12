@@ -25,6 +25,7 @@ interface ConverterPanelProps {
   selectedPaths: Set<string>;
   onToggleSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
   mode: ConverterMode; // 🛰️ [격상 완료]
+  onChangeMode: (mode: ConverterMode) => void; // ⚡ [신규] 통합 리모컨 수신처!
   onAddSource: () => void;
   onAddAllSource: () => void;
   onClearSource: () => void;
@@ -32,26 +33,27 @@ interface ConverterPanelProps {
   onUpdateStatusText?: (text: string) => void; // 🛰️ 상태바 업링크 신호선!
 }
 
-export const ConverterPanel: React.FC<ConverterPanelProps> = ({ 
-  sourceItems, 
+export const ConverterPanel: React.FC<ConverterPanelProps> = ({
+  sourceItems,
   hasSidebarItems,
   selectedPaths,
   onToggleSelection,
   mode, // 🛰️
-  onAddSource, 
-  onAddAllSource, 
-  onClearSource, 
+  onChangeMode, // ⚡
+  onAddSource,
+  onAddAllSource,
+  onClearSource,
   onRemoveSourceItems,
   onUpdateStatusText
 }) => {
   const [outputFormat, setOutputFormat] = useState<'zip' | 'cbz'>('zip');
-  const [outputNameBase, setOutputNameBase] = useState<string>('output');
-  const [outputNamePattern, setOutputNamePattern] = useState<OutputNamePattern>('name_underscore_index');
+  const [outputNameBase, setOutputNameBase] = useState<string>('예제 파일명');
+  const [outputNamePattern, setOutputNamePattern] = useState<OutputNamePattern>('name-index');
   const [compressionPolicy, setCompressionPolicy] = useState<CompressionPolicy>('auto');
   const [splitCriterion, setSplitCriterion] = useState<SplitCriterion>('custom');
   const [splitValue, setSplitValue] = useState<number>(100);
-  const [splitCustomValues, setSplitCustomValues] = useState<string>('100,100');
-  const [splitTotalPages, setSplitTotalPages] = useState<number>(1000);
+  const [splitCustomValues, setSplitCustomValues] = useState<string>('0,0');
+  const [splitTotalPages, setSplitTotalPages] = useState<number>(0);
   const [mergeStrategy, setMergeStrategy] = useState<MergeStrategy>('unpack'); // 🎯 [긴급 수혈] 기본은 '풀기'이나 유저 선택권 부여
   const [outputDirectory, setOutputDirectory] = useState('');
   const [isProcessing, setIsProcessing] = useState(false); // 🛰️ [작업 잠금] 병합 중 중복 클릭 및 UI 오작동 방지
@@ -59,7 +61,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const [executionLogs, setExecutionLogs] = useState<string[]>([]); // 📝 실시간 로깅 스트림
   const [elapsedTime, setElapsedTime] = useState(0); // ⏱️ [정밀 타이머] 작업 경과 시간 실시간 트래킹
   const [processingMode, setProcessingMode] = useState<ConverterMode | null>(null); // 🚦 [모드 고유 인식표] 어느 화면에서 작업을 시작했는지 박제
-  
+
   // ⏱️ [실시간 타이머 박동] 작업 시작 시 1초마다 째깍째깍!
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -120,6 +122,19 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     };
   }, [outputDirectory, sourceItems]);
 
+  // 🧩 [분할 타겟 동기화 엔진] 분할 모드에서 대상 파일이 등록되면, 해당 아카이브의 실측 '총 페이지 수'를 즉각 UI 상태에 자동 연동!
+  useEffect(() => {
+    if (mode === 'split' && sourceItems.length > 0) {
+      const targetItem = sourceItems[0];
+      if (typeof targetItem.totalPages === 'number' && targetItem.totalPages > 0) {
+        setSplitTotalPages(targetItem.totalPages);
+      }
+    } else if (sourceItems.length === 0) {
+      // 대상 소멸 시 기본값 회귀
+      setSplitTotalPages(0);
+    }
+  }, [mode, sourceItems]);
+
   const handlePickOutputDirectory = async () => {
     try {
       const appApi = (window as any).appApi;
@@ -170,14 +185,14 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const disabledReason = isProcessing
     ? '현재 변환 작업이 진행 중입니다...'
     : !hasSourceItems
-    ? '입력 파일을 먼저 추가하세요.'
-    : !hasOutputDirectory
-      ? '출력 위치를 지정하세요.'
-      : !hasOutputName
-        ? '출력 파일명을 입력하세요.'
-        : mode === 'split' && splitCriterion === 'custom' && !hasValidCustomCutPoints
-          ? '사용자 설정 시작 페이지를 오름차순으로 확인하세요.'
-          : null;
+      ? '입력 파일을 먼저 추가하세요.'
+      : !hasOutputDirectory
+        ? '출력 위치를 지정하세요.'
+        : !hasOutputName
+          ? '출력 파일명을 입력하세요.'
+          : mode === 'split' && splitCriterion === 'custom' && !hasValidCustomCutPoints
+            ? '사용자 설정 시작 페이지를 오름차순으로 확인하세요.'
+            : null;
 
   // 🛰️ [동기화 엔진] 실시간 상태 텍스트 생성 및 상위 전송
   useEffect(() => {
@@ -185,24 +200,24 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
 
     const splitHint =
       splitCriterion === 'pages' ? `${splitValue}페이지 단위` :
-      splitCriterion === 'sizeMb' ? `${splitValue}MB 단위` :
-      `사용자 설정 [${splitCustomValues || '-'}]`;
+        splitCriterion === 'sizeMb' ? `${splitValue}MB 단위` :
+          `사용자 설정 [${splitCustomValues || '-'}]`;
 
     const msg = !isExecuteEnabled && disabledReason
       ? `[대기] ${disabledReason}`
       : mode === 'merge'
-      ? `여러 권을 하나로 묶어 .${outputFormat} 파일로 저장합니다.`
-      : `대용량 파일을 ${splitHint}로 분할해 .${outputFormat} 파일로 저장합니다.`;
+        ? `여러 권을 하나로 묶어 .${outputFormat} 파일로 저장합니다.`
+        : `대용량 파일을 ${splitHint}로 분할해 .${outputFormat} 파일로 저장합니다.`;
 
     onUpdateStatusText(msg);
   }, [
-    onUpdateStatusText, 
-    mode, 
-    outputFormat, 
-    splitCriterion, 
-    splitValue, 
-    splitCustomValues, 
-    isExecuteEnabled, 
+    onUpdateStatusText,
+    mode,
+    outputFormat,
+    splitCriterion,
+    splitValue,
+    splitCustomValues,
+    isExecuteEnabled,
     disabledReason
   ]);
 
@@ -215,7 +230,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     setProgressPercent(0); // 게이지 초기화
     setExecutionLogs([]); // 로그 리셋
     const startTime = Date.now();
-    
+
     if (onUpdateStatusText) {
       onUpdateStatusText(`[처리 중] ${mode === 'merge' ? '병합' : '분할'} 작업을 실행하고 있습니다...`);
     }
@@ -223,7 +238,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     try {
       if (mode === 'merge') {
         const sourcePaths = sourceItems.map(item => item.path);
-        
+
         // 🛸 백엔드 프리로드 API 호출 (새로 뚫린 파이프라인)
         const appApi = (window as any).appApi;
         if (!appApi || !appApi.mergeFiles) {
@@ -231,9 +246,9 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
         }
 
         const result = await appApi.mergeFiles(
-          sourcePaths, 
-          outputDirectory, 
-          outputNameBase, 
+          sourcePaths,
+          outputDirectory,
+          outputNameBase,
           outputFormat,
           mergeStrategy // 🚀 [전략 투하] 유저가 고른 전략 주입!
         );
@@ -284,6 +299,32 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   return (
     <ConverterPanelShell>
       <div className="converter-panel-body">
+        {/* 🛸 [원점 회귀 완료] 사용자의 엄명에 따라 외곽 판넬 박스 내부 최상단으로 복귀한 컨트롤 타워! */}
+        <div className="titlebar-converter-header">
+          <h2 className="titlebar-converter-title">컨버터</h2>
+
+          <div className="converter-mode-switch" role="tablist" aria-label="컨버터 모드">
+            <button
+              className={`converter-mode-btn ${mode === 'merge' ? 'active' : ''}`}
+              onClick={() => onChangeMode('merge')}
+              role="tab"
+              aria-selected={mode === 'merge'}
+              type="button"
+            >
+              병합
+            </button>
+            <button
+              className={`converter-mode-btn ${mode === 'split' ? 'active' : ''}`}
+              onClick={() => onChangeMode('split')}
+              role="tab"
+              aria-selected={mode === 'split'}
+              type="button"
+            >
+              분할
+            </button>
+          </div>
+        </div>
+
         <div className="converter-workbench-grid">
           <section className="converter-pane">
             <ConverterFileList

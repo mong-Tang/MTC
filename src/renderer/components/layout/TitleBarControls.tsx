@@ -14,10 +14,6 @@ interface TitleBarProps {
   // 🚀 Workspace Context
   workspaceMode?: 'viewer' | 'converter';
   hasActiveFile?: boolean;
-
-  // 🛸 [격상] 컨버터 관제 계통 추가!
-  converterMode?: ConverterMode;
-  onChangeConverterMode?: (mode: ConverterMode) => void;
 }
 
 type ActiveMenuKey = 'view' | 'move' | 'edit';
@@ -28,9 +24,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
   themeMode, 
   onChangeThemeMode,
   workspaceMode = 'viewer',
-  hasActiveFile = false,
-  converterMode = 'merge',
-  onChangeConverterMode
+  hasActiveFile = false
 }) => {
   
   const [isExpanded, setExpanded] = useState(false);
@@ -66,33 +60,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
     <>
       <div className="titlebar-draggable-region"></div>
 
-      {/* 🛸 [격상된 전함 지휘소] 컨버터 통합 헤더 (위풍당당 왼쪽 고정!) */}
-      {workspaceMode === 'converter' && (
-        <div className="titlebar-converter-header">
-          <h2 className="titlebar-converter-title">컨버터</h2>
-          
-          <div className="converter-mode-switch" role="tablist" aria-label="컨버터 모드">
-            <button
-              className={`converter-mode-btn ${converterMode === 'merge' ? 'active' : ''}`}
-              onClick={() => onChangeConverterMode && onChangeConverterMode('merge')}
-              role="tab"
-              aria-selected={converterMode === 'merge'}
-              type="button"
-            >
-              병합
-            </button>
-            <button
-              className={`converter-mode-btn ${converterMode === 'split' ? 'active' : ''}`}
-              onClick={() => onChangeConverterMode && onChangeConverterMode('split')}
-              role="tab"
-              aria-selected={converterMode === 'split'}
-              type="button"
-            >
-              분할
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 🛸 [이동 완수] 컨버터 통합 헤더는 ConverterPanelShell로 귀환 조치됨! */}
       
       <div className="window-controls" ref={containerRef}>
         

@@ -1,4 +1,4 @@
-.converter-panel-shell {
+﻿.converter-panel-shell {
   padding: 44px 14px 40px;
   background: var(--bg-base);
   height: 100%;
@@ -20,27 +20,24 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  align-items: center; /* 🎯 [수평 정렬] 대형 박스를 화면 수평 정중앙에 배치 */
+  justify-content: center; /* 🚀 [수직 정렬] 대형 박스를 화면 수직 정중앙에 배치 */
   backdrop-filter: none;
 }
 
 .titlebar-converter-header {
-  position: absolute;
-  left: calc(var(--sidebar-width) + 14px);
-  /* 🧩 [동시 수축] 콘텐츠 너비가 넓어진 만큼 상단바 레일도 14px로 좌우 밀착! */
-  right: 14px;
-  /* 📏 우측 레일도 완벽 동기화! */
-  top: 0;
-  height: 40px;
   display: grid;
-  /* ⚔️ [마스터 클래스] 아래쪽 2열 그리드 아키텍처를 완벽하게 계승 복제! */
+  /* ⚔️ [마스터 클래스] 아래쪽 2열 그리드 아키텍처와 픽셀 퍼펙트 동기화! */
   grid-template-columns: 420px 1fr;
-  /* 🔒 [하드락] 콘텐츠 너비에 영향받지 않는 순수 수학적 비율 강제! */
+  /* 🔒 [하드락] 부모 박스(1080px) 내부에서 자식 그리드와 완벽하게 결착! */
   gap: 20px;
   align-items: center;
-  z-index: 1600;
+  height: 32px; /* 🚀 [압축] 헤더 높이 긴축 */
+  margin-bottom: 6px; /* 🧱 [밀착] 아래 그리드와의 간격을 좁혀 빈 공간 박멸 */
+  flex-shrink: 0;
+  /* 🔒 압축 가드 */
   -webkit-app-region: no-drag !important;
   pointer-events: auto !important;
-  transition: left 0.3s var(--transition-smooth);
 }
 
 .titlebar-converter-title {
@@ -196,7 +193,7 @@
 .converter-panel-body {
   /* 🧱 [성역 기준] 컴포넌트의 고정 규격(620px)을 절대 기준으로 삼아 앱 전체 규격을 강제 복속! */
   width: 1080px;
-  height: 620px;
+  height: 650px;
   flex: none;
   /* 💥 부모의 늘림(Grow) 본성 억제 */
 
@@ -204,13 +201,17 @@
   background: rgba(255, 255, 255, 0.025);
   border: 1px solid rgba(var(--rgb-contrast), 0.08);
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px 24px; /* 🚀 [공간 절약] 상하단 패딩을 얇게 압축 */
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
   box-sizing: border-box;
 
   /* 스크롤 넘침 방지용 안전 레일 */
   overflow: hidden;
+
+  /* 🧭 [신규 추가] 내부 헤더와 본진 그리드의 수직 스택 관제를 위한 엔진 탑재! */
+  display: flex;
+  flex-direction: column;
 }
 
 .converter-workbench-grid {
@@ -218,14 +219,18 @@
   /* 🧱 [유저 칙령] 비율 기반 본성을 타파하고, 420px 절대 고정값 규격으로 봉인! */
   grid-template-columns: 420px 1fr;
   /* 🔒 [상단바 동기화] 상단 그리드와 동일하게 콘텐츠 자동 팽창(Auto-Grow) 차단! */
+  grid-template-rows: 1fr; /* 🚀 [신규 투입] 그리드 행의 높이를 가용 공간 전체로 강제 확장! */
   gap: 20px;
-  height: 100%;
+  /* 🚀 [진화] 고정 높이(100%)를 버리고 남은 공간을 완벽 점령하는 자율 주행 모드! */
+  flex: 1;
+  min-height: 0;
 }
 
 .converter-pane {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%; /* 🧱 [구조 강화] 부모 그리드 셀의 높이를 완벽하게 계승하여 100% 지배! */
   min-height: 0;
 }
 
@@ -260,10 +265,10 @@
   height: 36px;
   padding: 0 8px;
   flex: none;
-  
+
   /* 📐 [명령 이행] 알값(R)을 완전히 8px로 복원하여 둥근 미학 완성 */
   border-radius: 8px;
-  
+
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -497,7 +502,9 @@
   letter-spacing: 0.05em;
   color: var(--text-dim);
   border-bottom: 1px solid rgba(var(--rgb-contrast), 0.08);
-  background: rgba(var(--rgb-contrast), 0.03);
+  background-color: var(--bg-base);
+  background-image: linear-gradient(rgba(var(--rgb-contrast), 0.08), rgba(var(--rgb-contrast), 0.08));
+  /* 🛡️ [철벽 방어] 투명도를 완전히 제거하고 배경색+레이어 조합으로 불투명화 처리하여 아래 내용물 침투 원천 봉쇄! */
 }
 
 .converter-item-head-btn {
@@ -548,6 +555,10 @@
   border-bottom: 1px solid rgba(var(--rgb-contrast), 0.04);
   cursor: pointer;
   transition: background 0.15s ease;
+
+  /* 🚀 [성능 극대화] 1만건 이상 초거대 리스트 렌더링 렉 방지용 최신 엔진 플래그 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 38px;
 }
 
 .converter-item-row:hover {
@@ -760,6 +771,14 @@
   border: 1px solid rgba(var(--rgb-contrast), 0.04);
 }
 
+/* 📐 [공간 고효율 레이아웃] 긴 세로 목록을 콤팩트한 2열 구조로 압축! */
+.converter-option-radio-group.grid-2-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 12px; /* 수평 여백 대폭 증설 */
+  row-gap: 6px;
+}
+
 .converter-option-radio-item {
   display: inline-flex;
   align-items: center;
@@ -960,6 +979,19 @@
   position: relative;
 }
 
+/* 🛸 [공중 요새] 확장된 부모 행이 스티키 모드로 고정될 때, 선택 상태를 뛰어넘어 100% 불투명 배경을 강제함! */
+.converter-item-row.is-expanded-parent {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: var(--bg-base) !important;
+  background-image: linear-gradient(rgba(255, 107, 0, 0.08), rgba(255, 107, 0, 0.08)) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4) !important;
+  border-bottom: 1px solid rgba(255, 107, 0, 0.25) !important;
+  border-left: 3px solid var(--accent) !important;
+}
+
+
 .converter-item-row.selected::before {
   content: '';
   position: absolute;
@@ -1116,4 +1148,51 @@
   background: rgba(0, 0, 0, 0.35);
   padding: 1px 4px;
   border-radius: 4px;
+}
+/* ??? [����Ʈ�ڽ�] ���� �̸����� �������� ���� */
+.converter-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  animation: lightboxFadeIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.converter-lightbox-img {
+  max-width: 92%;
+  max-height: 92%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transform-origin: center;
+  animation: lightboxScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.converter-lightbox-hint {
+  position: absolute;
+  bottom: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+@keyframes lightboxFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lightboxScaleUp {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
