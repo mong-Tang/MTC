@@ -5,16 +5,16 @@
 ; =================================================================================
 
 ; 1️⃣ [대화상자 경고문] MessageBox Text (시각적 황금 비율 유지를 위한 수동 개행 튜닝)
-LangString ConflictMsg ${LANG_ENGLISH} "💡 [Notice] This app is NOT a file extraction tool,$\r$\nbut a dedicated viewer for images inside archives.$\r$\n$\r$\n⚠️ [Warning] It NEVER modifies individual image file associations (JPG, PNG, etc.)!$\r$\nIt only manages .zip and .cbz containers.$\r$\n$\r$\nAnother default program is already registered to open .zip / .cbz files.$\r$\nDo you want to associate them with 'ZIP Image Viewer' instead?"
-LangString ConflictMsg ${LANG_KOREAN} "💡 [중요 안내] 이 앱은 압축을 해제하는 프로그램이 아니라,$\r$\n압축 속에 든 이미지를 열어주는 '압축 이미지 전용 뷰어'입니다.$\r$\n$\r$\n⚠️ [주의] JPG, PNG, WebP 등 개별 이미지의 연결은 전혀 건드리지 않습니다!$\r$\n오직 .zip / .cbz 압축파일에 대해서만 변경을 확인합니다.$\r$\n$\r$\n현재 시스템에 .zip / .cbz 파일을 여는 타사 기본 프로그램이 등록되어 있습니다.$\r$\n해당 압축파일들만 'ZIP 이미지 뷰어'에 새로 연결하시겠습니까?"
+LangString ConflictMsg ${LANG_ENGLISH} "[Notice] This app is NOT a file extraction tool,$\r$\nbut a dedicated viewer for images inside archives.$\r$\n$\r$\n[Warning] It NEVER modifies individual image file associations (JPG, PNG, etc.)!$\r$\nIt only manages .zip and .cbz containers.$\r$\n$\r$\nAnother default program is already registered to open .zip / .cbz files.$\r$\nDo you want to associate them with 'ZIP Image Viewer' instead?"
+LangString ConflictMsg ${LANG_KOREAN} "[중요 안내] 이 앱은 압축을 해제하는 프로그램이 아니라,$\r$\n압축 속에 든 이미지를 열어주는 '압축 이미지 전용 뷰어'입니다.$\r$\n$\r$\n[주의] JPG, PNG, WebP 등 개별 이미지의 연결은 전혀 건드리지 않습니다!$\r$\n오직 .zip / .cbz 압축파일에 대해서만 변경을 확인합니다.$\r$\n$\r$\n현재 시스템에 .zip / .cbz 파일을 여는 타사 기본 프로그램이 등록되어 있습니다.$\r$\n해당 압축파일들만 'ZIP 이미지 뷰어'에 새로 연결하시겠습니까?"
 
 ; 2️⃣ [로그 헤더] Log File Header
 LangString LogHeader ${LANG_ENGLISH} "========================================================$\r$\n  [ZIP Image Viewer] Installation & File Association Guide$\r$\n========================================================$\r$\n$\r$\n"
 LangString LogHeader ${LANG_KOREAN} "========================================================$\r$\n  [ZIP 이미지 뷰어] 설치 결과 및 파일 자동 연동 안내서$\r$\n========================================================$\r$\n$\r$\n"
 
 ; 3️⃣ [중요 안전 고지 타이틀] Safety Notice Title
-LangString LogNoticeTitle ${LANG_ENGLISH} "💡 [Important Safety Notice]$\r$\n"
-LangString LogNoticeTitle ${LANG_KOREAN} "💡 [중요 안전 고지]$\r$\n"
+LangString LogNoticeTitle ${LANG_ENGLISH} "[Important Safety Notice]$\r$\n"
+LangString LogNoticeTitle ${LANG_KOREAN} "[중요 안전 고지]$\r$\n"
 
 ; 4️⃣ [안전 고지 1번 항] Safety Clause 1
 LangString LogNotice1 ${LANG_ENGLISH} "1. This software is an image viewer, not a file decompression utility.$\r$\n"
@@ -29,8 +29,8 @@ LangString LogNotice3 ${LANG_ENGLISH} "3. Association processes target .zip and 
 LangString LogNotice3 ${LANG_KOREAN} "3. 오직 .zip 및 .cbz 압축 뭉치 파일만을 대상으로 연동을 수행합니다.$\r$\n$\r$\n"
 
 ; 7️⃣ [진단 기록 타이틀] Diagnosis Title
-LangString LogDiagTitle ${LANG_ENGLISH} "🔍 [Association Diagnostic Record]$\r$\n"
-LangString LogDiagTitle ${LANG_KOREAN} "🔍 [연결 진단 기록]$\r$\n"
+LangString LogDiagTitle ${LANG_ENGLISH} "[Association Diagnostic Record]$\r$\n"
+LangString LogDiagTitle ${LANG_KOREAN} "[연결 진단 기록]$\r$\n"
 
 ; 8️⃣ [대상 확장자 고지] Target Extensions
 LangString LogDiagExt ${LANG_ENGLISH} "- Target Extensions: .zip and .cbz (Excluding raw image formats)$\r$\n"
