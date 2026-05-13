@@ -39,6 +39,20 @@
   "build": {
     "appId": "com.mongtang.zipbookviewer",
     "productName": "ZIP 이미지 뷰어",
+    "fileAssociations": [
+      {
+        "ext": "zip",
+        "name": "ZIP Archive Book",
+        "description": "ZIP Image Viewer Archive",
+        "icon": "assets/data-file-icon.ico"
+      },
+      {
+        "ext": "cbz",
+        "name": "Comic Book Archive",
+        "description": "ZIP Image Viewer Comic Archive",
+        "icon": "assets/data-file-icon.ico"
+      }
+    ],
     "extraResources": [
       "assets/data-file-icon.ico"
     ],
