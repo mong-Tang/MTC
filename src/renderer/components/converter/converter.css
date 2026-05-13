@@ -444,7 +444,7 @@
   justify-content: space-between;
   gap: 12px;
   height: 28px;
-  margin-bottom: 12px;
+  margin-bottom: 16px; /* 🧱 [여백 통합] 상단 여백과 대칭을 이루도록 16px로 통일! */
 }
 
 .converter-section-text {

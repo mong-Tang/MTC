@@ -39,6 +39,9 @@
   "build": {
     "appId": "com.mongtang.zipbookviewer",
     "productName": "ZIP 이미지 뷰어",
+    "extraResources": [
+      "assets/data-file-icon.ico"
+    ],
     "directories": {
       "output": "release"
     },
@@ -53,6 +56,11 @@
       "!PLAN.MD",
       "!RULES.MD"
     ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "build/installer.nsh"
+    },
     "win": {
       "target": [
         {

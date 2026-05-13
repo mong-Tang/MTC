@@ -430,7 +430,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div style={styles.row}>
               <div style={styles.labelGroup}>
                 <span style={styles.label}>사이드바 너비 기본값 복구</span>
-                <span style={styles.desc}>사이드바 너비를 태초의 표준 크기(260px)로 정렬합니다.</span>
+                <span style={styles.desc}>사이드바 너비를 태초의 표준 크기(230px)로 정렬합니다.</span>
               </div>
               <button 
                 className="settings-action-btn"

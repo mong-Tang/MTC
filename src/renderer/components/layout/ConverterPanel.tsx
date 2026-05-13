@@ -89,6 +89,15 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     setElapsedTime(0);
   }, [mode]);
 
+  // 🌍 [언어 동적 동기화] 사용자가 파일명을 별도로 수정하지 않고 디폴트 상태인 경우, 설정 언어가 바뀌면 그에 맞춰 기본 파일명 예시도 자동 번역!
+  useEffect(() => {
+    const koDefault = TRANSLATIONS['ko'].exampleFilename;
+    const enDefault = TRANSLATIONS['en'].exampleFilename;
+    if (outputNameBase === koDefault || outputNameBase === enDefault) {
+      setOutputNameBase(TRANSLATIONS[language].exampleFilename);
+    }
+  }, [language, outputNameBase]);
+
   // ⏳ [글로벌 커서 컨트롤러] 작업 중일 때 전체 애플리케이션에 'is-processing' 클래스를 부여하여 모래시계 커서를 발동!
   useEffect(() => {
     if (isProcessing) {

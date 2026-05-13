@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconPlay, IconZip, IconFolder, IconFile } from '../ui/Icons';
+import { TRANSLATIONS } from '../../i18n';
+import type { AppLanguage } from '../../i18n';
 
 interface ViewerCanvasProps {
   onClick?: () => void;
@@ -20,14 +22,17 @@ interface ViewerCanvasProps {
   onNext?: () => void;
   onRecentCountClick?: () => void; // 🛸 [신규] 히스토리 탐사 시작 트리거!
   onSelectRecentItem?: (path: string) => void; // 🚀 [긴급 특명] 캔버스 내부 리스트 클릭 전송 파이프!
+  language?: AppLanguage; // 🌍 [다국어] 현재 언어
 }
 
 export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({ 
   onClick, onContextMenu, hasActiveFile, children, pagesToRender = [], viewMode = '1',
   imageFitMode = 'auto',
   showNavArrows = false, canGoPrev = false, canGoNext = false, onPrev, onNext,
-  onRecentCountClick, onSelectRecentItem
+  onRecentCountClick, onSelectRecentItem,
+  language = 'ko'
 }) => {
+  const t = TRANSLATIONS[language]; // ⚡ 실시간 사전 가동!
   
   const [imgSrcList, setImgSrcList] = useState<string[]>([]);
   const [isLoading, setLoading] = useState(false);
@@ -131,7 +136,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
       {/* 🎨 [유저 특명 최종판] 뷰어 바탕(최상위 코어)에 다이렉트 격납! (절대 간섭 불가 구역) */}
       {showRecentPanel && !hasActiveFile && recentItems.length > 0 && (
         <div className="zen-recent-panel" style={{ zIndex: 100 }}>
-          <div className="zen-recent-panel-header">RECENT HISTORY</div>
+          <div className="zen-recent-panel-header">{t.recentHistoryTitle}</div>
           <div className="zen-recent-list-scroll">
             {recentItems
               .slice(0, 15)
@@ -174,7 +179,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
           position: 'relative'
         }}>
           {isLoading && imgSrcList.length === 0 && (
-            <div style={{ color: 'var(--accent)', fontWeight: 600 }}>📥 로딩 중...</div>
+            <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{t.loadingState}</div>
           )}
           
           {imgSrcList.length > 0 ? (
@@ -194,8 +199,8 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
                   src={imgSrc}
                   alt={`Comic Page ${idx + 1}`}
                   style={{
-                    maxWidth: (imageFitMode === 'auto' || imageFitMode === 'width') ? (viewMode === '2' ? '50%' : '100%') : 'none',
-                    maxHeight: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : 'none',
+                    maxWidth: imageFitMode === 'actual' ? 'none' : (viewMode === '2' ? '50%' : '100%'),
+                    maxHeight: imageFitMode === 'actual' ? 'none' : '100%',
                     width: (imageFitMode === 'auto' || imageFitMode === 'width') ? (viewMode === '2' ? '50%' : '100%') : (imageFitMode === 'height' ? 'auto' : undefined),
                     height: (imageFitMode === 'auto' || imageFitMode === 'height') ? '100%' : (imageFitMode === 'width' ? 'auto' : undefined),
                     objectFit: imageFitMode === 'actual' ? 'none' : 'contain',
@@ -210,7 +215,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
               ))}
             </div>
           ) : !isLoading && (
-            <div style={{ color: 'rgba(255,255,255,0.4)' }}>⚠️ 이미지를 불러올 수 없습니다.</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)' }}>{t.failLoadImage}</div>
           )}
 
           {/* 중앙 책등 느낌: 하드 라인 대신 부드러운 그라데이션 음영 */}
@@ -248,10 +253,9 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
                 <div className="zen-divider" />
               </div>
               <p className="zen-subtitle">
-                <span>사이드바 메뉴</span>
+                <span>{t.centerSidebarMenu}</span>
                 <span style={{ fontSize: '10px', opacity: 0.6 }}>➔</span>
-                <span style={{ color: 'var(--accent)', fontWeight: 500 }}>'파일 열기'</span>
-                <span>를 클릭하세요</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{t.centerClickOpenFile}</span>
               </p>
               
               {/* 📜 [유저 특명] 살아있는 히스토리 카운팅 대시보드 링크 */}
@@ -264,7 +268,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
                       setShowRecentPanel(prev => !prev);
                     }}
                   >
-                    {recentCount}개의 최근 항목이 존재합니다
+                    {recentCount}{language === 'ko' ? '' : ' '}{t.centerRecentItemsSuffix}
                   </span>
                 </div>
               )}

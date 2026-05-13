@@ -32,7 +32,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'ViewerCanvas': {
     label: 'ViewerCanvas',
     desc: '메인 작품 뷰어 캔버스 엔진',
-    render: () => <div style={{ height: '100vh', background: '#000' }}><ViewerCanvas hasActiveFile={false} /></div>
+    render: () => <div style={{ height: '100vh', background: '#000' }}><ViewerCanvas hasActiveFile={false} language="ko" /></div>
   },
   'FloatingAnchor': {
     label: 'FloatingAnchor',
@@ -52,12 +52,12 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'Sidebar': {
     label: 'Sidebar',
     desc: '좌측 라이브러리 매니지먼트 패널',
-    render: () => <div style={{ height: '100vh', display:'flex' }}><Sidebar isOpen={true} isMenuOpen={false} onOpenConverter={()=>{}} loadSameBook={true} onToggleLoadSameBook={()=>{}} /><div style={{ flex: 1, opacity: 0.1, background:'#888' }}></div></div>
+    render: () => <div style={{ height: '100vh', display:'flex' }}><Sidebar isOpen={true} isMenuOpen={false} onOpenConverter={()=>{}} loadSameBook={true} onToggleLoadSameBook={()=>{}} language="ko" onLanguageChange={() => {}} /><div style={{ flex: 1, opacity: 0.1, background:'#888' }}></div></div>
   },
   'ConverterPanel': {
     label: 'ConverterPanel',
     desc: '컨버터 최종 취합 메인 컨테이너',
-    render: () => <div style={{ height: '100vh' }}><ConverterPanel sourceItems={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} mode="merge" onChangeMode={()=>{}} onAddSource={()=>{}} onAddAllSource={()=>{}} onClearSource={()=>{}} onRemoveSourceItems={()=>{}} /></div>
+    render: () => <div style={{ height: '100vh' }}><ConverterPanel sourceItems={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} mode="merge" onChangeMode={()=>{}} onAddSource={()=>{}} onAddAllSource={()=>{}} onClearSource={()=>{}} onRemoveSourceItems={()=>{}} language="ko" /></div>
   },
   'ConverterOptions': {
     label: 'ConverterOptions',
@@ -95,6 +95,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
               progressPercent={0}
               executionLogs={[]}
               isProcessing={false}
+              language="ko"
             />
           </section>
         </div>
@@ -104,7 +105,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'ConverterFileList': {
     label: 'ConverterFileList',
     desc: '변환 대기열 파일 리스트 관리',
-    render: () => <div style={{ height: '100vh', display:'flex', flexDirection:'column' }}><ConverterFileList mode="merge" outputFormat="zip" compressionPolicy="auto" items={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} onAdd={()=>{}} onAddAll={()=>{}} onClear={()=>{}} onRemoveItems={()=>{}} /></div>
+    render: () => <div style={{ height: '100vh', display:'flex', flexDirection:'column' }}><ConverterFileList mode="merge" outputFormat="zip" compressionPolicy="auto" items={mockItems} hasSidebarItems={true} selectedPaths={mockSelected} onToggleSelection={()=>{}} onAdd={()=>{}} onAddAll={()=>{}} onClear={()=>{}} onRemoveItems={()=>{}} language="ko" /></div>
   },
   'ConverterFooter': {
     label: 'ConverterFooter',

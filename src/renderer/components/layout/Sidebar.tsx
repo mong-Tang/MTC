@@ -1,5 +1,7 @@
 import React from 'react';
 import { IconFile, IconFolder, IconPlay, IconSettings, IconImage, IconZip, IconDots, IconHome } from '../ui/Icons';
+import { TRANSLATIONS } from '../../i18n';
+import type { AppLanguage } from '../../i18n';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ interface SidebarProps {
   onLibraryItemContextMenu?: (e: React.MouseEvent, path: string) => void; // 🖱️ [유저 특명] 우클릭 팝업 시동 엔진!
   sidebarViewMode?: 'library' | 'recent'; // 🛸 [신규] 사이드바 현재 뷰 모드 판별자
   onOpenSettings?: () => void; // ⚙️ [신규] 설정 모달 트리거 게이트웨이
+  language: AppLanguage; // 🌍 [글로벌] 현재 언어 정보
+  onLanguageChange: (lang: AppLanguage) => void; // 📡 [글로벌] 언어 변경 명령 채널
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -33,13 +37,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
   sidebarWidth = 180,
   onLibraryItemContextMenu,
   sidebarViewMode = 'library', // ✨ 기본값은 평화로운 라이브러리
-  onOpenSettings
+  onOpenSettings,
+  language,
+  onLanguageChange
 }) => {
   const selectedPathSet = new Set(selectedLibraryPaths);
+  const t = TRANSLATIONS[language]; // ⚡ 번역 객체 고속 소환
+  
   return (
     <aside className={`app-sidebar ${!isOpen ? 'collapsed' : ''}`}>
-      <header className="sidebar-header">
-        {sidebarViewMode === 'recent' ? '최근 열람 기록' : '라이브러리'}
+      <header className="sidebar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>{sidebarViewMode === 'recent' ? t.recentRecords : t.library}</span>
+        
+        {/* 🌍 [초소형 럭셔리 모드 제어실] 한/영 토글 캡슐 */}
+        <div className="lang-toggle-wrapper" onClick={(e) => e.stopPropagation()}>
+          <button 
+            type="button"
+            className={`lang-btn ${language === 'ko' ? 'active' : ''}`}
+            onClick={() => onLanguageChange('ko')}
+            title="한국어 (Korean)"
+          >
+            KO
+          </button>
+          <button 
+            type="button"
+            className={`lang-btn ${language === 'en' ? 'active' : ''}`}
+            onClick={() => onLanguageChange('en')}
+            title="English"
+          >
+            EN
+          </button>
+        </div>
       </header>
 
       {/* 🚀 [신규] 스르륵 열리며 아래 리스트를 밀어내는 메뉴판 패널 */}
@@ -49,7 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
             <button className="sidebar-menu-btn" onClick={onOpenFile}>
               <IconFile />
-              파일 열기
+              {t.openFile}
             </button>
             
             {/* 🛡️ [초강경 우측 잠금] 버튼 우측 벽에 완전히 못 박아버림! */}
@@ -71,13 +99,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onChange={(e) => onToggleLoadSameBook(e.target.checked)} 
               />
               <span className="sidebar-checkbox-ui"></span>
-              <span className="sidebar-option-text" style={{ fontSize: '0.7rem', opacity: 0.6 }}>(같은책)</span>
+              <span className="sidebar-option-text" style={{ fontSize: '0.7rem', opacity: 0.6 }}>{t.sameBook}</span>
             </label>
           </div>
 
           <button className="sidebar-menu-btn" onClick={onOpenFolder}>
             <IconFolder />
-            폴더 열기
+            {t.openFolder}
           </button>
 
           {/* 🏠 [통합 홈 버튼] 사이드바에서는 언제나 초기 화면(MTC Center) 복귀 경로만 상시 개방합니다. */}
@@ -87,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button className="sidebar-menu-btn" onClick={onOpenSettings}>
             <IconSettings />
-            설정
+            {t.settings}
           </button>
         </div>
       </div>
@@ -136,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {/* 🍔 [유저 특명] 파일 관리 햄버거 팝업 호출용 막둥이 버튼 탑재! */}
                   <button 
                     className="sidebar-item-action-btn"
-                    title="파일 관리 메뉴"
+                    title={t.fileMenu}
                     onClick={(e) => {
                       e.stopPropagation(); // 부모 클릭(파일 열기) 이벤트 간섭 차단!
                       onLibraryItemContextMenu && onLibraryItemContextMenu(e as any, item.path);
@@ -150,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <div className="sidebar-tree-info" style={{ opacity: 0.65, fontSize: '0.8rem', padding: '20px', textAlign: 'center' }}>
-            선택된 라이브러리가 없습니다.
+            {t.noLibrary}
           </div>
         )}
       </div>

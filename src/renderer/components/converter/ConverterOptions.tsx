@@ -4,6 +4,8 @@ import type { CompressionPolicy } from '../layout/ConverterPanel';
 import type { OutputNamePattern } from '../layout/ConverterPanel';
 import type { SplitCriterion } from '../layout/ConverterPanel';
 import type { MergeStrategy } from '../layout/ConverterPanel'; // 🛡️ [임포트] 병합 전략 타입 추가
+import { TRANSLATIONS } from '../../i18n';
+import type { AppLanguage } from '../../i18n';
 
 interface ConverterOptionsProps {
   mode: ConverterMode;
@@ -35,6 +37,7 @@ interface ConverterOptionsProps {
   progressPercent: number;
   executionLogs: string[];
   isProcessing: boolean;
+  language: AppLanguage; // 🌍 [전파 완료]
 }
 
 
@@ -66,8 +69,10 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   onExecute,
   progressPercent,
   executionLogs,
-  isProcessing
+  isProcessing,
+  language
 }) => {
+  const t = TRANSLATIONS[language]; // ⚡ 로컬 번역기 기동!
   const terminalRef = useRef<HTMLDivElement>(null);
 
   // 📜 [자동 스크롤 매직] 로그가 들어올 때마다 자동으로 최하단으로 스르륵 스크롤
@@ -84,11 +89,13 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       .map((token) => Number(token.trim()))
       .filter((value) => Number.isFinite(value) && value > 1)
       .map((value) => Math.floor(value));
-    if (splitTotalPages <= 0) return 'Preview: Please enter total pages.';
-    if (cutPoints.length === 0) return `Preview: No split (1~${splitTotalPages}, 1 vol.)`;
+
+    const isKo = language === 'ko';
+    if (splitTotalPages <= 0) return isKo ? '미리보기: 총 페이지 수를 입력하세요.' : 'Preview: Please enter total pages.';
+    if (cutPoints.length === 0) return isKo ? `미리보기: 분할 없음 (1~${splitTotalPages}, 1권)` : `Preview: No split (1~${splitTotalPages}, 1 vol.)`;
 
     const invalid = cutPoints.some((point) => point > splitTotalPages);
-    if (invalid) return `Preview: Start page must be less than or equal to total pages (${splitTotalPages}).`;
+    if (invalid) return isKo ? `미리보기: 시작 페이지는 총 페이지 수 이하여야 합니다 (${splitTotalPages}).` : `Preview: Start page must be less than or equal to total pages (${splitTotalPages}).`;
 
     const sortedUnique = Array.from(new Set(cutPoints)).sort((a, b) => a - b);
     const starts = [1, ...sortedUnique];
@@ -100,8 +107,8 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
 
     const preview = ranges.slice(0, 5).join(', ');
     const suffix = ranges.length > 5 ? ', ...' : '';
-    return `Preview: ${preview}${suffix} (${ranges.length} vol.)`;
-  }, [splitCriterion, splitCustomValues, splitTotalPages]);
+    return isKo ? `미리보기: ${preview}${suffix} (${ranges.length}권)` : `Preview: ${preview}${suffix} (${ranges.length} vol.)`;
+  }, [splitCriterion, splitCustomValues, splitTotalPages, language]);
 
   const customInputHint = useMemo(() => {
     if (splitCriterion !== 'custom') return '';
@@ -110,11 +117,12 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       .map((token) => Number(token.trim()))
       .filter((value) => Number.isFinite(value))
       .map((value) => Math.floor(value));
-    if (points.length === 0) return 'e.g., 201,451,651,851 (Start page of next volume)';
+    const isKo = language === 'ko';
+    if (points.length === 0) return isKo ? '예: 201,451,651,851 (다음 권의 시작 페이지)' : 'e.g., 201,451,651,851 (Start page of next volume)';
     const nonAscending = points.some((point, index) => index > 0 && point <= points[index - 1]);
-    if (nonAscending) return 'Warning: Start pages must be entered in ascending order.';
-    return 'Each number represents the start page of the next volume. Split will occur before that page.';
-  }, [splitCriterion, splitCustomValues]);
+    if (nonAscending) return isKo ? '주의: 시작 페이지는 오름차순으로 입력해야 합니다.' : 'Warning: Start pages must be entered in ascending order.';
+    return isKo ? '각 숫자는 다음 권이 시작되는 페이지를 의미하며, 그 직전에서 분할이 일어납니다.' : 'Each number represents the start page of the next volume. Split will occur before that page.';
+  }, [splitCriterion, splitCustomValues, language]);
 
   const splitNamePreview = useMemo(() => {
     const sampleIndex = '01';
@@ -123,16 +131,16 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
     if (outputNamePattern === 'name_underscore_index') return `${outputNameBase}_${sampleIndex}`;
     return `${sampleIndex}_${outputNameBase}`;
   }, [outputNameBase, outputNamePattern]);
-  const outputLabelBase = outputNameBase.trim() || 'example_filename';
+  const outputLabelBase = outputNameBase.trim() || t.exampleFilename;
 
   return (
     <section className="converter-section converter-options-section">
       <div className="converter-file-list-header">
-        <h3 className="converter-section-title">Conversion Options</h3>
+        <h3 className="converter-section-title">{t.optionsTitle}</h3>
       </div>
       <div className="converter-option-stack">
         <label className="converter-option-row">
-          <span>Output Format</span>
+          <span>{t.outputFormat}</span>
           <select
             value={outputFormat}
             onChange={(event) => onChangeOutputFormat(event.target.value as 'zip' | 'cbz')}
@@ -143,12 +151,12 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           </select>
         </label>
         <label className="converter-option-row">
-          <span>Output Filename</span>
+          <span>{t.outputFilename}</span>
           <div className="converter-option-path-row">
             <input
               type="text"
               value={outputNameBase}
-              placeholder={mode === 'merge' ? 'e.g., merged_output' : 'e.g., split_output'}
+              placeholder={mode === 'merge' ? (language === 'ko' ? '예: 병합출력' : 'e.g., merged_output') : (language === 'ko' ? '예: 분할출력' : 'e.g., split_output')}
               onChange={(event) => onChangeOutputNameBase(event.target.value)}
             />
             <span className="converter-option-suffix">.{outputFormat}</span>
@@ -158,8 +166,8 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         {/* 🎯 [긴급 투입] 병합 모드 전용: 압축 해제 여부를 결정하는 하이레벨 선택 시스템! */}
         {mode === 'merge' && (
           <div className="converter-option-block">
-            <p className="converter-option-block-label">Merge Strategy</p>
-            <div className="converter-option-radio-group" style={{ marginBottom: '4px' }}>
+            <p className="converter-option-block-label">{t.mergeStrategy}</p>
+            <div className="converter-option-radio-group" style={{ marginTop: '-4px', marginBottom: '0px' }}>
               <label className="converter-option-radio-item">
                 <input
                   type="radio"
@@ -167,7 +175,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                   checked={mergeStrategy === 'unpack'}
                   onChange={() => onChangeMergeStrategy('unpack')}
                 />
-                <span>Combine Images (Manga Omnibus)</span>
+                <span>{t.strategyUnpack}</span>
               </label>
               <label className="converter-option-radio-item">
                 <input
@@ -176,19 +184,23 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                   checked={mergeStrategy === 'bundle'}
                   onChange={() => onChangeMergeStrategy('bundle')}
                 />
-                <span>Keep Original Files (Simple Archive)</span>
+                <span>{t.strategyBundle}</span>
               </label>
             </div>
-            <p className="converter-help-line" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
-              {mergeStrategy === 'unpack'
-                ? '※ Automatically extracts archives and merges only the internal images into a single volume.'
-                : '※ Combines the selected archive files directly without extracting their contents.'}
+            <p className="converter-help-line" style={{
+              marginTop: '-4px', /* 🚀 [초밀착] Flex gap(8px)을 절반으로 깎아 박스 바로 밑으로 바짝 끌어올림! */
+              fontSize: '0.75rem',
+              color: 'var(--text-dim)',
+              fontStyle: 'italic',
+              paddingLeft: '4px'
+            }}>
+              ※ {mergeStrategy === 'unpack' ? t.optDescUnpack : t.optDescBundle}
             </p>
           </div>
         )}
         {mode === 'split' && (
           <div className="converter-option-block">
-            <p className="converter-option-block-label">Output Filename Pattern</p>
+            <p className="converter-option-block-label">{language === 'ko' ? '출력 파일명 패턴' : 'Output Filename Pattern'}</p>
             <div className="converter-option-radio-group grid-2-col" style={{ marginBottom: '2px' }}>
               <label className="converter-option-radio-item">
                 <input
@@ -228,36 +240,36 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
               </label>
 
               {/* 🛸 [긴급 정정] 회색 옵션 박스 '내부'로 전격 침투! 그리드 전체 폭을 장악하여 아름답게 통합! */}
-              <div className="converter-help-line" style={{ 
+              <div className="converter-help-line" style={{
                 gridColumn: 'span 2', /* 🔗 [통합] 2열을 시원하게 가로지르는 전대미문의 병합 선언! */
                 marginTop: '-2px', /* 🚀 [긴급 견인] 그리드 row-gap을 음수 마진으로 뚫고 위로 초밀착! */
                 paddingTop: '3px', /* ⚡ [극슬림화] 패딩을 최소 단위로 압축 */
                 paddingBottom: '0px',
                 borderTop: '1px dashed rgba(var(--rgb-contrast), 0.08)', /* ✂️ 내부 구획 정리선 */
-                fontSize: '0.74rem', 
+                fontSize: '0.74rem',
                 color: 'var(--text-dim)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 paddingLeft: '4px'
               }}>
-                <span>🔍 Preview:</span>
+                <span>🔍 {language === 'ko' ? '미리보기:' : 'Preview:'}</span>
                 <strong style={{ color: 'var(--text-main)', fontWeight: '700' }}>{splitNamePreview}.{outputFormat}</strong>
               </div>
             </div>
           </div>
         )}
         <label className="converter-option-row">
-          <span>Output Location</span>
+          <span>{t.outputDirectory}</span>
           <div className="converter-option-path-row">
             <input
               type="text"
               value={outputDirectory}
-              placeholder="Select output folder"
+              placeholder={language === 'ko' ? '출력 폴더를 선택하세요' : 'Select output folder'}
               onChange={(event) => onChangeOutputDirectory(event.target.value)}
             />
             <button type="button" className="converter-mini-btn" onClick={onPickOutputDirectory}>
-              Select
+              {t.selectDir}
             </button>
           </div>
         </label>
@@ -265,8 +277,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       {mode === 'merge' ? (
         <div className="converter-option-stack">
           <div className="converter-option-block">
-            <p className="converter-option-block-label">Compression Policy</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px', paddingLeft: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginTop: 0, paddingLeft: '4px' }}>
               <div className="converter-radio-item-group">
                 <label className="converter-option-radio-item">
                   <input
@@ -275,10 +286,10 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'auto'}
                     onChange={() => onChangeCompressionPolicy('auto')}
                   />
-                  <span style={{ fontWeight: '600' }}>Auto (Recommended)</span>
+                  <span style={{ fontWeight: '600' }}>{t.policyAuto}</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  💡 Inherits store method for existing archives and compresses raw images to balance speed and size.
+                <p className="converter-radio-sub-desc" style={{ margin: '1px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  💡 {t.optAutoHint}
                 </p>
               </div>
 
@@ -290,10 +301,10 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'store'}
                     onChange={() => onChangeCompressionPolicy('store')}
                   />
-                  <span style={{ fontWeight: '600' }}>Always Store (Fast)</span>
+                  <span style={{ fontWeight: '600' }}>{t.policyStore}</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  ⚡ Skips compression calculations for maximum speed. Files are saved in store mode.
+                <p className="converter-radio-sub-desc" style={{ margin: '1px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  ⚡ {t.optStoreHint}
                 </p>
               </div>
 
@@ -305,45 +316,46 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'compress'}
                     onChange={() => onChangeCompressionPolicy('compress')}
                   />
-                  <span style={{ fontWeight: '600' }}>Always Compress (Small Size)</span>
+                  <span style={{ fontWeight: '600' }}>{t.policyCompress}</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
-                  📦 Maximally compresses all data to minimize storage footprint.
+                <p className="converter-radio-sub-desc" style={{ margin: '1px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                  📦 {t.optCompressHint}
                 </p>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="converter-option-stack">
+        <div className="converter-option-stack" style={{ padding: '11px 13px' }}>
           <div className="converter-option-block">
-            <p className="converter-option-block-label">Split Criteria</p>
+            <p className="converter-option-block-label">{t.splitCriteria}</p>
             <div className="converter-option-select-group">
               <select
                 value={splitCriterion}
                 onChange={(event) => onChangeSplitCriterion(event.target.value as SplitCriterion)}
-                style={{ width: '100%', marginBottom: '8px' }}
+                style={{ width: '100%', marginBottom: '7px' }}
               >
-                <option value="pages">By Page Count (Even Split)</option>
-                <option value="sizeMb">By File Size (MB Limit)</option>
-                <option value="custom">Custom (Manual Split)</option>
+                <option value="pages">{t.criteriaPages}</option>
+                <option value="sizeMb">{t.criteriaSize}</option>
+                <option value="custom">{t.criteriaCustom}</option>
               </select>
 
               <p className="converter-help-line" style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontStyle: 'italic', minHeight: '1.2rem' }}>
-                {splitCriterion === 'pages' && '📏 Evenly divides the archive based on the specified number of pages.'}
-                {splitCriterion === 'sizeMb' && '💾 Ensures that each output file does not exceed the specified MB threshold.'}
-                {splitCriterion === 'custom' && '✂️ Splits the archive precisely at the page boundaries you define.'}
+                {splitCriterion === 'pages' && `📏 ${t.splitByPageHelp}`}
+                {splitCriterion === 'sizeMb' && `💾 ${t.splitBySizeHelp}`}
+                {splitCriterion === 'custom' && `✂️ ${t.splitByCustomHelp}`}
               </p>
             </div>
           </div>
           <label className="converter-option-row">
-            <span>{splitCriterion === 'custom' ? 'Start Pages' : 'Target Value'}</span>
+            <span style={{ position: 'relative', top: '-1px' }}>{splitCriterion === 'custom' ? (language === 'ko' ? '시작 페이지' : 'Start Pages') : t.splitTargetValue}</span>
             {splitCriterion === 'custom' ? (
               <input
                 type="text"
                 value={splitCustomValues}
                 placeholder="e.g., 201,451,651,851"
                 onChange={(event) => onChangeSplitCustomValues(event.target.value)}
+                style={{ height: '29px', padding: '0 9px' }}
               />
             ) : (
               <input
@@ -361,7 +373,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           {splitCriterion === 'custom' && (
             <>
               <label className="converter-option-row">
-                <span>Total Pages</span>
+                <span style={{ position: 'relative', top: '-2px' }}>{t.totalPages}</span>
                 <input
                   type="number"
                   min={1}
@@ -371,10 +383,10 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     const parsed = Number(event.target.value);
                     onChangeSplitTotalPages(Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1);
                   }}
+                  style={{ height: '29px', padding: '0 9px' }}
                 />
               </label>
-              <p className="converter-help-line">{customInputHint}</p>
-              <p className="converter-help-line">{customSplitPreview}</p>
+              <p className="converter-help-line" style={{ padding: '1px 0' }}>{customInputHint}</p>
             </>
           )}
         </div>
