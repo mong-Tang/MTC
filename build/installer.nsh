@@ -97,13 +97,13 @@ perform_registry_writes:
   ; 📦 .zip 확장자 연결 구조 조각
   WriteRegStr SHCTX "Software\Classes\.zip" "" "com.mongtang.zipbookviewer.zip"
   WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.zip" "" "ZIP Archive Book"
-  WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.zip\DefaultIcon" "" "$INSTDIR\resources\data-file-icon.ico"
+  WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.zip\DefaultIcon" "" "$INSTDIR\resources\assets\data-file-icon.ico"
   WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.zip\shell\open\command" "" '"$INSTDIR\ZIP 이미지 뷰어.exe" "%1"'
 
   ; 📦 .cbz 확장자 연결 구조 조각
   WriteRegStr SHCTX "Software\Classes\.cbz" "" "com.mongtang.zipbookviewer.cbz"
   WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.cbz" "" "Comic Book Archive"
-  WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.cbz\DefaultIcon" "" "$INSTDIR\resources\data-file-icon.ico"
+  WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.cbz\DefaultIcon" "" "$INSTDIR\resources\assets\data-file-icon.ico"
   WriteRegStr SHCTX "Software\Classes\com.mongtang.zipbookviewer.cbz\shell\open\command" "" '"$INSTDIR\ZIP 이미지 뷰어.exe" "%1"'
 
   ; 📡 변경된 전용 아이콘이 윈도우 탐색기에 즉각 투영되도록 쉘 갱신 선동!!
