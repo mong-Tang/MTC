@@ -317,8 +317,13 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   };
 
   // 🖼️ [신규] 내부 이미지 고속 미리보기 핸들러!
-  const handleInternalRowDoubleClick = async (page: any) => {
+  const handleInternalRowDoubleClick = async (page: any, forceIndex?: number) => {
     if (!viewingInternalPath) return;
+
+    // 🎯 [UX 보완] 더블클릭 시 연속 클릭으로 인해 해제되는 레이스 버그를 물리적으로 진압!
+    if (typeof forceIndex === 'number') {
+      setSelectedInternalIndices(new Set([forceIndex]));
+    }
 
     try {
       document.body.classList.add('is-processing'); // ⏳ [시각적 피드백] 로딩 개시
@@ -838,9 +843,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
 
                     return (
                       <div className="converter-nested-items-container" style={{
-                        backgroundColor: 'rgba(0,0,0,0.15)',
-                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
-                        paddingTop: `${padTop}px`, // 🧱 위쪽 공간 예약
+                        paddingTop: `${padTop}px`, // 🧱 위쪽 공간 예약 (가상화 계산값만 인라인 유지)
                         paddingBottom: `${padBottom}px` // 🧱 아래쪽 공간 예약
                       }}>
                         {slice.map((page, localIdx) => {
@@ -852,12 +855,11 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                               key={`${item.path}-page-${pIdx}`}
                               className={`converter-item-row ${isPageSelected ? 'selected' : ''}`}
                               style={{
-                                borderBottom: '1px solid rgba(255,255,255,0.03)',
                                 cursor: 'pointer' /* 🖱️ 손가락 커서 장착! */
                               }}
                               title={page.entryName}
                               onClick={(e) => handleInternalRowClick(pIdx, e)}
-                              onDoubleClick={() => void handleInternalRowDoubleClick(page)} /* 🛸 [최신 패치] 더블 클릭 시 즉각 화상 송출! */
+                              onDoubleClick={() => void handleInternalRowDoubleClick(page, pIdx)} /* 🛸 [최신 패치] 더블 클릭 시 셀렉션 유지 상태로 즉각 화상 송출! */
                             >
                               <span
                                 className="converter-item-index"
@@ -997,7 +999,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
             ) : (
               <div className="terminal-logs-container" ref={terminalRef}>
                 {executionLogs.length === 0 ? (
-                  <div className="terminal-log-line" style={{ opacity: 0.4 }}>
+                  <div className="terminal-log-line" style={{ opacity: 0.65 }}>
                     [SYSTEM] 명령 대기 중...
                   </div>
                 ) : (

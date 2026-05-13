@@ -7,8 +7,8 @@ interface ContextMenuProps {
   onClose: () => void;
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
-  themeMode: 'default' | 'light' | 'dark' | 'system';
-  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
+  themeMode: 'default' | 'light' | 'dark' | 'system' | 'hwasa';
+  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system' | 'hwasa') => void;
   imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
   onChangeImageFitMode: (mode: 'auto' | 'actual' | 'width' | 'height') => void; // ⚡ 스케일 변경 위임
   onDeletePage?: (target: 'left' | 'right') => void; // 🗑️ [신규] 페이지 소각 처리기 수신!
@@ -38,14 +38,21 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
   useEffect(() => {
     if (!show) return;
+    
+    let timerId: NodeJS.Timeout | number | null = null;
+
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
     };
-    setTimeout(() => {
+
+    // 🛡️ 우클릭 프레임 연쇄 방어용 마이크로 딜레이 탑재
+    timerId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
       document.addEventListener('contextmenu', handleClickOutside);
     }, 50);
+
     return () => {
+      if (timerId) clearTimeout(timerId); // 🧹 타이머 유령 누수 방지용 안전장치
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('contextmenu', handleClickOutside);
     };
@@ -209,7 +216,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>기본설정</span>
+                <span>⚓ 기본설정</span>
+              </div>
+            </button>
+
+            <button
+              className={`context-item ${themeMode === 'hwasa' ? 'active-mode' : ''}`}
+              onClick={() => { onChangeThemeMode('hwasa'); onClose(); }}
+            >
+              <span className="check-slot">✓</span>
+              <div className="item-label-group">
+                <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 화사함</span>
               </div>
             </button>
             <button
@@ -218,7 +235,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>라이트</span>
+                <span>☀️ 라이트</span>
               </div>
             </button>
             <button
@@ -227,7 +244,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>다크</span>
+                <span>🌙 다크</span>
               </div>
             </button>
             <button
@@ -236,7 +253,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>시스템</span>
+                <span>💻 시스템</span>
               </div>
             </button>
           </div>

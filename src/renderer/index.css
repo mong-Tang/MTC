@@ -21,9 +21,11 @@
   --bg-base: #3E3430;
   --bg-panel: rgba(62, 52, 48, 0.97);
   --bg-sidebar: #212121;
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.15); /* 🧱 [신규] 사이드바 내부 인셋을 위한 시각 변수 */
   --text-sidebar: #EAE6E2;
   --text-main: #EFEBE8;
   --text-dim: #BBAFA7;
+  --text-hover: #FFFFFF; /* 🔥 [신규] 호버링 최적화 텍스트 컬러 */
   --accent: #DA8552;
   --accent-muted: rgba(218, 133, 82, 0.16);
   --border-subtle: rgba(255, 255, 255, 0.12);
@@ -49,9 +51,11 @@
   --bg-base: #121212;
   --bg-panel: rgba(18, 18, 18, 0.96);
   --bg-sidebar: #1b1b1d;
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.15);
   --text-sidebar: #e8e8e8;
   --text-main: #e8e8e8;
   --text-dim: #9a9a9a;
+  --text-hover: #ffffff;
   --accent: #4da3ff;
   --accent-muted: rgba(77, 163, 255, 0.16);
   --border-subtle: rgba(255, 255, 255, 0.1);
@@ -71,39 +75,65 @@
 
 /* 🌅 3. THEME: LIGHT (OS 라이트 스타일) ----------------------- */
 [data-theme='light'] {
-  /* ☕ Warm Milk & Linen Palette */
-  --bg-base: #F8F5F2;
-  /* 부드럽고 따뜻한 린넨 색상 */
-  --bg-panel: rgba(255, 255, 255, 0.96);
-  --bg-sidebar: #EDE9E4;
-  /* 사이드바는 한 톤 가라앉은 베이지 그레이 */
-  --text-sidebar: #3A3533;
-  /* 가독성 높은 짙은 밤색 텍스트 */
-  --text-main: #3A3533;
-  --text-dim: #7A726C;
-  --accent: #CE743E;
-  /* 🌟 영혼의 액센트는 라이트에서도 그대로 빛납니다 */
-  --accent-muted: rgba(206, 116, 62, 0.1);
-  --border-subtle: rgba(0, 0, 0, 0.08);
+  /* ❄️ Absolute Snow White Palette */
+  --bg-base: #FFFFFF;
+  /* 완전히 깨끗하고 시원한 100% 절대 순백색 */
+  --bg-panel: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.03); /* ❄️ [유저 특명] 너무 진하지 않게 아주 찰나의 미세 음영만 주입! */
+  /* 💡 [유저 명령 반영] 사이드바까지 타협 없는 완벽한 순백색 적용! */
+  --text-sidebar: #111111;
+  /* 극명한 순백 위에 가장 또렷하게 눈에 박히는 딥 블랙 */
+  --text-main: #111111;
+  --text-dim: #4F565F;
+  --text-hover: #0969DA;
+  --accent: #0969DA;
+  /* 💎 극한의 화이트 대비로 존재감을 내뿜는 사파이어 블루 */
+  --accent-muted: rgba(9, 105, 218, 0.14);
+  --border-subtle: rgba(0, 0, 0, 0.07); /* 순백 경계를 나누는 극도로 미세한 구분선 */
 
   /* 🔗 [LINK] 시맨틱 컬러 레이어 (라이트 최적화 반전형) */
   --rgb-contrast: 0, 0, 0;
-  /* 💡 라이트에선 투명 레이어가 '검은색' 기반으로 자동 변환! */
-  --bg-floating-bar: rgba(255, 255, 255, 0.7);
-  --bg-floating-panel: rgba(255, 255, 255, 0.98);
-  --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.08);
-  /* 라이트에선 그림자를 매우 옅게 */
-  --modal-backdrop: rgba(0, 0, 0, 0.4);
+  --bg-floating-bar: rgba(245, 245, 247, 0.92); /* ❄️ [유저 특명] 순백 위에 뜬 프리미엄 라이트 그레이 (아이콘 시인성 사수!) */
+  --bg-floating-panel: #FFFFFF;
+  --shadow-popup: 0 10px 35px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.03);
+  --modal-backdrop: rgba(0, 0, 0, 0.25);
 
   /* 🌌 THEME_DEF: LIGHT (투명도와 반전 최적화) */
-  --theme-def-sidebar-rgb: 237, 233, 228;
-  --theme-def-accent-rgb: 206, 116, 62;
-  --theme-def-list-badge-rgb: 110, 125, 135;
-  /* 라이트에서는 살짝 더 진한 메탈릭 */
-  --theme-def-status-glass-opacity: 0.9;
-  /* 라이트에선 가독성을 위해 투명도 낮춤 */
-  --theme-def-status-blur: 16px;
-  /* 더 넓고 부드러운 확산 */
+  --theme-def-sidebar-rgb: 255, 255, 255;
+  --theme-def-accent-rgb: 9, 105, 218;
+  --theme-def-list-badge-rgb: 90, 105, 120;
+  --theme-def-status-glass-opacity: 0.96;
+  --theme-def-status-blur: 20px;
+}
+
+/* 🌸 3.5. THEME: HWASA (유저 특명: 부드럽고 눈부시지 않은 광채) ------------------ */
+[data-theme='hwasa'] {
+  /* 🎨 Sunlit Papyrus & Soft Clay Palette */
+  --bg-base: #EBE4D8;      /* 📜 눈부심을 완벽히 흡수한 고급 파피루스/리넨 톤 */
+  --bg-panel: rgba(235, 228, 216, 0.97);
+  --bg-sidebar: #E0D8CB;   /* 🏰 한 톤 깊어 깊이감을 주는 샌드 스톤 */
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.04); /* 🌸 부드럽고 눈부심 없는 은은한 음영 */
+  --text-sidebar: #1E1815; /* ☕ 명확하게 눈에 박히는 고대비 진한 에스프레소 */
+  --text-main: #1E1815; 
+  --text-dim: #4A413B;
+  --text-hover: #000000;
+  --accent: #B04E23;       /* 🌅 뚜렷하고 품격 있는 브라운 테라코타 */
+  --accent-muted: rgba(176, 78, 35, 0.14);
+  --border-subtle: rgba(0, 0, 0, 0.12);
+
+  /* 🔗 시맨틱 레이어 (눈부심 없는 라이트 변형) */
+  --rgb-contrast: 0, 0, 0;
+  --bg-floating-bar: rgba(215, 205, 190, 0.92); /* 🌸 [유저 특명] 연베이지 위에 한 톤 차분히 안착된 레이어 효과 */
+  --bg-floating-panel: rgba(235, 228, 216, 0.98);
+  --shadow-popup: 0 8px 24px rgba(80, 60, 40, 0.08); /* 🎨 따뜻한 그림자 */
+  --modal-backdrop: rgba(60, 50, 40, 0.3);
+
+  --theme-def-sidebar-rgb: 224, 216, 203;
+  --theme-def-accent-rgb: 176, 78, 35;
+  --theme-def-list-badge-rgb: 80, 85, 75;
+  --theme-def-status-glass-opacity: 0.92;
+  --theme-def-status-blur: 14px;
 }
 
 /* 🎨 4. THEME: CUSTOM (사용자 실시간 보정 프리셋) ------------------------- */
@@ -113,9 +143,11 @@
   --bg-base: #2F2A28;
   --bg-panel: rgba(47, 42, 40, 0.97);
   --bg-sidebar: #1E1E1F;
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.15);
   --text-sidebar: #EAE6E2;
   --text-main: #EAE6E2;
   --text-dim: #A59C96;
+  --text-hover: #ffffff;
   --accent: #CE743E;
   --accent-muted: rgba(206, 116, 62, 0.15);
   --border-subtle: rgba(255, 255, 255, 0.1);
@@ -140,6 +172,7 @@
   --bg-base: #121212;
   --bg-panel: rgba(18, 18, 18, 0.96);
   --bg-sidebar: #1b1b1d;
+  --bg-sidebar-inset: rgba(0, 0, 0, 0.15);
   --text-sidebar: #e8e8e8;
   --text-main: #e8e8e8;
   --text-dim: #9a9a9a;
@@ -166,6 +199,7 @@
     --bg-base: #F8F5F2;
     --bg-panel: rgba(255, 255, 255, 0.96);
     --bg-sidebar: #EDE9E4;
+    --bg-sidebar-inset: rgba(0, 0, 0, 0.03);
     --text-sidebar: #3A3533;
     --text-main: #3A3533;
     --text-dim: #7A726C;
@@ -175,7 +209,7 @@
 
     /* 🔗 시스템 라이트 동기화 레버 */
     --rgb-contrast: 0, 0, 0;
-    --bg-floating-bar: rgba(255, 255, 255, 0.7);
+    --bg-floating-bar: rgba(225, 220, 212, 0.92);
     --bg-floating-panel: rgba(255, 255, 255, 0.98);
     --shadow-popup: 0 10px 25px rgba(0, 0, 0, 0.08);
     --modal-backdrop: rgba(0, 0, 0, 0.4);

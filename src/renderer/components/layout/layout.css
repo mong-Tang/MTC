@@ -15,9 +15,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: rgb(32, 26, 24);
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background: var(--bg-floating-bar); /* 🎨 [수정] 하드코딩을 테마 변수로 연동하여 시인성 확보! */
+  backdrop-filter: blur(12px) !important; /* ✨ 유리 질감을 위해 블러 효과 복구 */
+  -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -67,7 +67,7 @@
 }
 
 .anchor-control-btn:hover {
-  color: var(--text-main);
+  color: var(--text-hover); /* 🎨 [테마 변수 연동] 호버 전용 극명 텍스트 탑재 */
   background: rgba(var(--rgb-contrast), 0.05);
 }
 
@@ -238,7 +238,7 @@
   /* 기본 상태는 닫힘 */
   overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--bg-sidebar-inset); /* 🎨 [신규] 하드코딩 색을 퇴출하고 테마 지향적 인셋 적용! */
   border-bottom: 0px solid var(--border-subtle);
 }
 
@@ -391,7 +391,7 @@
 .sidebar-file-item:hover {
   background: rgba(var(--rgb-contrast), 0.05);
   /* 메뉴판 호버와 정확히 동일한 톤 */
-  color: var(--text-main);
+  color: var(--text-hover); /* 🎨 [테마 변수 연동] 호버 전용 극명 텍스트 탑재 */
 }
 
 .sidebar-file-item.active {
@@ -666,6 +666,7 @@
 
 .win-btn svg {
   stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); /* 🛡️ 백지 위에서도 획을 살려내는 이중 섀도우 오라! */
 }
 
 /* 🎨 [신규] 초절정 럭셔리 커스텀 토글 (사이드바 옵션용) */
@@ -763,6 +764,7 @@
 
 .win-btn svg {
   stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
 }
 
 /* ─────────────────────────────────────────
@@ -1216,26 +1218,26 @@
 
 .zen-title {
   font-size: 1.1rem;
-  font-weight: 300;
+  font-weight: 400; /* 살짝 더 선명하도록 300에서 400으로 상향 */
   letter-spacing: 5px;
   color: var(--text-main);
-  opacity: 0.45;
+  opacity: 0.85; /* 0.45 -> 0.85 대폭 상향 */
   margin-bottom: 14px;
   text-transform: uppercase;
 }
 
 .zen-divider {
   width: 30px;
-  height: 1px;
+  height: 1.5px; /* 1px -> 1.5px */
   background: var(--accent);
-  opacity: 0.3;
+  opacity: 0.65; /* 0.3 -> 0.65 */
   margin-bottom: 18px;
 }
 
 .zen-subtitle {
   font-size: 0.8rem;
   color: var(--text-dim);
-  opacity: 0.4;
+  opacity: 0.8; /* 0.4 -> 0.8 대폭 상향 */
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1246,14 +1248,14 @@
   margin-top: 16px;
   font-size: 0.72rem;
   color: var(--accent);
-  opacity: 0.5;
+  opacity: 0.85; /* 0.5 -> 0.85 상향 */
   letter-spacing: 0.8px;
   cursor: pointer;
   display: inline-block;
   transition: all 0.25s ease-out;
   border-bottom: 1px solid rgba(var(--accent-rgb, 255, 140, 0), 0);
   padding: 2px 4px;
-  font-weight: 400;
+  font-weight: 500; /* 400 -> 500 */
 }
 
 .zen-recent-link:hover {
@@ -1299,10 +1301,10 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   color: var(--accent);
-  opacity: 0.6;
+  opacity: 0.85; /* 0.6 -> 0.85 상향 */
   margin-bottom: 16px;
   padding-left: 12px;
-  font-weight: 500;
+  font-weight: 600; /* 500 -> 600 */
 }
 
 .zen-recent-list-scroll {
@@ -1328,7 +1330,7 @@
   border-radius: 5px;
   cursor: pointer;
   color: var(--text-main);
-  opacity: 0.5;
+  opacity: 0.8; /* 0.5 -> 0.8 상향 */
   font-size: 0.75rem; /* 📏 [감축] 폰트 사이즈 다이어트 */
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -1338,9 +1340,9 @@
 
 .zen-recent-item:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--rgb-contrast), 0.06); /* 🎨 [수정] 라이트/다크 연동 음영 배경 */
   transform: translateX(4px);
-  color: #fff;
+  color: var(--text-hover); /* 🎨 [테마 변수 연동] 호버 전용 극명 텍스트 탑재 */
 }
 
 .zen-recent-item svg {

@@ -39,18 +39,23 @@ export const SidebarContextMenu: React.FC<SidebarContextMenuProps> = ({
   // 🛡️ 메뉴 바깥 클릭 시 자동 닫힘 시스템
   useEffect(() => {
     if (!show) return;
+    
+    let timerId: NodeJS.Timeout | number | null = null;
+
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
+    
     // 즉시 등록하면 현재 우클릭 이벤트가 트리거 시켜 바로 꺼질 수 있으므로 딜레이 살짝 부여
-    setTimeout(() => {
+    timerId = setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
       document.addEventListener('contextmenu', handleClickOutside);
     }, 50);
 
     return () => {
+      if (timerId) clearTimeout(timerId); // 🧹 잔여 타이머 잔상 완벽 소거!
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('contextmenu', handleClickOutside);
     };

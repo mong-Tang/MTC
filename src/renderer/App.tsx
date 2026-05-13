@@ -11,6 +11,7 @@ import type { ConverterMode } from './components/layout/ConverterPanel'; // 🚀
 import { ContextMenu } from './components/ui/ContextMenu'; // 🌌 [신규] 우클릭 부품
 import { SidebarContextMenu } from './components/ui/SidebarContextMenu'; // 📂 [신규] 사이드바 전용 메뉴
 import { StatusBar } from './components/layout/StatusBar'; // 🌌 [신규] 실시간 현황판
+import { SettingsModal } from './components/modals/SettingsModal'; // ⚙️ [신규] 통합 설정 센터 입항!
 
 // 🛠️ [신규] 파일 경로 및 시리즈 매칭 헬퍼 유틸리티
 // 🛠️ [특수강화] 시리즈 식별 고도화 엔진 (숫자 범위 '001-026', 괄호 주석 등 완벽 정복)
@@ -44,7 +45,7 @@ interface ViewerPage {
 const VIEW_MODE_STORAGE_KEY = 'mtc:viewMode';
 const PAGE_MEMORY_STORAGE_KEY = 'mtc:lastPageByPath';
 const THEME_MODE_STORAGE_KEY = 'mtc:themeMode';
-type ThemeMode = 'default' | 'light' | 'dark' | 'system';
+type ThemeMode = 'default' | 'light' | 'dark' | 'system' | 'hwasa'; /* 🌸 [유저 특명] 화사(Hwasa) 차원 신설! */
 type WorkspaceMode = 'viewer' | 'converter';
 
 function readSavedViewMode(): '1' | '2' {
@@ -66,8 +67,8 @@ function readSavedPageMemory(): Record<string, number> {
 
 function readSavedThemeMode(): ThemeMode {
   const saved = localStorage.getItem(THEME_MODE_STORAGE_KEY);
-  if (saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'default') {
-    return saved;
+  if (saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'default' || saved === 'hwasa') {
+    return saved as ThemeMode;
   }
   return 'default';
 }
@@ -76,12 +77,24 @@ function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMenuOpen, setSidebarMenuOpen] = useState(false);
+  const [isSettingsOpen, setSettingsOpen] = useState(false); // ⚙️ [신규] 통합 설정 모달 라이브 채널 개방
   const [converterStatusText, setConverterStatusText] = useState<string>(''); // 📡 [신규] 컨버터 전용 상태 메시지 저장소
   const [converterMode, setConverterMode] = useState<ConverterMode>('merge'); // 🚀 [격상] 컨버터 통합 관제 모드
   const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>('viewer');
   const [isAppLoading, setIsAppLoading] = useState(false); // 🛡️ [유저 고안] 철통 보안 마이크로 락 스테이트!
   const [autoMoveNotice, setAutoMoveNotice] = useState<string | null>(null);
   const autoMoveNoticeTimerRef = useRef<number | null>(null);
+  
+  // 📡 [유저 인벤션] 권 이동 알림창 자유 드래깅 포지셔너 탑재!
+  const [noticePos, setNoticePos] = useState<{ x: number, y: number } | null>(() => {
+    const saved = localStorage.getItem('mtc_notice_pos');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null; // 초기화 시 CSS 기본 중앙 배치 활용
+  });
+  const [isDraggingNotice, setIsDraggingNotice] = useState(false);
+
   const lastWheelTimeRef = useRef<number>(0); // 🎡 [신규] 휠 페이지 넘김 연속 난사 방지 타이머
   
   // 🛡️ [영속화 방어막] 초기 백엔드 로딩이 끝날 때까지 자동 저장을 일시 봉쇄하는 특수 가드!
@@ -159,6 +172,81 @@ function App() {
   useEffect(() => {
     document.body.style.cursor = isAppLoading ? 'wait' : '';
   }, [isAppLoading]);
+
+  // 🧹 [신규] 워크스페이스 차원(뷰어 ↔ 컨버터) 교체 시, 화면에 떠있던 모든 종류의 팝업/우클릭 메뉴를 강제 소각!
+  useEffect(() => {
+    setContextMenu(prev => prev.show ? { ...prev, show: false } : prev);
+    setSidebarCtxMenu(prev => prev.show ? { ...prev, show: false, targetPath: null } : prev);
+    setSidebarMenuOpen(false); // 사이드바 햄버거도 동시에 청소
+  }, [workspaceMode]);
+
+  // 📡 [유저 인벤션] 안내 메시지 알림 타이머 & 드래그 처리 엔진
+  const clearNoticeTimer = useCallback(() => {
+    if (autoMoveNoticeTimerRef.current !== null) {
+      window.clearTimeout(autoMoveNoticeTimerRef.current);
+      autoMoveNoticeTimerRef.current = null;
+    }
+  }, []);
+
+  const startNoticeTimer = useCallback((duration = 3000) => {
+    clearNoticeTimer();
+    autoMoveNoticeTimerRef.current = window.setTimeout(() => {
+      setAutoMoveNotice(null);
+    }, duration);
+  }, [clearNoticeTimer]);
+
+  const dispatchNotice = useCallback((msg: string) => {
+    setAutoMoveNotice(msg);
+    startNoticeTimer(3000);
+  }, [startNoticeTimer]);
+
+  const handleNoticeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return; // 좌클릭만 인정
+    e.preventDefault();
+    
+    clearNoticeTimer(); // 드래그 시작 시 사라짐 타이머 동결
+    setIsDraggingNotice(true);
+
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    
+    // 마우스 포인터와 요소 내부 간 오프셋 계산
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    const handleGlobalMouseMove = (moveEvent: MouseEvent) => {
+      const newX = moveEvent.clientX - offsetX + rect.width / 2;
+      const newY = moveEvent.clientY - offsetY + rect.height / 2;
+      
+      // 뷰포트 밖으로 완전히 이탈하지 않도록 세이프 가드 탑재!
+      const winW = window.innerWidth;
+      const winH = window.innerHeight;
+      const boundedX = Math.max(rect.width / 2, Math.min(winW - rect.width / 2, newX));
+      const boundedY = Math.max(rect.height / 2, Math.min(winH - rect.height / 2, newY));
+
+      setNoticePos({ x: boundedX, y: boundedY });
+    };
+
+    const handleGlobalMouseUp = (upEvent: MouseEvent) => {
+      setIsDraggingNotice(false);
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+
+      // 마우스를 뗀 지점의 최종 오프셋 기반 정밀 포지션 영속화
+      const finalX = upEvent.clientX - offsetX + rect.width / 2;
+      const finalY = upEvent.clientY - offsetY + rect.height / 2;
+      const winW = window.innerWidth;
+      const winH = window.innerHeight;
+      const finalBoundedX = Math.max(rect.width / 2, Math.min(winW - rect.width / 2, finalX));
+      const finalBoundedY = Math.max(rect.height / 2, Math.min(winH - rect.height / 2, finalY));
+
+      localStorage.setItem('mtc_notice_pos', JSON.stringify({ x: finalBoundedX, y: finalBoundedY }));
+      startNoticeTimer(2500); // 마우스 떼는 시점부터 종료 카운트 재개
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+  };
 
   // --- 💡 핸들러 모음 ---
   const toggleSidebarMenu = () => {
@@ -578,12 +666,15 @@ function App() {
   // 🗺️ [신규] 현재 열린 파일의 라이브러리 내 위치 추적
   const getBookPositionHint = () => {
     if (!zipPath || libraryItems.length <= 1) return null;
-    const currentIndex = libraryItems.findIndex(item => item.path === zipPath);
-    if (currentIndex === -1) return null;
+    const currentBookIndex = libraryItems.findIndex(item => item.path === zipPath);
+    if (currentBookIndex === -1) return null;
     
-    if (currentIndex === 0) return "처음";
-    if (currentIndex === libraryItems.length - 1) return "끝";
-    return null; // 중간은 비워둠
+    const total = libraryItems.length;
+    const current = currentBookIndex + 1;
+    
+    if (currentBookIndex === 0) return `처음 [ ${current} / ${total} ]`;
+    if (currentBookIndex === total - 1) return `끝 [ ${current} / ${total} ]`;
+    return `[ ${current} / ${total} ]`;
   };
 
   // 🔮 [신규 궁극의 해법] 사이드바 든 캔버스 든, 어디서든 '최근 기록'을 눌렀을 때 공통 발동할 만능 열쇠!
@@ -883,6 +974,12 @@ function App() {
   const canGoPrevLibrary = currentLibraryIndex > 0;
   const canGoNextLibrary = currentLibraryIndex !== -1 && currentLibraryIndex < libraryItems.length - 1;
   
+  // 🖼️ [지능형 디텍터] 현재 개방된 파일의 낱개 이미지 여부 감별 엔진
+  const isLooseImageMode = useMemo(() => {
+    if (!zipPath) return false;
+    return /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(zipPath);
+  }, [zipPath]);
+
   // 💡 [유저 명령 충실 이행] 단일 이미지(1페이지)이면서 형제 파일이 있을 때만 화살표 전설 가동!
   const showNavArrows = hasActiveFile && pages.length === 1 && libraryItems.length > 1;
   const pageStep = viewMode === '2' ? 2 : 1;
@@ -896,23 +993,21 @@ function App() {
     if (currentIndex > 0) {
       setCurrentIndex(prev => Math.max(0, prev - pageStep)); // 1. 내부 페이지 뒤로
     } else if (canGoPrevLibrary) {
-      // 2. 이전 책으로 넘어가서 '마지막 페이지(-1)'에 소프트 랜딩!
-      const targetItem = libraryItems[currentLibraryIndex - 1];
+      // 2. 이전 책/파일로 넘어가서 소프트 랜딩!
+      // 🖼️ [유저 특명: 버그 폭발 소탕] 낱개 파일 이미지 모드이고 양면보기인 경우, 앞장 2개분을 쾌속 점프!
+      const stepScale = (isLooseImageMode && viewMode === '2') ? 2 : 1;
+      const targetIdx = Math.max(0, currentLibraryIndex - stepScale);
+      const targetItem = libraryItems[targetIdx];
+
       // 🖼️ [유저 명령] 이미지는 권 이동 개념이 아니므로 알림 통과!
       const isImageTarget = targetItem?.type === 'image' || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(targetItem?.path || '');
 
       if (!isImageTarget) {
-        setAutoMoveNotice('이전 권으로 이동합니다');
-        if (autoMoveNoticeTimerRef.current !== null) {
-          window.clearTimeout(autoMoveNoticeTimerRef.current);
-        }
-        autoMoveNoticeTimerRef.current = window.setTimeout(() => {
-          setAutoMoveNotice(null);
-        }, 3000);
+        dispatchNotice('이전 권으로 이동합니다');
       }
       void loadZipIntoViewer(targetItem.path, -1);
     }
-  }, [currentIndex, pageStep, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
+  }, [currentIndex, pageStep, canGoPrevLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading, dispatchNotice, isLooseImageMode, viewMode]);
 
   const handleNavNext = useCallback(() => {
     // 🔒 [유저 엄명: 스킵 가드] 로딩 중일 때 어떠한 중복 명령 유입도 허용하지 않음!
@@ -921,22 +1016,20 @@ function App() {
     if (currentIndex < pages.length - pageStep) {
       setCurrentIndex(prev => Math.min(pages.length - 1, prev + pageStep)); // 1. 내부 페이지 앞으로
     } else if (canGoNextLibrary) {
-      // 2. 다음 책으로 넘어가서 '첫 페이지(0)'부터 시작!
-      const targetItem = libraryItems[currentLibraryIndex + 1];
+      // 2. 다음 책/파일로 넘어가서 시작!
+      // 🖼️ [유저 특명: 버그 폭발 소탕] 낱개 파일 이미지 모드이고 양면보기인 경우, 뒷장 2개분을 쾌속 점프!
+      const stepScale = (isLooseImageMode && viewMode === '2') ? 2 : 1;
+      const targetIdx = Math.min(libraryItems.length - 1, currentLibraryIndex + stepScale);
+      const targetItem = libraryItems[targetIdx];
+
       const isImageTarget = targetItem?.type === 'image' || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(targetItem?.path || '');
 
       if (!isImageTarget) {
-        setAutoMoveNotice('다음 권으로 이동합니다');
-        if (autoMoveNoticeTimerRef.current !== null) {
-          window.clearTimeout(autoMoveNoticeTimerRef.current);
-        }
-        autoMoveNoticeTimerRef.current = window.setTimeout(() => {
-          setAutoMoveNotice(null);
-        }, 3000);
+        dispatchNotice('다음 권으로 이동합니다');
       }
       void loadZipIntoViewer(targetItem.path, 0);
     }
-  }, [currentIndex, pages.length, pageStep, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading]);
+  }, [currentIndex, pages.length, pageStep, canGoNextLibrary, currentLibraryIndex, libraryItems, loadZipIntoViewer, isAppLoading, dispatchNotice, isLooseImageMode, viewMode]);
 
   useEffect(() => {
     return () => {
@@ -949,13 +1042,35 @@ function App() {
   // 🏁 전역 내비게이션 가능 상태 최종 판독
   const canGlobalPrev = currentIndex > 0 || canGoPrevLibrary;
   const canGlobalNext = (pages.length > 0 && currentIndex < pages.length - pageStep) || canGoNextLibrary;
-  const visibleEntryNames = useMemo(
-    () =>
-      viewMode === '2'
-        ? [pages[currentIndex]?.entryName, pages[currentIndex + 1]?.entryName].filter(Boolean)
-        : [pages[currentIndex]?.entryName].filter(Boolean),
-    [viewMode, pages, currentIndex]
-  );
+
+  // 🚀 [지능형 하이브리드 패커] ZIP파일 다중 페이지와 낱개 이미지 2쪽 보기를 단일 스펙트럼 통신 파이프로 통합!
+  const pagesToRender = useMemo(() => {
+    if (!zipPath) return [];
+
+    // 🔥 [유저 특명] 낱개 파일 이미지이면서 양면(2쪽) 보기일 때, 본인 파일과 다음 인접 형제 파일을 동시에 묶어 출격!!
+    if (isLooseImageMode && viewMode === '2') {
+      const packets = [{ filePath: zipPath, entryName: '__IMAGE_SINGLE_ENTRY__' }];
+      
+      if (currentLibraryIndex !== -1 && currentLibraryIndex < libraryItems.length - 1) {
+        const nextItem = libraryItems[currentLibraryIndex + 1];
+        const isNextImage = nextItem?.type === 'image' || /\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(nextItem?.path || '');
+        if (isNextImage) {
+          packets.push({ filePath: nextItem.path, entryName: '__IMAGE_SINGLE_ENTRY__' });
+        }
+      }
+      return packets;
+    }
+
+    // ZIP 압축파일 다중 열람 또는 단면 모드인 경우
+    const rawActivePages = viewMode === '2'
+      ? [pages[currentIndex], pages[currentIndex + 1]].filter(Boolean)
+      : [pages[currentIndex]].filter(Boolean);
+
+    return rawActivePages.map(p => ({
+      filePath: zipPath,
+      entryName: p.entryName
+    }));
+  }, [zipPath, pages, currentIndex, viewMode, isLooseImageMode, libraryItems, currentLibraryIndex]);
 
   // 🎹 [유저 특명] 키보드 화살표 & 🎡 마우스 휠 지능형 텔레파시 시스템 연동!
   useEffect(() => {
@@ -1043,6 +1158,10 @@ function App() {
 
     // 🎡 [명품 휠 리스너] 스크롤이 있으면 스크롤링을 먼저 돕고, 바닥에 닿으면 페이지를 넘기는 명품 알고리즘!
     const handleWheel = (e: WheelEvent) => {
+      // 🛡️ [유저 버그 리포트] 마우스가 사이드바 등 서브 영역에 올려져 있을 때는 휠 탈취 즉각 방어(중단)!
+      const isInsideViewer = (e.target as HTMLElement).closest?.('.app-main-content');
+      if (!isInsideViewer) return;
+
       // 스페이스바 스크롤링 중 등 기본 폼 활성화 상태면 방해하지 않음
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
 
@@ -1130,6 +1249,7 @@ function App() {
         onFileSelect={handleFileSelect}
         loadSameBook={loadSameBook}
         onToggleLoadSameBook={setLoadSameBook}
+        onOpenSettings={() => setSettingsOpen(true)} // ⚙️ [신규 연결] 설정 모달 트리거 개통!
         
         // 🚀 [지능형 분기] 현재 뷰 모드에 따라 '실시간 데이터 스트림'을 자동 스위칭!
         libraryItems={sidebarViewMode === 'recent' ? recentSidebarItems : libraryItems}
@@ -1166,8 +1286,7 @@ function App() {
           {/* 🖼️ 무대 (메인 뷰어) */}
           <ViewerCanvas 
             hasActiveFile={hasActiveFile}
-            zipPath={zipPath}
-            entryNames={visibleEntryNames}
+            pagesToRender={pagesToRender}
             viewMode={viewMode}
             imageFitMode={imageFitMode} /* 🔍 [동기화] 보기 모드 정보 하달! */
             
@@ -1223,39 +1342,43 @@ function App() {
       />
 
       {/* 🌌 궁극의 전천후 팝업 메뉴 (🔒 뷰모드 & 스케일 모드 동기화!) */}
-      <ContextMenu 
-        x={contextMenu.x} 
-        y={contextMenu.y} 
-        show={contextMenu.show} 
-        viewMode={viewMode}
-        onChangeViewMode={setViewMode}
-        themeMode={themeMode}
-        onChangeThemeMode={setThemeMode}
-        imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */
-        onChangeImageFitMode={setImageFitMode} /* ⚡ [트리거] 스케일 스왑 엔진 */
-        onDeletePage={handleDeletePage} /* 🗑️ [연결] 페이지 소각 처리 엔진 */
-        onClose={() => setContextMenu(prev => ({ ...prev, show: false }))} 
-      />
+      {contextMenu.show && (
+        <ContextMenu 
+          x={contextMenu.x} 
+          y={contextMenu.y} 
+          show={contextMenu.show} 
+          viewMode={viewMode}
+          onChangeViewMode={setViewMode}
+          themeMode={themeMode}
+          onChangeThemeMode={setThemeMode}
+          imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */
+          onChangeImageFitMode={setImageFitMode} /* ⚡ [트리거] 스케일 스왑 엔진 */
+          onDeletePage={handleDeletePage} /* 🗑️ [연결] 페이지 소각 처리 엔진 */
+          onClose={() => setContextMenu(prev => ({ ...prev, show: false }))} 
+        />
+      )}
 
       {/* 📂 [유저 특명] 사이드바 전용 파일 관리 메뉴 탑재 */}
-      <SidebarContextMenu 
-        x={sidebarCtxMenu.x}
-        y={sidebarCtxMenu.y}
-        show={sidebarCtxMenu.show}
-        onClose={() => setSidebarCtxMenu(prev => ({ ...prev, show: false }))}
-        onOpen={() => {
-          if (sidebarCtxMenu.targetPath) loadZipIntoViewer(sidebarCtxMenu.targetPath);
-        }}
-        onCloseDoc={() => {
-          if (sidebarCtxMenu.targetPath) handleCloseDocFromSidebar(sidebarCtxMenu.targetPath);
-        }}
-        onRemove={() => {
-          if (sidebarCtxMenu.targetPath) handleRemoveDocFromSidebar(sidebarCtxMenu.targetPath);
-        }}
-        onDeleteFile={() => {
-          if (sidebarCtxMenu.targetPath) handleDeleteFileFromSidebar(sidebarCtxMenu.targetPath);
-        }}
-      />
+      {sidebarCtxMenu.show && (
+        <SidebarContextMenu 
+          x={sidebarCtxMenu.x}
+          y={sidebarCtxMenu.y}
+          show={sidebarCtxMenu.show}
+          onClose={() => setSidebarCtxMenu(prev => ({ ...prev, show: false }))}
+          onOpen={() => {
+            if (sidebarCtxMenu.targetPath) loadZipIntoViewer(sidebarCtxMenu.targetPath);
+          }}
+          onCloseDoc={() => {
+            if (sidebarCtxMenu.targetPath) handleCloseDocFromSidebar(sidebarCtxMenu.targetPath);
+          }}
+          onRemove={() => {
+            if (sidebarCtxMenu.targetPath) handleRemoveDocFromSidebar(sidebarCtxMenu.targetPath);
+          }}
+          onDeleteFile={() => {
+            if (sidebarCtxMenu.targetPath) handleDeleteFileFromSidebar(sidebarCtxMenu.targetPath);
+          }}
+        />
+      )}
 
       {/* 🛡️ [유저 인벤션: Micro Safety Lock] 초단위 클릭 연사 무지개반사 실드!! */}
       {isAppLoading && (
@@ -1268,10 +1391,14 @@ function App() {
 
       {autoMoveNotice && (
         <div
+          onMouseDown={handleNoticeMouseDown}
+          onMouseEnter={clearNoticeTimer} // 🛡️ 마우스 오버 시 사라지는 타이머 일시 동결!
+          onMouseLeave={() => !isDraggingNotice && startNoticeTimer(1500)} // 마우스 퇴장 시 1.5초 후 부드러운 퇴장 유도!
           style={{
             position: 'fixed',
-            left: '50%',
-            top: '50%',
+            // 📍 커스텀 드래그 좌표 유무에 따른 다이내믹 랜딩 설계
+            left: noticePos ? `${noticePos.x}px` : '50%',
+            top: noticePos ? `${noticePos.y}px` : '50%',
             transform: 'translate(-50%, -50%)',
             zIndex: 100000,
             padding: '14px 20px',
@@ -1279,16 +1406,39 @@ function App() {
             border: '1px solid rgba(var(--rgb-contrast), 0.18)',
             background: 'var(--bg-floating-panel)',
             color: 'var(--text-main)',
-            boxShadow: 'var(--shadow-popup)',
+            boxShadow: isDraggingNotice ? '0 20px 50px rgba(0,0,0,0.4)' : 'var(--shadow-popup)',
             backdropFilter: 'blur(12px)',
-            pointerEvents: 'none',
+            pointerEvents: 'auto', // 🔓 [봉인해제] 드래그 및 호버 피드백을 위한 활성화!
             fontSize: '0.95rem',
-            fontWeight: 600
+            fontWeight: 600,
+            cursor: isDraggingNotice ? 'grabbing' : 'grab', // 🏎️ 지능형 마우스 포인터 메타포
+            userSelect: 'none', // 드래그 중 불필요한 글자 긁힘 방어
+            transition: isDraggingNotice ? 'none' : 'box-shadow 0.2s, transform 0.1s' // 실시간 드래깅 시 프레임 유실 제로화!
           }}
+          title="잡아서 드래그하면 원하는 곳으로 알림창 위치가 이동합니다"
         >
           {autoMoveNotice}
         </div>
       )}
+
+      {/* ⚙️ [유저 특명] 무한 확장 가능한 프리미엄 통합 환경 설정 허브 */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        themeMode={themeMode}
+        onChangeThemeMode={setThemeMode}
+        viewMode={viewMode}
+        onChangeViewMode={setViewMode}
+        imageFitMode={imageFitMode}
+        onChangeImageFitMode={setImageFitMode}
+        loadSameBook={loadSameBook}
+        onChangeLoadSameBook={setLoadSameBook}
+        onResetSidebarWidth={() => setSidebarWidth(260)}
+        onResetNoticePos={() => {
+          localStorage.removeItem('mtc_notice_pos');
+          setNoticePos(null);
+        }}
+      />
 
       </div>
   );

@@ -8,8 +8,8 @@ import type { ConverterMode } from './ConverterPanel'; // 🛰️ [격상] 모�
 interface TitleBarProps {
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
-  themeMode: 'default' | 'light' | 'dark' | 'system';
-  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system') => void;
+  themeMode: 'default' | 'light' | 'dark' | 'system' | 'hwasa';
+  onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system' | 'hwasa') => void;
   
   // 🚀 Workspace Context
   workspaceMode?: 'viewer' | 'converter';
@@ -237,7 +237,17 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>기본설정</span>
+                        <span>⚓ 기본설정</span>
+                      </div>
+                    </button>
+                    
+                    <button
+                      className={`ribbon-dropdown-item ${themeMode === 'hwasa' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangeThemeMode('hwasa'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 화사함</span>
                       </div>
                     </button>
                     <button
@@ -246,7 +256,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>라이트</span>
+                        <span>☀️ 라이트</span>
                       </div>
                     </button>
                     <button
@@ -255,7 +265,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>다크</span>
+                        <span>🌙 다크</span>
                       </div>
                     </button>
                     <button
@@ -264,7 +274,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>시스템</span>
+                        <span>💻 시스템</span>
                       </div>
                     </button>
                   </div>

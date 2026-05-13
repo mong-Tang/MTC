@@ -7,9 +7,8 @@ interface ViewerCanvasProps {
   hasActiveFile?: boolean;
   children?: React.ReactNode; // 🛰️ [신규] 스테이터스바 수용 창구
   
-  // 🧬 전달된 생명줄
-  zipPath?: string | null;
-  entryNames?: string[];
+  // 🧬 [진화형 생명줄] 개별 파일 경로 지정이 가능토록 아키텍처 개선! (낱개 이미지 2쪽 보기 지원용)
+  pagesToRender?: { filePath: string; entryName: string }[];
   viewMode?: '1' | '2';
   imageFitMode?: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 보기 스케일 모드
   
@@ -24,7 +23,7 @@ interface ViewerCanvasProps {
 }
 
 export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({ 
-  onClick, onContextMenu, hasActiveFile, children, zipPath, entryNames = [], viewMode = '1',
+  onClick, onContextMenu, hasActiveFile, children, pagesToRender = [], viewMode = '1',
   imageFitMode = 'auto',
   showNavArrows = false, canGoPrev = false, canGoNext = false, onPrev, onNext,
   onRecentCountClick, onSelectRecentItem
@@ -55,7 +54,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
 
   // 🔄 [이미지 로딩 마법]
   useEffect(() => {
-    if (!zipPath || entryNames.length === 0) {
+    if (pagesToRender.length === 0) {
       setImgSrcList([]);
       return;
     }
@@ -65,7 +64,10 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
       setLoading(true);
       try {
         const appApi = (window as any).appApi;
-        const results = await Promise.all(entryNames.map((entryName) => appApi.getPage(zipPath, entryName)));
+        // 🚀 [유저 특명: 버그 소탕] 각 페이지가 가지고 있는 독자적인 filePath로 개별 비동기 페치 요청!
+        const results = await Promise.all(
+          pagesToRender.map((p) => appApi.getPage(p.filePath, p.entryName))
+        );
 
         if (isCancelled) return;
 
@@ -91,7 +93,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
     return () => {
       isCancelled = true; // 메모리 꼬임 방지
     };
-  }, [zipPath, entryNames]);
+  }, [pagesToRender]);
 
   // ♻️ [메모리 클린업] 이전 이미지 흔적 지우기
   useEffect(() => {

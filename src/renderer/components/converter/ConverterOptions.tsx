@@ -187,50 +187,65 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
           </div>
         )}
         {mode === 'split' && (
-          <>
-            <div className="converter-option-block">
-              <p className="converter-option-block-label">출력 파일명 옵션</p>
-              <div className="converter-option-radio-group grid-2-col">
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="output-name-pattern"
-                    checked={outputNamePattern === 'name-index'}
-                    onChange={() => onChangeOutputNamePattern('name-index')}
-                  />
-                  <span>{`${outputLabelBase}-01`}</span>
-                </label>
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="output-name-pattern"
-                    checked={outputNamePattern === 'name_underscore_index'}
-                    onChange={() => onChangeOutputNamePattern('name_underscore_index')}
-                  />
-                  <span>{`${outputLabelBase}_01`}</span>
-                </label>
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="output-name-pattern"
-                    checked={outputNamePattern === 'index-name'}
-                    onChange={() => onChangeOutputNamePattern('index-name')}
-                  />
-                  <span>{`01-${outputLabelBase}`}</span>
-                </label>
-                <label className="converter-option-radio-item">
-                  <input
-                    type="radio"
-                    name="output-name-pattern"
-                    checked={outputNamePattern === 'index_underscore_name'}
-                    onChange={() => onChangeOutputNamePattern('index_underscore_name')}
-                  />
-                  <span>{`01_${outputLabelBase}`}</span>
-                </label>
+          <div className="converter-option-block">
+            <p className="converter-option-block-label">출력 파일명 옵션</p>
+            <div className="converter-option-radio-group grid-2-col" style={{ marginBottom: '2px' }}>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="output-name-pattern"
+                  checked={outputNamePattern === 'name-index'}
+                  onChange={() => onChangeOutputNamePattern('name-index')}
+                />
+                <span>{`${outputLabelBase}-01`}</span>
+              </label>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="output-name-pattern"
+                  checked={outputNamePattern === 'name_underscore_index'}
+                  onChange={() => onChangeOutputNamePattern('name_underscore_index')}
+                />
+                <span>{`${outputLabelBase}_01`}</span>
+              </label>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="output-name-pattern"
+                  checked={outputNamePattern === 'index-name'}
+                  onChange={() => onChangeOutputNamePattern('index-name')}
+                />
+                <span>{`01-${outputLabelBase}`}</span>
+              </label>
+              <label className="converter-option-radio-item">
+                <input
+                  type="radio"
+                  name="output-name-pattern"
+                  checked={outputNamePattern === 'index_underscore_name'}
+                  onChange={() => onChangeOutputNamePattern('index_underscore_name')}
+                />
+                <span>{`01_${outputLabelBase}`}</span>
+              </label>
+
+              {/* 🛸 [긴급 정정] 회색 옵션 박스 '내부'로 전격 침투! 그리드 전체 폭을 장악하여 아름답게 통합! */}
+              <div className="converter-help-line" style={{ 
+                gridColumn: 'span 2', /* 🔗 [통합] 2열을 시원하게 가로지르는 전대미문의 병합 선언! */
+                marginTop: '-2px', /* 🚀 [긴급 견인] 그리드 row-gap을 음수 마진으로 뚫고 위로 초밀착! */
+                paddingTop: '3px', /* ⚡ [극슬림화] 패딩을 최소 단위로 압축 */
+                paddingBottom: '0px',
+                borderTop: '1px dashed rgba(var(--rgb-contrast), 0.08)', /* ✂️ 내부 구획 정리선 */
+                fontSize: '0.74rem', 
+                color: 'var(--text-dim)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                paddingLeft: '4px'
+              }}>
+                <span>🔍 미리보기:</span>
+                <strong style={{ color: 'var(--text-main)', fontWeight: '700' }}>{splitNamePreview}.{outputFormat}</strong>
               </div>
             </div>
-            <p className="converter-help-line">미리보기: {splitNamePreview}.{outputFormat}</p>
-          </>
+          </div>
         )}
         <label className="converter-option-row">
           <span>출력 위치</span>
@@ -251,7 +266,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         <div className="converter-option-stack">
           <div className="converter-option-block">
             <p className="converter-option-block-label">압축 정책</p>
-            <div className="converter-option-radio-group" style={{ flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px', paddingLeft: '4px' }}>
               <div className="converter-radio-item-group">
                 <label className="converter-option-radio-item">
                   <input
@@ -260,9 +275,9 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'auto'}
                     onChange={() => onChangeCompressionPolicy('auto')}
                   />
-                  <span>자동 (추천)</span>
+                  <span style={{ fontWeight: '600' }}>자동 (추천)</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
                   💡 병합 시 기존 압축 파일은 무압축 승계, 일반 이미지는 새로 압축하여 최적의 밸런스를 유지합니다.
                 </p>
               </div>
@@ -275,9 +290,9 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'store'}
                     onChange={() => onChangeCompressionPolicy('store')}
                   />
-                  <span>항상 무압축 (빠름)</span>
+                  <span style={{ fontWeight: '600' }}>항상 무압축 (빠름)</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
                   ⚡ 압축 연산 과정을 생략하여 병합/분할 속도가 가장 빠르며 원본 그대로 저장됩니다.
                 </p>
               </div>
@@ -290,9 +305,9 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
                     checked={compressionPolicy === 'compress'}
                     onChange={() => onChangeCompressionPolicy('compress')}
                   />
-                  <span>항상 압축 (최소 용량)</span>
+                  <span style={{ fontWeight: '600' }}>항상 압축 (최소 용량)</span>
                 </label>
-                <p className="converter-radio-sub-desc" style={{ margin: '2px 0 0 22px', fontSize: '0.72rem', color: 'var(--text-dim)', opacity: 0.85 }}>
+                <p className="converter-radio-sub-desc" style={{ margin: '4px 0 0 22px', fontSize: '0.74rem', color: 'var(--text-dim)', opacity: 0.85 }}>
                   📦 모든 데이터를 최고 수준으로 압축하여 저장 장치의 공간을 최대한 절약합니다.
                 </p>
               </div>

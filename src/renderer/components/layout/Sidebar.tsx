@@ -20,6 +20,7 @@ interface SidebarProps {
   sidebarWidth?: number; // 📏 [추가] 현재 사이드바의 리사이즈 실측 너비 정보
   onLibraryItemContextMenu?: (e: React.MouseEvent, path: string) => void; // 🖱️ [유저 특명] 우클릭 팝업 시동 엔진!
   sidebarViewMode?: 'library' | 'recent'; // 🛸 [신규] 사이드바 현재 뷰 모드 판별자
+  onOpenSettings?: () => void; // ⚙️ [신규] 설정 모달 트리거 게이트웨이
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -31,7 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onShowViewer,
   sidebarWidth = 180,
   onLibraryItemContextMenu,
-  sidebarViewMode = 'library' // ✨ 기본값은 평화로운 라이브러리
+  sidebarViewMode = 'library', // ✨ 기본값은 평화로운 라이브러리
+  onOpenSettings
 }) => {
   const selectedPathSet = new Set(selectedLibraryPaths);
   return (
@@ -83,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <IconHome />
             MTC Center
           </button>
-          <button className="sidebar-menu-btn" onClick={() => console.log('Settings open')}>
+          <button className="sidebar-menu-btn" onClick={onOpenSettings}>
             <IconSettings />
             설정
           </button>
@@ -147,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
         ) : (
-          <div className="sidebar-tree-info" style={{ opacity: 0.3, fontSize: '0.8rem', padding: '20px', textAlign: 'center' }}>
+          <div className="sidebar-tree-info" style={{ opacity: 0.65, fontSize: '0.8rem', padding: '20px', textAlign: 'center' }}>
             선택된 라이브러리가 없습니다.
           </div>
         )}
