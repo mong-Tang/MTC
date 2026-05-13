@@ -30,7 +30,7 @@ export const ConverterFooter: React.FC<ConverterFooterProps> = ({
         disabled={!canExecute}
         title={!canExecute && disabledReason ? disabledReason : ''}
       >
-        {mode === 'merge' ? '병합 실행' : '분할 실행'}
+        {mode === 'merge' ? 'Run Merge' : 'Run Split'}
       </button>
     </footer>
   );

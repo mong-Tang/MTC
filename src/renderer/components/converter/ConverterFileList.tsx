@@ -197,7 +197,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         setInternalPages(result.data.pages);
         setViewingInternalPath(filePath);
       } else {
-        alert(`내부 파일을 불러오는데 실패했습니다.\n${result.error?.message || '알 수 없는 오류'}`);
+        alert(`Failed to load internal files.\n${result.error?.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('[System] Failed to load internal archive list:', error);
@@ -471,7 +471,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
   const expectedSizeText =
     unknownSizeCount === 0
       ? formatSize(estimatedOutputSize)
-      : `${formatSize(estimatedOutputSize)} + ? (${unknownSizeCount}개 미확인)`;
+      : `${formatSize(estimatedOutputSize)} + ? (${unknownSizeCount} unknown)`;
 
   // 🎹 [글로벌 키보드 액셀러레이터] 엔터 키로 초신속 프리뷰/진입 발동!
   useEffect(() => {
@@ -601,7 +601,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
 
     return (
       <>
-        <div className="converter-dropdown-title">목록 편집</div>
+        <div className="converter-dropdown-title">Edit List</div>
 
         {/* 🔮 [컨텍스트 고정] 숨김 대신 '비활성화' 처리하여 항상 유저 인지 가능하도록 구현! */}
         {mode === 'split' && (
@@ -610,7 +610,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               className="converter-dropdown-item"
               style={canToggleList ? { color: 'var(--accent)', fontWeight: 600 } : {}}
               disabled={!canToggleList}
-              title={!canToggleList ? "대상을 하나 선택해야 리스트를 볼 수 있습니다." : ""}
+              title={!canToggleList ? "Please select a single item to view its contents." : ""}
               onClick={() => {
                 if (targetPath) {
                   handleViewInternalList(targetPath);
@@ -619,7 +619,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               }}
             >
               {isOpen ? <IconEyeOff /> : <IconEye />}
-              <span>{isOpen ? '리스트 닫기' : '리스트 보기'}</span>
+              <span>{isOpen ? 'Close List' : 'View List'}</span>
             </button>
             <div className="converter-dropdown-divider" />
           </>
@@ -637,7 +637,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         <button
           className="converter-dropdown-item"
           disabled={mode === 'split' || !hasSidebarItems}
-          title={mode === 'split' ? "분할 모드에서는 다중 추가가 비활성화됩니다." : ""}
+          title={mode === 'split' ? "Multi-add is disabled in split mode." : ""}
           onClick={() => { onAddAll(); closeSource(); }}
         >
           <IconLayer /> <span>Add All</span>
@@ -684,7 +684,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     >
       <div className="converter-file-list-header">
         <h3 className="converter-section-title">
-          {mode === 'merge' ? '입력 파일 목록' : (
+          {mode === 'merge' ? 'Input File List' : (
             <>
               <span
                 title={activeViewingItem?.name}
@@ -697,11 +697,11 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                   verticalAlign: 'bottom'
                 } : {}}
               >
-                {activeViewingItem?.name || '대상 파일'}
+                {activeViewingItem?.name || 'Target File'}
               </span>
               {activeViewingItem && (
                 <span style={{ fontWeight: 'normal', opacity: 0.8, marginLeft: '6px' }}>
-                  - 내부리스트
+                  - Internal List
                 </span>
               )}
             </>
@@ -734,15 +734,15 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           onContextMenu={(e) => handleOpenContextMenu(e)}
         >
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
-            {mode === 'merge' ? '병합할 파일을 순서대로 추가하세요.' : '분할할 파일 1개를 선택하세요.'}
+            {mode === 'merge' ? 'Add files to merge in sequential order.' : 'Select one file to split.'}
           </p>
-          <EmptyStateHelpLine>- 사이드바 목록에서 햄버거 메뉴의 [Add All] 사용</EmptyStateHelpLine>
-          <EmptyStateHelpLine>- 사이드바 파일 클릭: 입력 목록에 추가/제거</EmptyStateHelpLine>
-          <EmptyStateHelpLine>- [+ Add]: 탐색기에서 직접 파일 추가</EmptyStateHelpLine>
-          <EmptyStateHelpLine>- 행 선택 후 [Delete]: 선택한 파일 목록 제거</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- Use [Add All] in the menu to import all sidebar items</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- Click sidebar items to add or remove from list</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- [+ Add]: Add files directly from OS explorer</EmptyStateHelpLine>
+          <EmptyStateHelpLine>- Select item and [Remove]: Remove selected item</EmptyStateHelpLine>
           {mode === 'split' && (
             <EmptyStateHelpLine style={{ color: 'var(--accent)', fontWeight: 600 }}>
-              - 파일 더블 클릭: 내부 구성 계층 열기 / 닫기
+              - Double-click file: Open or close internal folder tree
             </EmptyStateHelpLine>
           )}
         </EmptyState>
@@ -755,14 +755,14 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               className="converter-item-head-btn converter-item-head-name"
               onClick={() => handleSort('name')}
             >
-              파일명{getSortIndicator('name')}
+              Filename{getSortIndicator('name')}
             </button>
             <button
               type="button"
               className="converter-item-head-btn converter-item-head-size"
               onClick={() => handleSort('size')}
             >
-              크기{getSortIndicator('size')}
+              Size{getSortIndicator('size')}
             </button>
           </div>
           <div
@@ -779,7 +779,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                 <React.Fragment key={item.path}>
                   <div
                     className={`converter-item-row ${isSelected ? 'selected' : ''} ${isExpanded ? 'is-expanded-parent' : ''}`}
-                    title={`${item.path}\n클릭하여 선택 (더블 클릭 시 ${mode === 'split' ? '내부 파일 열기/닫기' : '제거'})`}
+                    title={`${item.path}\nClick to select (Double-click to ${mode === 'split' ? 'open/close contents' : 'remove'})`}
                     onClick={(e) => handleRowClick(item.path, e)}
                     onDoubleClick={() => {
                       if (mode === 'split') {
@@ -806,13 +806,13 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                           borderRadius: '3px',
                           whiteSpace: 'nowrap'
                         }}>
-                          {item.totalPages} 쪽
+                          {item.totalPages} pages
                         </span>
                       )}
                     </span>
                     <span
                       className="converter-item-size"
-                      title={item.uncompressedSizeBytes ? `원본 내용량: ${formatSize(item.uncompressedSizeBytes)} (압축 파일: ${formatSize(item.sizeBytes)})` : undefined}
+                      title={item.uncompressedSizeBytes ? `Original Size: ${formatSize(item.uncompressedSizeBytes)} (Compressed: ${formatSize(item.sizeBytes)})` : undefined}
                     >
                       {formatSize(item.uncompressedSizeBytes ?? item.sizeBytes)}
                     </span>
@@ -894,12 +894,12 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           {mode === 'merge' && (
             <div className="converter-item-footer">
               <div className="converter-item-footer-text">
-                <span className="converter-item-footer-label">예상 출력({outputFormat.toUpperCase()}, 압축률 추정)</span>
+                <span className="converter-item-footer-label">Estimated Output ({outputFormat.toUpperCase()})</span>
                 <span className="converter-item-footer-sub">
-                  압축 정책: {effectivePolicy === 'store' ? '무압축' : '압축 적용'}
-                  {compressionPolicy === 'auto' ? ' (자동)' : ' (수동)'}
+                  Policy: {effectivePolicy === 'store' ? 'Store' : 'Compress'}
+                  {compressionPolicy === 'auto' ? ' (Auto)' : ' (Manual)'}
                 </span>
-                <span className="converter-item-footer-sub">입력 합계(원본): {formatSize(knownTotalSize)} ({knownTotalPages} 쪽)</span>
+                <span className="converter-item-footer-sub">Total Input (Raw): {formatSize(knownTotalSize)} ({knownTotalPages} pages)</span>
               </div>
               <span className="converter-item-footer-value">{expectedSizeText}</span>
             </div>
@@ -922,7 +922,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               style={{ borderRadius: '8px', height: '27px' }}
             >
               <span className="btn-label-text" style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                {isProcessing ? '중지' : mode === 'merge' ? '병합 실행' : '분할 실행'}
+                {isProcessing ? 'Stop' : mode === 'merge' ? 'Run Merge' : 'Run Split'}
               </span>
             </button>
           </div>
@@ -966,7 +966,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                 <img
                   src={previewImageUrl || undefined}
                   alt="Preview"
-                  title="더블 클릭하여 크게 보기"
+                  title="Double-click to enlarge"
                   onDoubleClick={() => setIsLightboxOpen(true)}
                   style={{ 
                     maxWidth: '100%', maxHeight: '100%', 
@@ -986,7 +986,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                     fontSize: '12px', backdropFilter: 'blur(4px)', zIndex: 5, fontWeight: 'bold'
                   }}
-                  title="닫기"
+                  title="Close"
                   onClick={() => {
                     if (previewImageUrl) URL.revokeObjectURL(previewImageUrl);
                     setPreviewImageUrl(null);
@@ -1000,7 +1000,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               <div className="terminal-logs-container" ref={terminalRef}>
                 {executionLogs.length === 0 ? (
                   <div className="terminal-log-line" style={{ opacity: 0.65 }}>
-                    [SYSTEM] 명령 대기 중...
+                    [SYSTEM] Awaiting command...
                   </div>
                 ) : (
                   executionLogs.map((log, idx) => (
@@ -1051,7 +1051,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
             className="converter-lightbox-img"
             // 🧱 전체 오버레이가 더블클릭 이벤트를 수집하므로 이미지 역시 자연스럽게 버블링되어 기능합니다.
           />
-          <div className="converter-lightbox-hint">더블클릭하여 닫기</div>
+          <div className="converter-lightbox-hint">Double-click to close</div>
         </div>,
         document.body
       )}
