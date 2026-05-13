@@ -3,6 +3,8 @@ import { ConverterFileList } from '../converter/ConverterFileList';
 import { ConverterFooter } from '../converter/ConverterFooter';
 import { ConverterOptions } from '../converter/ConverterOptions';
 import { ConverterPanelShell } from '../converter/ConverterPanelShell';
+import { TRANSLATIONS } from '../../i18n';
+import type { AppLanguage } from '../../i18n';
 // 💡 Toolbar has been elevated to system Titlebar.
 
 export type ConverterMode = 'merge' | 'split';
@@ -31,6 +33,7 @@ interface ConverterPanelProps {
   onClearSource: () => void;
   onRemoveSourceItems: (paths: string[]) => void;
   onUpdateStatusText?: (text: string) => void; // 🛰️ 상태바 업링크 신호선!
+  language: AppLanguage; // 🌍 [글로벌] 현재 언어 정보
 }
 
 export const ConverterPanel: React.FC<ConverterPanelProps> = ({
@@ -44,10 +47,13 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   onAddAllSource,
   onClearSource,
   onRemoveSourceItems,
-  onUpdateStatusText
+  onUpdateStatusText,
+  language
 }) => {
+  const t = TRANSLATIONS[language]; // ⚡ 실시간 번역기 소환
+
   const [outputFormat, setOutputFormat] = useState<'zip' | 'cbz'>('zip');
-  const [outputNameBase, setOutputNameBase] = useState<string>('example_filename');
+  const [outputNameBase, setOutputNameBase] = useState<string>(language === 'ko' ? '예제 파일명' : 'example_filename');
   const [outputNamePattern, setOutputNamePattern] = useState<OutputNamePattern>('name-index');
   const [compressionPolicy, setCompressionPolicy] = useState<CompressionPolicy>('auto');
   const [splitCriterion, setSplitCriterion] = useState<SplitCriterion>('custom');
@@ -138,7 +144,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const handlePickOutputDirectory = async () => {
     try {
       const appApi = (window as any).appApi;
-      const selected = await appApi.openFolderDialog('Select Output Folder');
+      const selected = await appApi.openFolderDialog(t.selectOutputDirTitle);
       if (!selected) return;
       setOutputDirectory(selected);
     } catch (error) {
@@ -183,15 +189,15 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const isExecuteEnabled = (mode === 'merge' ? isMergeReady : isSplitReady) && !isProcessing;
 
   const disabledReason = isProcessing
-    ? 'Conversion in progress...'
+    ? t.conversionInProgress
     : !hasSourceItems
-      ? 'Please add input files first.'
+      ? t.addInputFirst
       : !hasOutputDirectory
-        ? 'Please select an output location.'
+        ? t.selectOutputLoc
         : !hasOutputName
-          ? 'Please enter an output filename.'
+          ? t.enterOutputName
           : mode === 'split' && splitCriterion === 'custom' && !hasValidCustomCutPoints
-            ? 'Ensure start pages are in ascending order.'
+            ? t.ensureAscending
             : null;
 
   // 🛰️ [동기화 엔진] 실시간 상태 텍스트 생성 및 상위 전송
@@ -199,15 +205,15 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     if (!onUpdateStatusText) return;
 
     const splitHint =
-      splitCriterion === 'pages' ? `every ${splitValue} pages` :
-        splitCriterion === 'sizeMb' ? `by ${splitValue}MB` :
-          `custom pages [${splitCustomValues || '-'}]`;
+      splitCriterion === 'pages' ? `${splitValue}${t.unitPages}` :
+        splitCriterion === 'sizeMb' ? `${splitValue}${t.unitMb}` :
+          `${t.userCustom} [${splitCustomValues || '-'}]`;
 
     const msg = !isExecuteEnabled && disabledReason
-      ? `[Awaiting] ${disabledReason}`
+      ? `[${t.awaiting}] ${disabledReason}`
       : mode === 'merge'
-        ? `Combines multiple files into a single .${outputFormat} archive.`
-        : `Splits large archive ${splitHint} into .${outputFormat} files.`;
+        ? t.combinesToSingle.replace('{{format}}', outputFormat)
+        : t.splitsLargeTo.replace('{{hint}}', splitHint).replace('{{format}}', outputFormat);
 
     onUpdateStatusText(msg);
   }, [
@@ -232,7 +238,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     const startTime = Date.now();
 
     if (onUpdateStatusText) {
-      onUpdateStatusText(`[Processing] Running ${mode === 'merge' ? 'Merge' : 'Split'}...`);
+      onUpdateStatusText(t.runningTask.replace('{{mode}}', mode === 'merge' ? t.merge : t.split));
     }
 
     try {
@@ -242,7 +248,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
         // 🛸 백엔드 프리로드 API 호출 (새로 뚫린 파이프라인)
         const appApi = (window as any).appApi;
         if (!appApi || !appApi.mergeFiles) {
-          throw new Error('Failed to connect to merge engine.');
+          throw new Error(t.connectEngineFailed);
         }
 
         const result = await appApi.mergeFiles(
@@ -258,32 +264,32 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
         if (result.ok) {
           setProgressPercent(100); // 💯 최후의 방어선: 무조건 100% 완료 상태 강제 고정
           if (onUpdateStatusText) {
-            onUpdateStatusText(`[Done] Merge completed (${elapsed}s): ${outputNameBase}.${outputFormat}`);
+            onUpdateStatusText(`[${t.done}] ${t.merge} ${t.done} (${elapsed}${t.timeSecShort}): ${outputNameBase}.${outputFormat}`);
           }
           // 🚨 얼럿창은 렌더링을 멈추므로, 약간의 시차를 두어 UI가 100%로 바뀌는 것을 보여준 뒤 띄움
           setTimeout(() => {
-            alert(`✅ Merge Successful!\n\nFile: ${outputNameBase}.${outputFormat}\nFolder: ${outputDirectory}\nTime: ${elapsed}s`);
+            alert(`${t.mergeSuccess}\n\n${t.filenameLabel}: ${outputNameBase}.${outputFormat}\n${t.locationLabel}: ${outputDirectory}\n${t.timeLabel}: ${elapsed}${t.timeSecShort}`);
           }, 200);
         } else {
-          const err = result.error?.message || 'An unknown error occurred';
+          const err = result.error?.message || t.unknownError;
           if (onUpdateStatusText) {
-            onUpdateStatusText('[Failed] Error occurred during merge.');
+            onUpdateStatusText(`[${t.fatalError}] ${t.errorOccurredDuringMerge}`);
           }
           setTimeout(() => {
-            alert(`❌ Merge Failed\n\n${err}`);
+            alert(`${t.mergeFailed}\n\n${err}`);
           }, 200);
         }
       } else {
         // 🚧 Split 모드는 아직 구현 중으로 안전 가이드
-        alert('🚧 Split feature is under construction and will be available soon.');
-        if (onUpdateStatusText) onUpdateStatusText('[Notice] Split feature under development');
+        alert(t.splitUnderDev);
+        if (onUpdateStatusText) onUpdateStatusText(`[${t.notice}] ${t.splitUnderDevNotice}`);
       }
     } catch (error: any) {
       const errMsg = error.message || String(error);
       if (onUpdateStatusText) {
-        onUpdateStatusText(`[Fatal Error] ${errMsg}`);
+        onUpdateStatusText(`[${t.fatalError}] ${errMsg}`);
       }
-      alert(`🚨 Fatal Error\n\n${errMsg}`);
+      alert(`🚨 ${t.fatalError}\n\n${errMsg}`);
     } finally {
       // 🔐 작업 잠금 해제하여 UI 다시 복구
       setIsProcessing(false);
@@ -302,7 +308,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
         {/* 🛸 [원점 회귀 완료] 사용자의 엄명에 따라 외곽 판넬 박스 내부 최상단으로 복귀한 컨트롤 타워! */}
         <div className="titlebar-converter-header">
           <h2 className="titlebar-converter-title">
-            {mode === 'split' ? 'Converter - Split Archive' : 'Converter - Merge Archives'}
+            {mode === 'split' ? t.converterSplit : t.converterMerge}
           </h2>
 
           <div className="converter-mode-switch" role="tablist" aria-label="Converter Mode">
@@ -313,7 +319,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               aria-selected={mode === 'merge'}
               type="button"
             >
-              Merge
+              {t.merge}
             </button>
             <button
               className={`converter-mode-btn ${mode === 'split' ? 'active' : ''}`}
@@ -322,67 +328,65 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               aria-selected={mode === 'split'}
               type="button"
             >
-              Split
+              {t.split}
             </button>
           </div>
         </div>
 
         <div className="converter-workbench-grid">
-          <section className="converter-pane">
-            <ConverterFileList
-              mode={mode}
-              outputFormat={outputFormat}
-              compressionPolicy={compressionPolicy}
-              items={sourceItems}
-              hasSidebarItems={hasSidebarItems}
-              selectedPaths={selectedPaths}
-              onToggleSelection={onToggleSelection}
-              onAdd={onAddSource}
-              onAddAll={onAddAllSource}
-              onClear={onClearSource}
-              onRemoveItems={onRemoveSourceItems}
-              // 🛰️ [동적 릴레이] 분할 모드일 때 왼쪽으로 이사 올 터미널/실행 버튼용 엔진 주입!!
-              canExecute={isExecuteEnabled}
-              disabledReason={disabledReason}
-              onExecute={handleExecute}
-              progressPercent={currentProgress}
-              executionLogs={currentLogs}
-              isProcessing={isEffectiveProcessing}
-              elapsedTime={currentElapsedTime} // 📡 타이머 맥동 전송!
-            />
-          </section>
-          <section className="converter-pane">
-            <ConverterOptions
-              mode={mode}
-              outputFormat={outputFormat}
-              onChangeOutputFormat={setOutputFormat}
-              outputNameBase={outputNameBase}
-              onChangeOutputNameBase={setOutputNameBase}
-              outputNamePattern={outputNamePattern}
-              onChangeOutputNamePattern={setOutputNamePattern}
-              compressionPolicy={compressionPolicy}
-              onChangeCompressionPolicy={setCompressionPolicy}
-              splitCriterion={splitCriterion}
-              onChangeSplitCriterion={setSplitCriterion}
-              splitValue={splitValue}
-              onChangeSplitValue={setSplitValue}
-              splitCustomValues={splitCustomValues}
-              onChangeSplitCustomValues={setSplitCustomValues}
-              splitTotalPages={splitTotalPages}
-              onChangeSplitTotalPages={setSplitTotalPages}
-              mergeStrategy={mergeStrategy}
-              onChangeMergeStrategy={setMergeStrategy}
-              outputDirectory={outputDirectory}
-              onChangeOutputDirectory={setOutputDirectory}
-              onPickOutputDirectory={handlePickOutputDirectory}
-              canExecute={isExecuteEnabled}
-              disabledReason={disabledReason}
-              onExecute={handleExecute}
-              progressPercent={currentProgress}
-              executionLogs={currentLogs}
-              isProcessing={isEffectiveProcessing}
-            />
-          </section>
+          <ConverterFileList
+            mode={mode}
+            outputFormat={outputFormat}
+            compressionPolicy={compressionPolicy}
+            items={sourceItems}
+            hasSidebarItems={hasSidebarItems}
+            selectedPaths={selectedPaths}
+            onToggleSelection={onToggleSelection}
+            onAdd={onAddSource}
+            onAddAll={onAddAllSource}
+            onClear={onClearSource}
+            onRemoveItems={onRemoveSourceItems}
+            // 🛰️ [동적 릴레이] 분할 모드일 때 왼쪽으로 이사 올 터미널/실행 버튼용 엔진 주입!!
+            canExecute={isExecuteEnabled}
+            disabledReason={disabledReason}
+            onExecute={handleExecute}
+            progressPercent={currentProgress}
+            executionLogs={currentLogs}
+            isProcessing={isEffectiveProcessing}
+            elapsedTime={currentElapsedTime} // 📡 타이머 맥동 전송!
+            language={language} // 🌍 [전파] 언어 주입!
+          />
+          <ConverterOptions
+            mode={mode}
+            outputFormat={outputFormat}
+            onChangeOutputFormat={setOutputFormat}
+            outputNameBase={outputNameBase}
+            onChangeOutputNameBase={setOutputNameBase}
+            outputNamePattern={outputNamePattern}
+            onChangeOutputNamePattern={setOutputNamePattern}
+            compressionPolicy={compressionPolicy}
+            onChangeCompressionPolicy={setCompressionPolicy}
+            splitCriterion={splitCriterion}
+            onChangeSplitCriterion={setSplitCriterion}
+            splitValue={splitValue}
+            onChangeSplitValue={setSplitValue}
+            splitCustomValues={splitCustomValues}
+            onChangeSplitCustomValues={setSplitCustomValues}
+            splitTotalPages={splitTotalPages}
+            onChangeSplitTotalPages={setSplitTotalPages}
+            mergeStrategy={mergeStrategy}
+            onChangeMergeStrategy={setMergeStrategy}
+            outputDirectory={outputDirectory}
+            onChangeOutputDirectory={setOutputDirectory}
+            onPickOutputDirectory={handlePickOutputDirectory}
+            canExecute={isExecuteEnabled}
+            disabledReason={disabledReason}
+            onExecute={handleExecute}
+            progressPercent={currentProgress}
+            executionLogs={currentLogs}
+            isProcessing={isEffectiveProcessing}
+            language={language} // 🌍 [전파] 언어 주입!
+          />
         </div>
       </div>
     </ConverterPanelShell>

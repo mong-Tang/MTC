@@ -195,9 +195,11 @@
 }
 
 .converter-panel-body {
-  /* 🧱 [성역 기준] 컴포넌트의 고정 규격(620px)을 절대 기준으로 삼아 앱 전체 규격을 강제 복속! */
+  /* 🧱 [성역 기준] 컴포넌트의 고정 규격(650px)을 절대 기준으로 삼아 앱 전체 규격을 강제 복속! */
   width: 1080px;
   height: 650px;
+  max-height: 650px !important; /* 🔒 상단 팽창 절대 봉쇄 */
+  min-height: 650px !important; /* 🔒 하단 압축 절대 방어 */
   flex: none;
   /* 💥 부모의 늘림(Grow) 본성 억제 */
 
@@ -224,9 +226,9 @@
   display: grid;
   /* 🧱 [유저 칙령] 비율 기반 본성을 타파하고, 420px 절대 고정값 규격으로 봉인! */
   grid-template-columns: 420px 1fr;
-  /* 🔒 [상단바 동기화] 상단 그리드와 동일하게 콘텐츠 자동 팽창(Auto-Grow) 차단! */
-  grid-template-rows: 1fr;
-  /* 🚀 [신규 투입] 그리드 행의 높이를 가용 공간 전체로 강제 확장! */
+  /* 🔒 [상단바 동기화] 상단 그리드와 동일하게 콘텐츠 자동 팽창(Auto-Grow) 완벽 차단! 580px 철통 보안! */
+  grid-template-rows: 580px;
+  /* 🚀 [신규 투입] 그리드 행의 높이를 좌측 카드와 완벽한 싱크로나이즈로 봉인! */
   gap: 20px;
   /* 🚀 [진화] 고정 높이(100%)를 버리고 남은 공간을 완벽 점령하는 자율 주행 모드! */
   flex: 1;
@@ -479,6 +481,7 @@
 }
 
 .converter-help-line {
+  margin: 0; /* 🧱 불투명한 브라우저 기본 마진에 의한 팽창 전격 방어! */
   font-size: 0.8rem;
   color: var(--text-dim);
   line-height: 1.5;
@@ -671,7 +674,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   background: rgba(var(--rgb-contrast), 0.025);
   border-radius: 12px;
   border: 1px solid rgba(var(--rgb-contrast), 0.04);
@@ -704,7 +707,8 @@
   box-sizing: border-box;
   border-radius: 6px;
   border: 1px solid rgba(var(--rgb-contrast), 0.08);
-  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] '변환 옵션' 카드 바탕색과 물아일체 매칭! */
+  background: var(--bg-sidebar-inset);
+  /* 🎨 [유저 특명] '변환 옵션' 카드 바탕색과 물아일체 매칭! */
   color: var(--text-main);
   padding: 0 10px;
   font-family: var(--font-sans);
@@ -719,7 +723,8 @@
   box-sizing: border-box;
   border-radius: 6px;
   border: 1px solid rgba(var(--rgb-contrast), 0.1);
-  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] 콤보 박스도 카드 바탕색으로 매끄럽게 통합! */
+  background: var(--bg-sidebar-inset);
+  /* 🎨 [유저 특명] 콤보 박스도 카드 바탕색으로 매끄럽게 통합! */
   color: var(--text-main);
   padding: 0 10px;
   font-family: var(--font-sans);
@@ -783,9 +788,11 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] 라디오 박스도 카드 바탕색으로 최종 대통합! */
+  background: var(--bg-sidebar-inset);
+  /* 🎨 [유저 특명] 라디오 박스도 카드 바탕색으로 최종 대통합! */
   border-radius: 8px;
-  border: 1px solid rgba(var(--rgb-contrast), 0.08); /* 🎨 선 두께 및 선명도 맞춤 */
+  border: 1px solid rgba(var(--rgb-contrast), 0.08);
+  /* 🎨 선 두께 및 선명도 맞춤 */
 }
 
 /* 📐 [공간 고효율 레이아웃] 긴 세로 목록을 콤팩트한 2열 구조로 압축! */
