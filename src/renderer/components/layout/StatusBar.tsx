@@ -7,6 +7,7 @@ interface StatusBarProps {
   totalPages: number;
   bookPositionHint?: string | null; // 🗺️ '첫 번째', '마지막' 등의 위치 힌트
   totalLibraryItems: number; // 📚 [신규] 라이브러리에 적재된 전체 아이템 수
+  totalLibrarySize?: number; // 🔋 [대특명] 라이브러리 총 용량(바이트) 수신선 개통!
   isSidebarOpen: boolean; // 📏 [신규] 사이드바 개폐 상태 동기화
   
   // 🧭 [유저 오더] 중앙 조종 엔진 연결선!
@@ -27,6 +28,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   totalPages,
   bookPositionHint,
   totalLibraryItems,
+  totalLibrarySize = 0,
   isSidebarOpen,
   canGoPrev = false,
   canGoNext = false,
@@ -41,13 +43,30 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     ? Math.round(((currentPageIndex + 1) / totalPages) * 100)
     : 0;
 
+  // ⚙️ [특명] 바이트 용량을 보고 자동 판단하여 MB/GB로 절삭 보정하는 고급 포맷터!
+  const formatLibrarySize = (bytes: number): string => {
+    if (bytes <= 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    // 로그 연산을 통해 단위 인덱스 고속 판별
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    // 소수점 1자리로 포맷
+    const formatted = (bytes / Math.pow(k, i)).toFixed(1);
+    // 만약 정수면 '.0'을 제거하여 극도의 정갈함 도모!
+    const finalVal = formatted.endsWith('.0') ? formatted.slice(0, -2) : formatted;
+    return `${finalVal} ${sizes[i]}`;
+  };
+
   return (
     <footer className={`custom-status-bar ${!isSidebarOpen ? 'sidebar-collapsed' : ''}`}>
       
-      {/* 🏛️ [1구역] 사이드바 직속 하단: 인벤토리 명찰 + 총량 */}
+      {/* 🏛️ [1구역] 사이드바 직속 하단: 유저 지정 인벤토리 실시간 전력량 대시보드! */}
       <div className="status-left">
         <span className="status-badge idle badge-list">
           LIST
+        </span>
+        <span className="library-meta-text">
+          {totalLibraryItems}개 파일 : 총 {formatLibrarySize(totalLibrarySize)}
         </span>
       </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { ConverterMode } from './ConverterPanel'; // 🛰️ [격상] 모드 상태 타입 공유
+import { TRANSLATIONS, AppLanguage } from '../../i18n'; // 🌍 [글로벌] 다국어 번역 엔진 수혈!
 
 /**
  * TitleBarControls
@@ -14,6 +15,8 @@ interface TitleBarProps {
   // 🚀 Workspace Context
   workspaceMode?: 'viewer' | 'converter';
   hasActiveFile?: boolean;
+  
+  language?: AppLanguage; // 🌍 [글로벌] 다국어 데이터 포트 증설!
 }
 
 type ActiveMenuKey = 'view' | 'move' | 'edit';
@@ -24,8 +27,10 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
   themeMode, 
   onChangeThemeMode,
   workspaceMode = 'viewer',
-  hasActiveFile = false
+  hasActiveFile = false,
+  language = 'ko' /* 🌍 기본값은 한국어로 자동 안전 랜딩 */
 }) => {
+  const t = TRANSLATIONS[language]; // ⚡ 실시간 현지 사전 가동!
   
   const [isExpanded, setExpanded] = useState(false);
   const [activeMenu, setActiveMenu] = useState<ActiveMenuKey | null>(null);
@@ -111,61 +116,62 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                   className="ribbon-item" 
                   onClick={() => toggleSubmenu('move')}
                   onMouseEnter={() => handleMouseEnterMenu('move')}
-                  style={{ color: activeMenu === 'move' ? 'var(--text-main)' : '' }}
+                  // ⚡ [유저 특명] 활성화 시에도 테마 포인트 컬러로 또렷하게 락온!
+                  style={{ color: activeMenu === 'move' ? 'var(--accent)' : '', opacity: activeMenu === 'move' ? 1 : '' }}
                 >
-                  이동
+                  {t.menuMove}
                 </button>
                 {activeMenu === 'move' && (
                   <div className="ribbon-dropdown">
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⏭️ 다음 페이지</span> <span className="shortcut">Space / → / ↓</span>
+                        <span>⏭️ {t.menuNextPage}</span> <span className="shortcut">Space / → / ↓</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⏮️ 이전 페이지</span> <span className="shortcut">BkSpc / ← / ↑</span>
-                      </div>
-                    </button>
-                    <div className="ribbon-divider" />
-                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                      <span className="check-slot">✓</span>
-                      <div className="item-label-group">
-                        <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
-                      </div>
-                    </button>
-                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
-                      <span className="check-slot">✓</span>
-                      <div className="item-label-group">
-                        <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
+                        <span>⏮️ {t.menuPrevPage}</span> <span className="shortcut">BkSpc / ← / ↑</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⏹️ 첫 페이지</span> <span className="shortcut">Home</span>
+                        <span>⏩ {t.menuNext10}</span> <span className="shortcut">PgDn</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⏺️ 마지막 페이지</span> <span className="shortcut">End</span>
+                        <span>⏪ {t.menuPrev10}</span> <span className="shortcut">PgUp</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>📚 다음권 보기</span> <span className="shortcut">Ctrl + →</span>
+                        <span>⏹️ {t.menuFirstPage}</span> <span className="shortcut">Home</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>📚 이전권 보기</span> <span className="shortcut">Ctrl + ←</span>
+                        <span>⏺️ {t.menuLastPage}</span> <span className="shortcut">End</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>📚 {t.menuNextBook}</span> <span className="shortcut">Ctrl + →</span>
+                      </div>
+                    </button>
+                    <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>📚 {t.menuPrevBook}</span> <span className="shortcut">Ctrl + ←</span>
                       </div>
                     </button>
                   </div>
@@ -178,34 +184,35 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                   className="ribbon-item" 
                   onClick={() => toggleSubmenu('view')}
                   onMouseEnter={() => handleMouseEnterMenu('view')}
-                  style={{ color: activeMenu === 'view' ? 'var(--text-main)' : '' }}
+                  // ⚡ [유저 특명] 활성화 시에도 테마 포인트 컬러로 또렷하게 락온!
+                  style={{ color: activeMenu === 'view' ? 'var(--accent)' : '', opacity: activeMenu === 'view' ? 1 : '' }}
                 >
-                  보기
+                  {t.menuView}
                 </button>
                 {activeMenu === 'view' && (
                   <div className="ribbon-dropdown">
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⚙️ 자동 맞춤</span> <span className="shortcut">F</span>
+                        <span>⚙️ {t.menuFitAuto}</span> <span className="shortcut">F</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>🔍 1:1 맞춤</span> <span className="shortcut">O</span>
+                        <span>🔍 {t.menuFitActual}</span> <span className="shortcut">O</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>↔️ 폭 맞춤</span> <span className="shortcut">W</span>
+                        <span>↔️ {t.menuFitWidth}</span> <span className="shortcut">W</span>
                       </div>
                     </button>
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>↕️ 높이 맞춤</span> <span className="shortcut">H</span>
+                        <span>↕️ {t.menuFitHeight}</span> <span className="shortcut">H</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />
@@ -217,7 +224,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>👤 1쪽 보기</span> <span className="shortcut">1</span>
+                        <span>👤 {t.menuSinglePage}</span> <span className="shortcut">1</span>
                       </div>
                     </button>
                     <button 
@@ -226,7 +233,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+                        <span>👥 {t.menuDoublePage}</span> <span className="shortcut">2</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />
@@ -237,7 +244,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>⚓ 기본설정</span>
+                        <span>⚓ {t.menuThemeDefault}</span>
                       </div>
                     </button>
                     
@@ -247,7 +254,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 화사함</span>
+                        <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 {t.menuThemeHwasa}</span>
                       </div>
                     </button>
                     <button
@@ -256,7 +263,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>☀️ 라이트</span>
+                        <span>☀️ {t.menuThemeLight}</span>
                       </div>
                     </button>
                     <button
@@ -265,7 +272,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>🌙 다크</span>
+                        <span>🌙 {t.menuThemeDark}</span>
                       </div>
                     </button>
                     <button
@@ -274,7 +281,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>💻 시스템</span>
+                        <span>💻 {t.menuThemeSystem}</span>
                       </div>
                     </button>
                   </div>
@@ -287,9 +294,10 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                   className="ribbon-item" 
                   onClick={() => toggleSubmenu('edit')}
                   onMouseEnter={() => handleMouseEnterMenu('edit')}
-                  style={{ color: activeMenu === 'edit' ? 'var(--text-main)' : '' }}
+                  // ⚡ [유저 특명] 활성화 시에도 테마 포인트 컬러로 또렷하게 락온!
+                  style={{ color: activeMenu === 'edit' ? 'var(--accent)' : '', opacity: activeMenu === 'edit' ? 1 : '' }}
                 >
-                  편집
+                  {t.menuEdit}
                 </button>
                 {activeMenu === 'edit' && (
                   <div className="ribbon-dropdown">
@@ -300,7 +308,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Delete</span>
+                        <span>🗑️ {t.menuDeletePage}</span> <span className="shortcut">Delete</span>
                       </div>
                     </button>
                     <button 
@@ -310,7 +318,7 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
+                        <span>◀️ {t.menuDeleteLeft}</span> <span className="shortcut">Shift+Del</span>
                       </div>
                     </button>
                     <button 
@@ -320,14 +328,14 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                     >
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>
+                        <span>▶️ {t.menuDeleteRight}</span> <span className="shortcut">Alt+Del</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />
                     <button className="ribbon-dropdown-item" onClick={() => setActiveMenu(null)}>
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
-                        <span>➕ 페이지 다음에 추가</span> <span className="shortcut">Insert</span>
+                        <span>➕ {t.menuInsertAfter}</span> <span className="shortcut">Insert</span>
                       </div>
                     </button>
                   </div>
@@ -340,14 +348,17 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
         {/* 🍔 메인 햄버거 토글 */}
         <button 
           className={`win-btn btn-titlebar-hamburger ${(workspaceMode !== 'viewer' || !hasActiveFile) ? 'disabled' : ''}`} 
-          disabled={workspaceMode !== 'viewer' || !hasActiveFile}
+          // 🚫 [유저 특명 초정밀 처방] 브라우저의 강제 회색 왜곡(User Agent graytext)을 차단하기 위해 
+          // HTML 네이티브 disabled 속성을 제거하고 pointer-events 스타일링으로만 논리적 잠금을 수행합니다!
           onClick={() => {
+            if (workspaceMode !== 'viewer' || !hasActiveFile) return; // 만약의 사태 대비 안전핀
             setExpanded(!isExpanded);
             if (isExpanded) setActiveMenu(null); 
           }} 
-          title={workspaceMode !== 'viewer' ? '이 메뉴는 뷰어 전용입니다' : (!hasActiveFile ? '파일을 먼저 열어주세요' : '확장 메뉴')}
+          title={workspaceMode !== 'viewer' ? t.menuViewerOnly : (!hasActiveFile ? t.menuOpenFileFirst : t.menuExpand)}
           style={{ 
-            opacity: (workspaceMode !== 'viewer' || !hasActiveFile) ? 0.25 : 0.7, 
+            // 🎨 브라우저의 개입이 사라졌으므로 투명도 제어만으로 완벽한 톤 조율이 가능해졌습니다!
+            opacity: (workspaceMode !== 'viewer' || !hasActiveFile) ? 0.6 : 1.0, 
             color: isExpanded ? 'var(--accent)' : 'inherit',
             cursor: (workspaceMode !== 'viewer' || !hasActiveFile) ? 'default' : 'pointer',
             pointerEvents: (workspaceMode !== 'viewer' || !hasActiveFile) ? 'none' : 'auto' 
@@ -360,17 +371,17 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
           </svg>
         </button>
 
-        <button className="win-btn" onClick={handleMinimize} title="최소화">
+        <button className="win-btn" onClick={handleMinimize} title={t.winMinimize}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </button>
-        <button className="win-btn" onClick={handleMaximize} title="최대화">
+        <button className="win-btn" onClick={handleMaximize} title={t.winMaximize}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <rect x="4" y="4" width="16" height="16" rx="1"></rect>
           </svg>
         </button>
-        <button className="win-btn btn-close" onClick={handleClose} title="닫기">
+        <button className="win-btn btn-close" onClick={handleClose} title={t.winClose}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>

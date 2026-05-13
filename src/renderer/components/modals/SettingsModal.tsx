@@ -325,7 +325,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onChange={(e) => onChangeThemeMode(e.target.value)}
               >
                 <option value="default">⚓ 기본설정 (Warm Mocha)</option>
-                <option value="hwasa">🌸 화사함 (Beige)</option>
+                <option value="hwasa">🌸 화사함 (Bright Beige)</option>
                 <option value="light">☀️ 라이트 (Pure White)</option>
                 <option value="dark">🌙 다크 (Deep Grey)</option>
                 <option value="system">💻 시스템 동기화</option>

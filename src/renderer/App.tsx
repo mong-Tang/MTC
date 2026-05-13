@@ -631,7 +631,10 @@ function App() {
         // ⚡ [버그 척살] 단일 모드라도 파일 확장자를 지능형으로 추론하여 올바른 타입 각인!
         const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
         const targetType = ['zip','cbz','7z','rar'].includes(ext) ? 'archive' : (['png','jpg','jpeg','webp','gif','bmp','avif'].includes(ext) ? 'image' : 'zip');
-        setLibraryItems([{ name: fileName, path: filePath, type: targetType }]);
+        
+        // 📐 [특명] 단일 파일 오프닝 시에도 누수 없는 용량 수집망 가동!
+        const singleFileSize = await appApi.getFileSize(filePath).catch(() => 0);
+        setLibraryItems([{ name: fileName, path: filePath, type: targetType, sizeBytes: singleFileSize }]);
         setLibraryFolderName(null); // 단일 파일은 폴더 헤더 불필요
         setLibraryFolderPath(null);
       }
@@ -711,6 +714,7 @@ function App() {
         
         // 🏰 왕의 귀환: 어떤 루트로 왔든 임무 완료 후 '라이브러리 뷰'로 평화 귀속!
         setSidebarViewMode('library');
+        setSidebarOpen(true); // 📂 [유저 특명 고수] 폴더가 로딩되자마자 우아하게 사이드바를 즉각 개방합니다!
         console.log('[System] Loaded Entity as Folder Library.');
         return;
       }
@@ -747,7 +751,10 @@ function App() {
         // 단일 모드라도, 사이드바에 본인은 당당하게 등재!
         const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
         const targetType = ['zip','cbz','7z','rar'].includes(ext) ? 'archive' : (['png','jpg','jpeg','webp'].includes(ext) ? 'image' : 'zip');
-        setLibraryItems([{ name: fileName, path: filePath, type: targetType }]);
+        
+        // 📐 [특명] 단일 직통 오픈 시에도 철저한 용량 계측 반영!
+        const singleFileSize = await appApi.getFileSize(filePath).catch(() => 0);
+        setLibraryItems([{ name: fileName, path: filePath, type: targetType, sizeBytes: singleFileSize }]);
         setLibraryFolderName(null);
         setLibraryFolderPath(null);
       }
@@ -1238,6 +1245,7 @@ function App() {
         // 🚀 [New] Global Workspace Integration
         workspaceMode={workspaceMode}
         hasActiveFile={hasActiveFile}
+        language={language} /* 🌍 [글로벌] 다국어 통신선 연결 개통! */
       />
       
       {/* ⚓ 관제탑 (앵커바) */}
@@ -1307,6 +1315,7 @@ function App() {
             pagesToRender={pagesToRender}
             viewMode={viewMode}
             imageFitMode={imageFitMode} /* 🔍 [동기화] 보기 모드 정보 하달! */
+            isSidebarOpen={isSidebarOpen} // 📏 [신규] 사이드바 점유 면적 감시선 개설!
             
             // 🧭 [신규] 내비게이션 제어 신호 송신!
             showNavArrows={showNavArrows}
@@ -1353,6 +1362,7 @@ function App() {
         totalPages={pages.length}
         bookPositionHint={getBookPositionHint()}
         totalLibraryItems={libraryItems.length}
+        totalLibrarySize={libraryItems.reduce((sum, it) => sum + (it.sizeBytes || 0), 0)} // 🔋 [초정밀 합계 파이프라인]
         isSidebarOpen={isSidebarOpen}
         canGoPrev={canGlobalPrev}
         canGoNext={canGlobalNext}
@@ -1373,6 +1383,7 @@ function App() {
           imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */
           onChangeImageFitMode={setImageFitMode} /* ⚡ [트리거] 스케일 스왑 엔진 */
           onDeletePage={handleDeletePage} /* 🗑️ [연결] 페이지 소각 처리 엔진 */
+          language={language} /* 🌍 [글로벌] 우클릭 메뉴도 다국어 무선 장착 완수! */
           onClose={() => setContextMenu(prev => ({ ...prev, show: false }))} 
         />
       )}

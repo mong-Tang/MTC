@@ -326,7 +326,7 @@
   backdrop-filter: blur(8px); /* 스크롤 중첩 시 미세하게 고급진 심도를 줌 */
   
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); /* 스크롤 시 떠 있는 듯한 레이어 깊이감 확보 */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); /* 🤏 [유저 특명] 짧고 강렬하게 입체감만 주는 미니 섀도우 */
   
   font-weight: 600;
   font-size: 0.9rem;
@@ -533,6 +533,15 @@
   align-items: center;
   overflow: visible !important;
   /* 🛡️ 이중 안전장치: 어떠한 경우에도 자식이 잘리지 않도록! */
+  
+  /* 🌌 [유저 특명 궁극의 조율] 부드러운 전체 영역 시각화용 트랜지션 장착 */
+  transition: background 0.25s ease;
+}
+
+.window-controls:hover {
+  /* 🎨 [유저 특명 극강의 처방] 무의미한 회색/흰색 음영을 버리고, 현 테마 브랜드 색상의 은은한 15% 투명 유리알을 깔아줍니다! */
+  background: rgba(var(--theme-def-accent-rgb), 0.15);
+  backdrop-filter: blur(4px); /* 🫧 세련된 프리미엄 블러 필터로 디테일 보정 */
 }
 
 /* 🎀 [신규] 좌측으로 촤르륵 펼쳐지는 타이틀바 확장 리본 */
@@ -559,10 +568,12 @@
 .ribbon-item {
   background: transparent;
   border: none;
-  color: var(--text-dim);
+  /* 🎨 [유저 특명 궁극의 해법] 묻혀버리는 흰색/회색 변수를 완전히 버리고, 독보적 가독성의 테마 포인트 컬러(var(--accent))로 영구 각인! */
+  color: var(--accent); 
+  opacity: 0.7; /* 🤏 평소에는 70% 불투명도로 과하지 않게 세련된 브랜드 톤 유지 */
   font-family: var(--font-sans);
   font-size: 0.85rem;
-  font-weight: 400;
+  font-weight: 600; /* ⚡ 자획 굵기를 600(Semi-Bold)으로 격상하여 글자를 아주 '쫀득하고 진하게' 노출! */
   padding: 6px 12px;
   cursor: pointer;
   border-radius: 4px;
@@ -573,8 +584,9 @@
 }
 
 .ribbon-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
+  background: rgba(var(--theme-def-accent-rgb), 0.1); /* 🎨 은은한 브랜드 악센트 백코팅 */
+  color: var(--accent); /* 🎨 [유저 특명 3단계] 호버링 시 흰색 반전을 버리고 브랜드 악센트로 찬란하게 점등! */
+  opacity: 1 !important; /* 🔥 호버링 시 불투명도 100% 풀가동! */
 }
 
 /* 🫧 [신규] 날개 밑으로 쏟아져 내릴 유리알 드롭다운 */
@@ -659,8 +671,8 @@
 }
 
 .win-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-main);
+  background: var(--accent); /* 🎨 [유저 특명] 호버 영역 전체를 브랜드 테마색으로 시원하게 색칠! */
+  color: #ffffff; /* 🤍 화려한 테마 배경 위에서 아이콘이 선명하게 부각되도록 화이트로 반전! */
 }
 
 .win-btn.btn-close:hover {
@@ -671,7 +683,6 @@
 
 .win-btn svg {
   stroke-width: 1.5;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)); /* 🛡️ 백지 위에서도 획을 살려내는 이중 섀도우 오라! */
 }
 
 /* 🎨 [신규] 초절정 럭셔리 커스텀 토글 (사이드바 옵션용) */
@@ -757,8 +768,8 @@
 }
 
 .win-btn:hover {
-  background: rgba(var(--rgb-contrast), 0.08);
-  color: var(--text-main);
+  background: var(--accent); /* 🎨 [이중 보안 블록] 영역 전체 테마색 도포! */
+  color: #ffffff; /* 🤍 아이콘 화이트 매칭! */
 }
 
 .win-btn.btn-close:hover {
@@ -769,7 +780,6 @@
 
 .win-btn svg {
   stroke-width: 1.5;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
 }
 
 /* ─────────────────────────────────────────
@@ -823,6 +833,16 @@
   /* 🌊 사이드바 접힐 때의 애니메이션 타이밍까지 완벽 싱크! */
   transition: width 0.4s var(--transition-smooth), border-right-color 0.4s var(--transition-smooth);
   flex-shrink: 0;
+}
+
+/* 📊 LIST 배지 우측 통계 계기판 폰트 튜닝 */
+.library-meta-text {
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+  opacity: 0.78;
+  margin-left: 2px;
 }
 
 /* 🧱 사이드바가 닫혔을 때의 상태바 좌측 영역 극초소형 압축! */

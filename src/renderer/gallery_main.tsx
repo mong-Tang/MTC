@@ -47,7 +47,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'StatusBar': {
     label: 'StatusBar',
     desc: '하단 진행률 및 텔레메트리 바',
-    render: () => <div style={{ position:'fixed', bottom:0, width:'100%' }}><StatusBar hasActiveFile={true} activeFileName="Masterpiece.zip" currentPageIndex={1} totalPages={100} totalLibraryItems={5} isSidebarOpen={true} /></div>
+    render: () => <div style={{ position:'fixed', bottom:0, width:'100%' }}><StatusBar hasActiveFile={true} activeFileName="Masterpiece.zip" currentPageIndex={1} totalPages={100} totalLibraryItems={5} totalLibrarySize={1234567890} isSidebarOpen={true} /></div>
   },
   'Sidebar': {
     label: 'Sidebar',

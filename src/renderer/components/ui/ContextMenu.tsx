@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { TRANSLATIONS, AppLanguage } from '../../i18n'; // 🌍 [글로벌] 다국어 번역 자재 조달!
 
 interface ContextMenuProps {
   x: number;
@@ -12,15 +13,23 @@ interface ContextMenuProps {
   imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
   onChangeImageFitMode: (mode: 'auto' | 'actual' | 'width' | 'height') => void; // ⚡ 스케일 변경 위임
   onDeletePage?: (target: 'left' | 'right') => void; // 🗑️ [신규] 페이지 소각 처리기 수신!
+  
+  language?: AppLanguage; // 🌍 [글로벌] 언어 설정 채널 개방!
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode, onDeletePage
+  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode, onDeletePage,
+  language = 'ko' /* 🌍 기본 한국어 안전 락온 */
 }) => {
+  const t = TRANSLATIONS[language]; // ⚡ 실시간 다국어 팩 번역기 구동!
+  
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState({ top: y, left: x });
   const [isThemeSubmenuOpen, setThemeSubmenuOpen] = useState(false);
   const [isNavSubmenuOpen, setNavSubmenuOpen] = useState(false); // 🧭 [신규] 이동 서브메뉴 상태 추가!
+  
+  // 🛡️ [유저 특명 궁극의 안전장치] 화면 우측 끝에서 서브메뉴가 짤려나가지 않도록 좌측 오픈 모드를 자동 전환합니다!
+  const [openSubmenuLeft, setOpenSubmenuLeft] = useState(false);
 
   useLayoutEffect(() => {
     if (!show || !menuRef.current) return;
@@ -34,6 +43,11 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     finalX = Math.max(5, finalX);
     finalY = Math.max(5, finalY);
     setCoords({ top: finalY, left: finalX });
+
+    // 🚨 [초정밀 지능형 충돌 탐지] 메인메뉴 좌표 우측에 서브메뉴(약 160px)가 확보될 여력이 있는지 검측
+    const submenuWidth = 165;
+    const isOverflowingRight = (finalX + menuRect.width + submenuWidth) > winWidth;
+    setOpenSubmenuLeft(isOverflowingRight);
   }, [show, x, y]);
 
   useEffect(() => {
@@ -74,7 +88,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       style={{ top: coords.top, left: coords.left }}
     >
       {/* 🧭 [1번 타자] 이동 (서브메뉴로 콤팩트하게 수납) */}
-      <div className="menu-section-title">내비게이션</div>
+      <div className="menu-section-title">{t.menuNavigation}</div>
       <div
         className="context-submenu-wrap"
         onMouseEnter={() => setNavSubmenuOpen(true)}
@@ -89,35 +103,42 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         >
           <span className="check-slot"></span>
           <div className="item-label-group">
-            <span>🧭 이동</span> <span className="shortcut">▶</span>
+            <span>🧭 {t.menuMove}</span> <span className="shortcut">▶</span>
           </div>
         </button>
 
         {isNavSubmenuOpen && (
-          <div className="context-submenu-panel" style={{ top: 0 }}>
+          <div 
+            className="context-submenu-panel" 
+            style={{ 
+              top: 0,
+              // 🛡️ 충돌 감지 시 좌측으로 역오버랩 오픈!
+              ...(openSubmenuLeft ? { left: 'auto', right: 'calc(100% - 4px)' } : {})
+            }}
+          >
             <button className="context-item" onClick={onClose}>
               <span className="check-slot"></span>
               <div className="item-label-group">
-                <span>⏭️ 다음 페이지</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>Space / → / ↓</span>
+                <span>⏭️ {t.menuNextPage}</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>Space / → / ↓</span>
               </div>
             </button>
             <button className="context-item" onClick={onClose}>
               <span className="check-slot"></span>
               <div className="item-label-group">
-                <span>⏮️ 이전 페이지</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>BkSpc / ← / ↑</span>
+                <span>⏮️ {t.menuPrevPage}</span> <span className="shortcut" style={{ fontSize: '0.65rem' }}>BkSpc / ← / ↑</span>
               </div>
             </button>
             <div className="ribbon-divider" />
             <button className="context-item" onClick={onClose}>
               <span className="check-slot"></span>
               <div className="item-label-group">
-                <span>⏩ 10 페이지 앞으로</span> <span className="shortcut">PgDn</span>
+                <span>⏩ {t.menuNext10}</span> <span className="shortcut">PgDn</span>
               </div>
             </button>
             <button className="context-item" onClick={onClose}>
               <span className="check-slot"></span>
               <div className="item-label-group">
-                <span>⏪ 10 페이지 뒤로</span> <span className="shortcut">PgUp</span>
+                <span>⏪ {t.menuPrev10}</span> <span className="shortcut">PgUp</span>
               </div>
             </button>
           </div>
@@ -127,14 +148,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       <div className="ribbon-divider" />
       
       {/* 🔍 [2번 타자] 보기 설정 (비율 & 스케일) */}
-      <div className="menu-section-title">스케일 설정</div>
+      <div className="menu-section-title">{t.menuScaleSetting}</div>
       <button 
         className={`context-item ${imageFitMode === 'auto' ? 'active-mode' : ''}`} 
         onClick={() => { onChangeImageFitMode('auto'); onClose(); }}
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>⚙️ 자동 맞춤 (Full)</span> <span className="shortcut">F</span>
+          <span>⚙️ {t.menuFitAuto} (Full)</span> <span className="shortcut">F</span>
         </div>
       </button>
       <button 
@@ -143,7 +164,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>↕️ 높이 맞춤 (Height)</span> <span className="shortcut">H</span>
+          <span>↕️ {t.menuFitHeight} (Height)</span> <span className="shortcut">H</span>
         </div>
       </button>
       <button 
@@ -152,7 +173,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>↔️ 폭 맞춤 (Width)</span> <span className="shortcut">W</span>
+          <span>↔️ {t.menuFitWidth} (Width)</span> <span className="shortcut">W</span>
         </div>
       </button>
       <button 
@@ -161,12 +182,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>💎 1:1 보기 (Original)</span> <span className="shortcut">O</span>
+          <span>💎 {t.menuFitActual} (Original)</span> <span className="shortcut">O</span>
         </div>
       </button>
 
       <div className="ribbon-divider" />
-      <div className="menu-section-title">페이지 설정</div>
+      <div className="menu-section-title">{t.menuPageSetting}</div>
       
       {/* 💎 우클릭 메뉴용 정통 체크 결합 */}
       <button 
@@ -175,7 +196,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>👤 1쪽 보기</span> <span className="shortcut">1</span>
+          <span>👤 {t.menuSinglePage}</span> <span className="shortcut">1</span>
         </div>
       </button>
       <button 
@@ -184,12 +205,12 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>👥 2쪽 보기</span> <span className="shortcut">2</span>
+          <span>👥 {t.menuDoublePage}</span> <span className="shortcut">2</span>
         </div>
       </button>
 
       <div className="ribbon-divider" />
-      <div className="menu-section-title">테마</div>
+      <div className="menu-section-title">{t.menuTheme}</div>
       <div
         className="context-submenu-wrap"
         onMouseEnter={() => setThemeSubmenuOpen(true)}
@@ -204,19 +225,25 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         >
           <span className="check-slot">{themeMode ? '✓' : ''}</span>
           <div className="item-label-group">
-            <span>테마</span> <span className="shortcut">▶</span>
+            <span>{t.menuTheme}</span> <span className="shortcut">▶</span>
           </div>
         </button>
 
         {isThemeSubmenuOpen && (
-          <div className="context-submenu-panel">
+          <div 
+            className="context-submenu-panel"
+            style={{
+              // 🛡️ 테마 메뉴도 우측 공간 부족 시 좌측 오픈으로 긴급 전환!
+              ...(openSubmenuLeft ? { left: 'auto', right: 'calc(100% - 4px)' } : {})
+            }}
+          >
             <button
               className={`context-item ${themeMode === 'default' ? 'active-mode' : ''}`}
               onClick={() => { onChangeThemeMode('default'); onClose(); }}
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>⚓ 기본설정</span>
+                <span>⚓ {t.menuThemeDefault}</span>
               </div>
             </button>
 
@@ -226,7 +253,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 화사함</span>
+                <span style={{ color: 'var(--accent)', fontWeight: 'bold' }}>🌸 {t.menuThemeHwasa}</span>
               </div>
             </button>
             <button
@@ -235,7 +262,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>☀️ 라이트</span>
+                <span>☀️ {t.menuThemeLight}</span>
               </div>
             </button>
             <button
@@ -244,7 +271,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>🌙 다크</span>
+                <span>🌙 {t.menuThemeDark}</span>
               </div>
             </button>
             <button
@@ -253,7 +280,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <span className="check-slot">✓</span>
               <div className="item-label-group">
-                <span>💻 시스템</span>
+                <span>💻 {t.menuThemeSystem}</span>
               </div>
             </button>
           </div>
@@ -263,7 +290,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       <div className="ribbon-divider" />
       
       {/* ✏️ [3번 타자] 편집 */}
-      <div className="menu-section-title">편집 (🔒 모드 잠금)</div>
+      <div className="menu-section-title">{t.menuEditLocked}</div>
       <button 
         className="context-item" 
         disabled={viewMode !== '1'} 
@@ -271,7 +298,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>🗑️ 현재 페이지 삭제</span> <span className="shortcut">Del</span>
+          <span>🗑️ {t.menuDeletePage}</span> <span className="shortcut">Del</span>
         </div>
       </button>
       <button 
@@ -281,7 +308,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>◀️ 왼쪽 페이지 삭제</span> <span className="shortcut">Shift+Del</span>
+          <span>◀️ {t.menuDeleteLeft}</span> <span className="shortcut">Shift+Del</span>
         </div>
       </button>
       <button 
@@ -291,7 +318,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       >
         <span className="check-slot">✓</span>
         <div className="item-label-group">
-          <span>▶️ 오른쪽 페이지 삭제</span> <span className="shortcut">Alt+Del</span>
+          <span>▶️ {t.menuDeleteRight}</span> <span className="shortcut">Alt+Del</span>
         </div>
       </button>
     </div>

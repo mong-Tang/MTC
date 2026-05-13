@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, type MenuItemConstructorOptions } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, type MenuItemConstructorOptions } from 'electron';
 
 import { registerIpcHandlers } from './ipc/ipc-handlers';
 import { setLocale, t, type Locale } from '../shared/i18n/i18n';
@@ -768,6 +768,103 @@ app.whenReady().then(async () => {
 
   ipcMain.on('window:open-help', () => {
     openHelpWindow();
+  });
+
+  // 📐 [특명: 자동 밀착 리사이징 엔진]
+  ipcMain.on('window:fit-to-image', (event, data: { imageAspectRatio: number; sidebarWidth: number; chromeHeight: number }) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return;
+
+    const { imageAspectRatio, sidebarWidth, chromeHeight } = data;
+    if (!imageAspectRatio || imageAspectRatio <= 0) return;
+
+    // 🚀 [원상 복구] 최대화 상태인 경우 즉시 해제 후 축소 계산 돌입
+    if (win.isMaximized()) {
+      win.unmaximize();
+    }
+
+    // 📏 UI 전용 점유 면적 계산 (크롬 패딩)
+    // 💡 [초정밀 진화] 하드코딩된 상수를 완전히 폐지하고, React가 실시간 측정하여 전달한 
+    // 사이드바 가변폭(리사이저 2px 포함) 및 크롬 유휴높이를 100% 그대로 추종하여 틈새 여백을 원천 제거합니다!
+    const CHROME_HEIGHT = typeof chromeHeight === 'number' ? chromeHeight : 26; 
+    const SIDEBAR_WIDTH = typeof sidebarWidth === 'number' ? sidebarWidth : 0;
+
+    // 🧭 현재 윈도우의 위치/크기 및 속해있는 모니터의 활용 가능 영역 확보
+    const bounds = win.getBounds();
+    const currentDisplay = screen.getDisplayMatching(bounds);
+    const workArea = currentDisplay.workArea;
+
+    // 실질적으로 이미지가 그려지는 내부 캔버스의 현재 크기
+    const canvasW = bounds.width - SIDEBAR_WIDTH;
+    const canvasH = bounds.height - CHROME_HEIGHT;
+    if (canvasW <= 0 || canvasH <= 0) return;
+
+    const canvasAspectRatio = canvasW / canvasH;
+
+    let targetCanvasW = canvasW;
+    let targetCanvasH = canvasH;
+
+    if (canvasAspectRatio > imageAspectRatio) {
+      // 📐 [케이스 A] 캔버스가 가로로 더 뚱뚱함 (좌우 여백 잔존)
+      // -> 세로 길이를 기준으로 가로폭을 이미지 폭만큼 축소!
+      targetCanvasW = targetCanvasH * imageAspectRatio;
+    } else {
+      // 📐 [케이스 B] 캔버스가 세로로 더 길쭉함 (위아래 여백 잔존)
+      // -> 가로 너비를 기준으로 세로높이를 이미지 길이만큼 축소!
+      targetCanvasH = targetCanvasW / imageAspectRatio;
+    }
+
+    // 전체 윈도우의 최종 요구 규격 조립
+    let finalWinW = Math.round(targetCanvasW + SIDEBAR_WIDTH);
+    let finalWinH = Math.round(targetCanvasH + CHROME_HEIGHT);
+
+    // 🛡️ [유저 특명 최우선 순위] 최소 하한선 락다운! (1350 * 825)
+    finalWinW = Math.max(finalWinW, 1350);
+    finalWinH = Math.max(finalWinH, 825);
+
+    // 🧱 [안전장치] 현재 모니터 작업 영역을 초과하지 못하도록 상한 제어
+    if (finalWinW > workArea.width) {
+      finalWinW = workArea.width;
+      const derivedCanvasW = finalWinW - SIDEBAR_WIDTH;
+      const derivedCanvasH = derivedCanvasW / imageAspectRatio;
+      finalWinH = Math.round(derivedCanvasH + CHROME_HEIGHT);
+    }
+
+    if (finalWinH > workArea.height) {
+      finalWinH = workArea.height;
+      const derivedCanvasH = finalWinH - CHROME_HEIGHT;
+      const derivedCanvasW = derivedCanvasH * imageAspectRatio;
+      finalWinW = Math.round(derivedCanvasW + SIDEBAR_WIDTH);
+    }
+
+    // 🛡️ 상한 조정 과정에서 혹시 다시 최소선 밑으로 내려가지 않는지 2중 방어
+    finalWinW = Math.max(finalWinW, 1350);
+    finalWinH = Math.max(finalWinH, 825);
+
+    // 🧭 [중력 센터링] 기존 창의 정중앙 좌표를 물리적 회전축으로 유지하며 리사이즈
+    const centerX = bounds.x + Math.floor(bounds.width / 2);
+    const centerY = bounds.y + Math.floor(bounds.height / 2);
+
+    let newX = centerX - Math.floor(finalWinW / 2);
+    let newY = centerY - Math.floor(finalWinH / 2);
+
+    // 🗺️ 모니터 사각지대(화면 밖) 이탈 방어 로직
+    if (newX < workArea.x) newX = workArea.x;
+    if (newY < workArea.y) newY = workArea.y;
+    if (newX + finalWinW > workArea.x + workArea.width) {
+      newX = workArea.x + workArea.width - finalWinW;
+    }
+    if (newY + finalWinH > workArea.y + workArea.height) {
+      newY = workArea.y + workArea.height - finalWinH;
+    }
+
+    // 🚀 리사이즈 전격 시행 (트랜지션 효과 true)
+    win.setBounds({
+      x: newX,
+      y: newY,
+      width: finalWinW,
+      height: finalWinH
+    }, true);
   });
 
   mainWindow = createMainWindow();

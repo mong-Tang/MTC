@@ -138,6 +138,49 @@ export const TRANSLATIONS = {
     // Tooltips
     selectOneToViewList: '대상을 하나 선택해야 리스트를 볼 수 있습니다.',
     multiAddDisabledSplit: '분할 모드에서는 다중 추가가 비활성화됩니다.',
+
+    // 💎 TitleBar & Context Menu (Ribbon)
+    menuMove: '이동',
+    menuView: '보기',
+    menuEdit: '편집',
+    menuNextPage: '다음 페이지',
+    menuPrevPage: '이전 페이지',
+    menuNext10: '10 페이지 앞으로',
+    menuPrev10: '10 페이지 뒤로',
+    menuFirstPage: '첫 페이지',
+    menuLastPage: '마지막 페이지',
+    menuNextBook: '다음권 보기',
+    menuPrevBook: '이전권 보기',
+
+    menuFitAuto: '자동 맞춤',
+    menuFitActual: '1:1 맞춤',
+    menuFitWidth: '폭 맞춤',
+    menuFitHeight: '높이 맞춤',
+    menuSinglePage: '1쪽 보기',
+    menuDoublePage: '2쪽 보기',
+
+    menuThemeDefault: '기본설정',
+    menuThemeHwasa: '화사함',
+    menuThemeLight: '라이트',
+    menuThemeDark: '다크',
+    menuThemeSystem: '시스템',
+
+    menuDeletePage: '현재 페이지 삭제',
+    menuDeleteLeft: '왼쪽 페이지 삭제',
+    menuDeleteRight: '오른쪽 페이지 삭제',
+    menuInsertAfter: '페이지 다음에 추가',
+    menuEditLocked: '편집 (🔒 모드 잠금)',
+    menuNavigation: '내비게이션',
+    menuScaleSetting: '스케일 설정',
+    menuPageSetting: '페이지 설정',
+    menuTheme: '테마',
+
+    menuViewerOnly: '이 메뉴는 뷰어 전용입니다',
+    menuOpenFileFirst: '파일을 먼저 열어주세요',
+    menuExpand: '확장 메뉴',
+    winMinimize: '최소화',
+    winMaximize: '최대화',
+    winClose: '닫기',
   },
   en: {
     // Sidebar
@@ -276,5 +319,48 @@ export const TRANSLATIONS = {
     // Tooltips
     selectOneToViewList: 'Please select a single item to view its contents.',
     multiAddDisabledSplit: 'Multi-add is disabled in split mode.',
+
+    // 💎 TitleBar & Context Menu (Ribbon)
+    menuMove: 'Move',
+    menuView: 'View',
+    menuEdit: 'Edit',
+    menuNextPage: 'Next Page',
+    menuPrevPage: 'Prev Page',
+    menuNext10: '10 Pages Forward',
+    menuPrev10: '10 Pages Backward',
+    menuFirstPage: 'First Page',
+    menuLastPage: 'Last Page',
+    menuNextBook: 'Next Book',
+    menuPrevBook: 'Prev Book',
+
+    menuFitAuto: 'Auto Fit',
+    menuFitActual: '1:1 Fit',
+    menuFitWidth: 'Fit Width',
+    menuFitHeight: 'Fit Height',
+    menuSinglePage: '1-Page View',
+    menuDoublePage: '2-Page View',
+
+    menuThemeDefault: 'Default (Warm Mocha)',
+    menuThemeHwasa: 'Hwasa (Bright Beige)',
+    menuThemeLight: 'Light Mode',
+    menuThemeDark: 'Dark Mode',
+    menuThemeSystem: 'System Sync',
+
+    menuDeletePage: 'Delete Page',
+    menuDeleteLeft: 'Delete Left Page',
+    menuDeleteRight: 'Delete Right Page',
+    menuInsertAfter: 'Insert After Page',
+    menuEditLocked: 'Edit (🔒 Mode Locked)',
+    menuNavigation: 'Navigation',
+    menuScaleSetting: 'Scale Settings',
+    menuPageSetting: 'Page Settings',
+    menuTheme: 'Theme',
+
+    menuViewerOnly: 'This menu is viewer only',
+    menuOpenFileFirst: 'Please open a file first',
+    menuExpand: 'Expand Menu',
+    winMinimize: 'Minimize',
+    winMaximize: 'Maximize',
+    winClose: 'Close',
   }
 };

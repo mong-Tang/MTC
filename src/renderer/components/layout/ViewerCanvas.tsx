@@ -23,6 +23,7 @@ interface ViewerCanvasProps {
   onRecentCountClick?: () => void; // 🛸 [신규] 히스토리 탐사 시작 트리거!
   onSelectRecentItem?: (path: string) => void; // 🚀 [긴급 특명] 캔버스 내부 리스트 클릭 전송 파이프!
   language?: AppLanguage; // 🌍 [다국어] 현재 언어
+  isSidebarOpen?: boolean; // 📏 [신규] 사이드바 실시간 개폐 정보망!
 }
 
 export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({ 
@@ -30,7 +31,8 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
   imageFitMode = 'auto',
   showNavArrows = false, canGoPrev = false, canGoNext = false, onPrev, onNext,
   onRecentCountClick, onSelectRecentItem,
-  language = 'ko'
+  language = 'ko',
+  isSidebarOpen = false
 }) => {
   const t = TRANSLATIONS[language]; // ⚡ 실시간 사전 가동!
   
@@ -116,10 +118,73 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
     }
   };
 
+  // 📐 [특명: 더블 클릭 이미지 밀착 제어기]
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    // 🚀 활성 파일이 없거나 로딩 중이거나 이미지가 없는 상태면 스킵!
+    if (!hasActiveFile || isLoading || imgSrcList.length === 0) return;
+
+    // 🖼️ 캔버스 렌더링 영역에서 출력된 실물 이미지 태그들 즉각 수집!
+    const images = document.querySelectorAll('.viewer-render-area img') as NodeListOf<HTMLImageElement>;
+    if (images.length === 0) return;
+
+    // 모든 이미지가 로드 완료되어 naturalWidth를 품고 있는지 긴급 점검!
+    let isReady = true;
+    images.forEach((img) => {
+      if (!img.naturalWidth || img.naturalWidth <= 0) {
+        isReady = false;
+      }
+    });
+    if (!isReady) return;
+
+    let totalW = 0;
+    let maxH = 0;
+
+    if (viewMode === '2') {
+      // 📘 양면(Dual) 보기: 가로 너비는 합산, 세로 높이는 둘 중 최대값으로 결정!
+      images.forEach((img) => {
+        totalW += img.naturalWidth;
+        if (img.naturalHeight > maxH) {
+          maxH = img.naturalHeight;
+        }
+      });
+    } else {
+      // 📄 단면(Single) 보기
+      totalW = images[0].naturalWidth;
+      maxH = images[0].naturalHeight;
+    }
+
+    if (totalW <= 0 || maxH <= 0) return;
+
+    const imageAspectRatio = totalW / maxH;
+
+    // 📏 [초정밀 레이아웃 측정]
+    // 사이드바의 가변적 상태 및 리사이저 바(2px)를 포함한 실제 차지 면적을 DOM 기반으로 동적 스캔합니다!
+    const mainEl = document.querySelector('.app-main-content');
+    if (!mainEl) return;
+    
+    const rect = mainEl.getBoundingClientRect();
+    // 🛡️ [초정밀 하이브리드 보정] 
+    // 사이드바가 닫혀 있을 때는 CSS 애니메이션 잔상 및 DOM 오탐을 완벽히 차단하기 위해 무조건 '0'으로 집행합니다.
+    // 오직 사이드바가 당당하게 열려 있을 때만, 리사이저를 포함한 실시간 가변 너비(rect.left)를 계측합니다!
+    const sidebarWidth = isSidebarOpen ? Math.round(rect.left) : 0; 
+    const chromeHeight = Math.round(window.innerHeight - rect.height); // 전체 창 높이 대비 뷰어가 점유하지 않는 유휴 높이 (상태바 등)
+
+    // 🛸 메인 통신선 가동: "창을 이미지 핏에 맞게 강제 수축해줘!"
+    const appApi = (window as any).appApi;
+    if (appApi?.fitWindowToImage) {
+      appApi.fitWindowToImage({
+        imageAspectRatio,
+        sidebarWidth,
+        chromeHeight
+      });
+    }
+  };
+
   return (
     <main 
       className="app-main-content" 
       onClick={onClick}
+      onDoubleClick={handleDoubleClick} // 📐 [신성 탑재] 더블 클릭 자동 밀착 트리거!
       onContextMenu={handleContextMenu}
       style={{ 
         cursor: 'default',
@@ -265,6 +330,7 @@ export const ViewerCanvas: React.FC<ViewerCanvasProps> = ({
                     className="zen-recent-link" 
                     onClick={(e) => {
                       e.stopPropagation();
+                      // 🎯 [유저 특명] 중앙 배지는 원안대로 '화면 내 최근 목록 패널'을 여는 스위치 역할을 수행합니다.
                       setShowRecentPanel(prev => !prev);
                     }}
                   >
