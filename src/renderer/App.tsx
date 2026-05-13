@@ -601,7 +601,7 @@ function App() {
           console.log('[System] Matched Series Key:', currentKey);
           
           const siblings = (listResult.data as any[])
-            .filter((item) => (item.type === 'zip' || item.type === 'archive') && getSeriesKeyFromName(item.name) === currentKey)
+            .filter((item) => (item.type === 'zip' || item.type === 'archive' || item.type === 'image') && getSeriesKeyFromName(item.name) === currentKey)
             .sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
           
           console.log('[System] Filtered Library Items:', siblings);
@@ -615,8 +615,10 @@ function App() {
           console.error('[System] Failed to list folder items:', listResult.error);
         }
       } else {
-        // 단일 모드면 라이브러리엔 본인 하나만 존재감 있게 표시
-        setLibraryItems([{ name: fileName, path: filePath, type: 'zip' }]);
+        // ⚡ [버그 척살] 단일 모드라도 파일 확장자를 지능형으로 추론하여 올바른 타입 각인!
+        const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+        const targetType = ['zip','cbz','7z','rar'].includes(ext) ? 'archive' : (['png','jpg','jpeg','webp','gif','bmp','avif'].includes(ext) ? 'image' : 'zip');
+        setLibraryItems([{ name: fileName, path: filePath, type: targetType }]);
         setLibraryFolderName(null); // 단일 파일은 폴더 헤더 불필요
         setLibraryFolderPath(null);
       }

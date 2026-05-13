@@ -20,8 +20,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 🎯 [수평 정렬] 대형 박스를 화면 수평 정중앙에 배치 */
-  justify-content: center; /* 🚀 [수직 정렬] 대형 박스를 화면 수직 정중앙에 배치 */
+  align-items: center;
+  /* 🎯 [수평 정렬] 대형 박스를 화면 수평 정중앙에 배치 */
+  justify-content: center;
+  /* 🚀 [수직 정렬] 대형 박스를 화면 수직 정중앙에 배치 */
   backdrop-filter: none;
 }
 
@@ -32,8 +34,10 @@
   /* 🔒 [하드락] 부모 박스(1080px) 내부에서 자식 그리드와 완벽하게 결착! */
   gap: 20px;
   align-items: center;
-  height: 32px; /* 🚀 [압축] 헤더 높이 긴축 */
-  margin-bottom: 6px; /* 🧱 [밀착] 아래 그리드와의 간격을 좁혀 빈 공간 박멸 */
+  height: 32px;
+  /* 🚀 [압축] 헤더 높이 긴축 */
+  margin-bottom: 6px;
+  /* 🧱 [밀착] 아래 그리드와의 간격을 좁혀 빈 공간 박멸 */
   flex-shrink: 0;
   /* 🔒 압축 가드 */
   -webkit-app-region: no-drag !important;
@@ -201,8 +205,10 @@
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: 16px;
-  padding: 16px 24px; /* 🚀 [공간 절약] 상하단 패딩을 얇게 압축 */
-  box-shadow: var(--shadow-popup); /* 🔮 [통일] 테마가 지향하는 은은하고 깨끗한 최고급 그림자 상속 */
+  padding: 16px 24px;
+  /* 🚀 [공간 절약] 상하단 패딩을 얇게 압축 */
+  box-shadow: var(--shadow-popup);
+  /* 🔮 [통일] 테마가 지향하는 은은하고 깨끗한 최고급 그림자 상속 */
   backdrop-filter: blur(16px);
   box-sizing: border-box;
 
@@ -219,7 +225,8 @@
   /* 🧱 [유저 칙령] 비율 기반 본성을 타파하고, 420px 절대 고정값 규격으로 봉인! */
   grid-template-columns: 420px 1fr;
   /* 🔒 [상단바 동기화] 상단 그리드와 동일하게 콘텐츠 자동 팽창(Auto-Grow) 차단! */
-  grid-template-rows: 1fr; /* 🚀 [신규 투입] 그리드 행의 높이를 가용 공간 전체로 강제 확장! */
+  grid-template-rows: 1fr;
+  /* 🚀 [신규 투입] 그리드 행의 높이를 가용 공간 전체로 강제 확장! */
   gap: 20px;
   /* 🚀 [진화] 고정 높이(100%)를 버리고 남은 공간을 완벽 점령하는 자율 주행 모드! */
   flex: 1;
@@ -230,7 +237,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100%; /* 🧱 [구조 강화] 부모 그리드 셀의 높이를 완벽하게 계승하여 100% 지배! */
+  height: 100%;
+  /* 🧱 [구조 강화] 부모 그리드 셀의 높이를 완벽하게 계승하여 100% 지배! */
   min-height: 0;
 }
 
@@ -243,8 +251,10 @@
   padding: 16px;
   border: 1px solid rgba(var(--rgb-contrast), 0.06);
   border-radius: 16px;
-  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] 칙칙함의 근원인 12% 검정을 걷어내고, 스마트 인셋 투명도 주입! */
-  box-shadow: none; /* 🚀 [디클러터링] 박스 과다로 인한 눈의 피로감을 유발하는 안쪽 그림자 1단계 소탕! */
+  background: var(--bg-sidebar-inset);
+  /* 🎨 [유저 특명] 칙칙함의 근원인 12% 검정을 걷어내고, 스마트 인셋 투명도 주입! */
+  box-shadow: none;
+  /* 🚀 [디클러터링] 박스 과다로 인한 눈의 피로감을 유발하는 안쪽 그림자 1단계 소탕! */
 }
 
 /* 👑 [시각적 피날레] 설정의 마침표를 찍는 하단 고정형 액션 버퍼 */
@@ -316,7 +326,8 @@
 /* 📟 [터미널 센터] 부모 테마에 완벽히 동화되어 맑고 투명하게 녹아드는 실시간 글래스 인셋 스킨! */
 .converter-terminal-panel {
   margin-top: 16px;
-  background: rgba(var(--rgb-contrast), 0.03); /* ❄️ [유저 긴급 명령] 라이트의 순백을 침해하지 않는 초미세 투명 음영 */
+  background: rgba(var(--rgb-contrast), 0.03);
+  /* ❄️ [유저 긴급 명령] 라이트의 순백을 침해하지 않는 초미세 투명 음영 */
   border: 1px solid rgba(var(--rgb-contrast), 0.08);
   border-radius: 12px;
   padding: 12px;
@@ -358,7 +369,8 @@
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 0.78rem;
   line-height: 1.5;
-  color: var(--text-main); /* 💡 [동기화] 라이트에서는 선명한 딥블랙, 다크에선 퓨어 화이트로 실시간 변신! */
+  color: var(--text-main);
+  /* 💡 [동기화] 라이트에서는 선명한 딥블랙, 다크에선 퓨어 화이트로 실시간 변신! */
   background: transparent;
   /* 🔥 [단일화] 이중 상자 효과 제거를 위해 배경 투명 처리 */
   padding: 0;
@@ -383,9 +395,11 @@
 }
 
 .terminal-log-line:last-child {
-  color: var(--text-main); /* 🚀 [긴급 픽스] 하얀색 강제 코드를 불사지르고, 테마 연동 최선명 명조 폰트로 각인! */
+  color: var(--text-main);
+  /* 🚀 [긴급 픽스] 하얀색 강제 코드를 불사지르고, 테마 연동 최선명 명조 폰트로 각인! */
   opacity: 1;
-  font-weight: 700; /* ✨ 대신 굵기를 묵직하게 주어 최신 라인을 돋보이게 강조 */
+  font-weight: 700;
+  /* ✨ 대신 굵기를 묵직하게 주어 최신 라인을 돋보이게 강조 */
 }
 
 /* ✍️ [메시지 작성창] 사용자가 병합 시 메모를 남기는 입력 구역 */
@@ -484,7 +498,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: rgba(var(--rgb-contrast), 0.03); /* ✨ [초정밀 계층] 이중 겹침 영역에서 지저분하지 않도록 테마 투명도 결착 */
+  background: rgba(var(--rgb-contrast), 0.03);
+  /* ✨ [초정밀 계층] 이중 겹침 영역에서 지저분하지 않도록 테마 투명도 결착 */
   box-shadow: inset 0 1px 4px rgba(var(--rgb-contrast), 0.02);
 }
 
@@ -524,7 +539,8 @@
 }
 
 .converter-item-head-btn:hover {
-  color: var(--text-hover); /* 🎨 [테마 변수 연동] 호버 전용 극명 텍스트 탑재 */
+  color: var(--text-hover);
+  /* 🎨 [테마 변수 연동] 호버 전용 극명 텍스트 탑재 */
   background: rgba(var(--rgb-contrast), 0.06);
 }
 
@@ -659,7 +675,8 @@
   background: rgba(var(--rgb-contrast), 0.025);
   border-radius: 12px;
   border: 1px solid rgba(var(--rgb-contrast), 0.04);
-  box-shadow: none; /* 🚀 [완전 평면화] 웅덩이처럼 파이던 중첩 그림자를 완벽히 제거하여 숨 막히던 정신 산만함 종식! */
+  box-shadow: none;
+  /* 🚀 [완전 평면화] 웅덩이처럼 파이던 중첩 그림자를 완벽히 제거하여 숨 막히던 정신 산만함 종식! */
 }
 
 .converter-option-stack+.converter-option-stack {
@@ -686,8 +703,8 @@
   width: 100%;
   box-sizing: border-box;
   border-radius: 6px;
-  border: 1px solid rgba(var(--rgb-contrast), 0.1);
-  background: rgba(var(--rgb-contrast), 0.03);
+  border: 1px solid rgba(var(--rgb-contrast), 0.08);
+  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] '변환 옵션' 카드 바탕색과 물아일체 매칭! */
   color: var(--text-main);
   padding: 0 10px;
   font-family: var(--font-sans);
@@ -701,8 +718,8 @@
   width: 100%;
   box-sizing: border-box;
   border-radius: 6px;
-  border: 1px solid rgba(var(--rgb-contrast), 0.15);
-  background: rgba(var(--rgb-contrast), 0.04);
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] 콤보 박스도 카드 바탕색으로 매끄럽게 통합! */
   color: var(--text-main);
   padding: 0 10px;
   font-family: var(--font-sans);
@@ -766,16 +783,17 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px;
-  background: rgba(var(--rgb-contrast), 0.02);
+  background: var(--bg-sidebar-inset); /* 🎨 [유저 특명] 라디오 박스도 카드 바탕색으로 최종 대통합! */
   border-radius: 8px;
-  border: 1px solid rgba(var(--rgb-contrast), 0.04);
+  border: 1px solid rgba(var(--rgb-contrast), 0.08); /* 🎨 선 두께 및 선명도 맞춤 */
 }
 
 /* 📐 [공간 고효율 레이아웃] 긴 세로 목록을 콤팩트한 2열 구조로 압축! */
 .converter-option-radio-group.grid-2-col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  column-gap: 12px; /* 수평 여백 대폭 증설 */
+  column-gap: 12px;
+  /* 수평 여백 대폭 증설 */
   row-gap: 6px;
 }
 
@@ -900,12 +918,15 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background: var(--bg-floating-panel); /* 🎨 [수정] 하드코딩 된 블랙을 테마 플로팅 패널 변수로 교체! */
+  background: var(--bg-floating-panel);
+  /* 🎨 [수정] 하드코딩 된 블랙을 테마 플로팅 패널 변수로 교체! */
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(var(--rgb-contrast), 0.1); /* 🎨 [수정] 경계선 역시 테마에 따라 가변 적용 */
+  border: 1px solid rgba(var(--rgb-contrast), 0.1);
+  /* 🎨 [수정] 경계선 역시 테마에 따라 가변 적용 */
   border-radius: 12px;
   min-width: 180px;
-  box-shadow: var(--shadow-popup), inset 0 1px 1px rgba(var(--rgb-contrast), 0.03); /* 🎨 [수정] 그림자 역시 테마 연동 */
+  box-shadow: var(--shadow-popup), inset 0 1px 1px rgba(var(--rgb-contrast), 0.03);
+  /* 🎨 [수정] 그림자 역시 테마 연동 */
   padding: 6px;
   z-index: 1000;
   transform-origin: top right;
@@ -959,7 +980,8 @@
 
 .converter-dropdown-divider {
   height: 1px;
-  background: rgba(var(--rgb-contrast), 0.08); /* 🎨 [수정] 하드코딩을 테마 기반 가변 구분선으로 교체 */
+  background: rgba(var(--rgb-contrast), 0.08);
+  /* 🎨 [수정] 하드코딩을 테마 기반 가변 구분선으로 교체 */
   margin: 4px 0;
 }
 
@@ -986,15 +1008,18 @@
   z-index: 100 !important;
   background-color: var(--bg-base) !important;
   background-image: linear-gradient(rgba(255, 107, 0, 0.08), rgba(255, 107, 0, 0.08)) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important; /* 🚀 [유저 긴급 개혁] 구시대 40% 다크 진흙림자를 걷어내고 15%의 맑은 섀도우 적용! */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+  /* 🚀 [유저 긴급 개혁] 구시대 40% 다크 진흙림자를 걷어내고 15%의 맑은 섀도우 적용! */
   border-bottom: 1px solid rgba(255, 107, 0, 0.25) !important;
   border-left: 3px solid var(--accent) !important;
 }
 
 /* 🌳 [내부 계단식 트리 컨테이너] */
 .converter-nested-items-container {
-  background: rgba(var(--rgb-contrast), 0.035) !important; /* 🧱 [단차 완성] 모든 테마의 명암 비율과 100% 동기화되는 스마트 글래스 인셋 */
-  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.06) !important; /* 💎 칙칙한 블랙홀을 버리고 우아하고 섬세한 깊이 단차 부여 */
+  background: rgba(var(--rgb-contrast), 0.035) !important;
+  /* 🧱 [단차 완성] 모든 테마의 명암 비율과 100% 동기화되는 스마트 글래스 인셋 */
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.06) !important;
+  /* 💎 칙칙한 블랙홀을 버리고 우아하고 섬세한 깊이 단차 부여 */
   border-bottom: 1px solid rgba(var(--rgb-contrast), 0.04);
 }
 
@@ -1110,7 +1135,8 @@
 
 .gauge-track {
   fill: none;
-  stroke: rgba(var(--rgb-contrast), 0.15); /* 🚀 [가시성 상승] 어두운 백그라운드 위에서 트랙 선이 또렷이 보이도록 광량 확보 */
+  stroke: rgba(var(--rgb-contrast), 0.15);
+  /* 🚀 [가시성 상승] 어두운 백그라운드 위에서 트랙 선이 또렷이 보이도록 광량 확보 */
   stroke-width: 7;
   /* ⚖️ 안정감을 주는 선 두께 */
 }
@@ -1145,7 +1171,8 @@
 .gauge-percent-text {
   font-size: 0.8rem;
   font-weight: 800;
-  color: var(--text-main); /* 🌈 [동기화] 억지 블랙을 몰아내고 현존 테마 본연의 최고 명도 폰트와 연동! */
+  color: var(--text-main);
+  /* 🌈 [동기화] 억지 블랙을 몰아내고 현존 테마 본연의 최고 명도 폰트와 연동! */
   letter-spacing: -0.02em;
   text-shadow: 0 1px 2px rgba(var(--rgb-contrast), 0.05);
 }
@@ -1157,10 +1184,12 @@
   color: var(--accent);
   opacity: 0.9;
   margin-top: -1px;
-  background: rgba(var(--rgb-contrast), 0.08); /* 🎨 [동기화] 고정 블랙에서 테마 대비 인셋으로 변환 */
+  background: rgba(var(--rgb-contrast), 0.08);
+  /* 🎨 [동기화] 고정 블랙에서 테마 대비 인셋으로 변환 */
   padding: 1px 4px;
   border-radius: 4px;
 }
+
 /* ??? [����Ʈ�ڽ�] ���� �̸����� �������� ���� */
 .converter-lightbox-overlay {
   position: fixed;
@@ -1200,11 +1229,23 @@
 }
 
 @keyframes lightboxFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes lightboxScaleUp {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
