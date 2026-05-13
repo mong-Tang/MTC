@@ -1,5 +1,5 @@
 # PowerShell script to generate high-quality Windows Document Association Icon (.ico)
-# UPDATED DESIGN: Expanded App Logo Plate size for maximum brand visibility!
+# NEW UPDATE: Completely removed heavy blacks! Shited plates to Vibrant Brand Blue for supreme lightness!
 # Contains sizes: 256, 128, 64, 48, 32, 16
 
 $outputDir = "d:\my_Work\workspace\MTC\assets"
@@ -50,7 +50,7 @@ function Render-DocPng {
 
     [System.IO.File]::WriteAllText($htmlFile, $HtmlContent)
     
-    Write-Host "Rendering Doc Icon with EXPANDED Logo Plate: ${Size}x${Size}..."
+    Write-Host "Rendering Doc Icon (Vibrant Blue Tone): ${Size}x${Size}..."
     
     $args = @(
         "--headless",
@@ -74,7 +74,7 @@ function New-IcoFile {
         [string]$OutputPath
     )
     
-    Write-Host "Bundling expanded PNGs into $OutputPath..."
+    Write-Host "Bundling PNGs into $OutputPath..."
     
     $header = New-Object byte[] 6
     $header[2] = 1 # Type = 1
@@ -119,16 +119,14 @@ function New-IcoFile {
     $finalBytes.AddRange($imageData.ToArray())
     
     [System.IO.File]::WriteAllBytes($OutputPath, $finalBytes.ToArray())
-    Write-Host "Successfully created Expanded Logo Doc ICO!"
 }
 
 # ---------------------------------------------------------
-# 1. SVGs with Substantially Enlarged Mini App Plates
+# SVGs: Shifted to Lighter, Vibrant Royal/Sky Blue theme
 # ---------------------------------------------------------
 
 # Large Design (256, 128, 64)
-# Plate Width expanded from 76px to 108px! (Occupies serious space!)
-# Centered within the 108x108 box.
+# Swapped heavy slate black gradient for elegant Rich Royal Blue to Navy Deep Gradient!
 $largeInnerSvg = @"
     <defs>
         <filter id="pageShadow" x="-10%" y="-10%" width="130%" height="130%">
@@ -142,72 +140,69 @@ $largeInnerSvg = @"
             <stop offset="100%" stop-color="#e2e8f0"/>
         </linearGradient>
         <linearGradient id="plateBg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1e293b"/>
-            <stop offset="100%" stop-color="#0f172a"/>
+            <stop offset="0%" stop-color="#1e40af"/> <!-- Modern Royal Blue -->
+            <stop offset="100%" stop-color="#0f172a"/> <!-- Deep Navy -->
         </linearGradient>
     </defs>
     
-    <!-- 1. Paper (Right margin slightly wider, Shifted slightly to accommodate the large logo) -->
+    <!-- Paper Sheet -->
     <path d="M75 40 H150 L206 96 V220 C206 225.5 201.5 230 196 230 H85 C79.5 230 75 225.5 75 220 Z" 
           fill="url(#pageBg)" stroke="#cbd5e1" stroke-width="2" filter="url(#pageShadow)"/>
-    
-    <!-- 2. Folded Flap -->
     <path d="M150 40 V91 C150 93.8 152.2 96 155 96 H206 L150 40 Z" fill="#cbd5e1" opacity="0.95"/>
     
-    <!-- 3. Bold Text ZIP/CBZ -->
+    <!-- Bold Texts -->
     <text x="142" y="185" font-family="'Segoe UI', system-ui, sans-serif" font-weight="900" font-size="42" fill="#0284c7" text-anchor="middle" letter-spacing="1.5">ZIP</text>
     <text x="142" y="210" font-family="'Segoe UI', system-ui, sans-serif" font-weight="800" font-size="18" fill="#64748b" text-anchor="middle" letter-spacing="1">CBZ</text>
     
-    <!-- 4. HUGE Expanded App Icon Rounded Plate (108x108) -->
+    <!-- Royal Blue App Icon Plate (108x108) -->
     <g filter="url(#plateShadow)">
-        <rect x="15" y="15" width="108" height="108" rx="24" fill="url(#plateBg)" stroke="#334155" stroke-width="2" />
-        <!-- Centered open-sided icon scale raised to 0.38 -->
+        <rect x="15" y="15" width="108" height="108" rx="24" fill="url(#plateBg)" stroke="#3b82f6" stroke-width="1.5" />
         <g transform="translate(19, 13) scale(0.38)">
             <g transform="translate(0, -13)">
-                <polygon points="128,124 243,182 128,240 13,182" fill="none" stroke="#0284c7" stroke-width="15" stroke-linejoin="round" />
-                <path d="M128 100 V240" stroke="#0284c7" stroke-width="15" stroke-linecap="round" />
-                <polygon points="128,42 243,100 128,158 13,100" fill="none" stroke="#38bdf8" stroke-width="20" stroke-linejoin="round"/>
-                <circle cx="128" cy="100" r="22" fill="#38bdf8"/>
+                <polygon points="128,124 243,182 128,240 13,182" fill="none" stroke="#60a5fa" stroke-width="15" stroke-linejoin="round" />
+                <path d="M128 100 V240" stroke="#60a5fa" stroke-width="15" stroke-linecap="round" />
+                <polygon points="128,42 243,100 128,158 13,100" fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round"/>
+                <circle cx="128" cy="100" r="22" fill="#ffffff"/>
             </g>
         </g>
     </g>
 "@
 
 # Medium Design (48, 32)
-# Plate expanded to 16x16 (fills half the height!)
+# Uses Vibrant Sky Blue Plate for amazing lightness. White crisp logo.
 $mediumInnerSvg = @"
-    <!-- Adjusted Paper for larger logo -->
     <path d="M9 3 H21 L27 9 V28 C27 29.1 26.1 30 25 30 H11 C9.9 30 9 29.1 9 28 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4" />
     <path d="M21 3 V8.2 C21 8.7 21.3 9 21.8 9 H27 Z" fill="#cbd5e1" />
     <text x="18.5" y="23.5" font-family="system-ui, sans-serif" font-weight="900" font-size="8.5" fill="#0284c7" text-anchor="middle" letter-spacing="0.2">ZIP</text>
     
-    <!-- Massive 16x16 Plate -->
-    <rect x="1.5" y="1.5" width="16" height="16" rx="4" fill="#0f172a" stroke="#334155" stroke-width="0.8" />
-    <g transform="translate(1.5, 1.5)">
-        <!-- Highly Visible Stack -->
-        <polygon points="8,9.5 11,11.5 8,13.5 5,11.5" fill="none" stroke="#0284c7" stroke-width="0.9" stroke-linejoin="round" />
-        <line x1="8" y1="7" x2="8" y2="13.5" stroke="#0284c7" stroke-width="0.9" />
-        <polygon points="8,5 11,7 8,9 5,7" fill="none" stroke="#38bdf8" stroke-width="1.1" stroke-linejoin="round"/>
-        <circle cx="8" cy="7" r="0.9" fill="#38bdf8" />
+    <!-- Beautiful Vibrant Sky Blue Plate (15x15) -->
+    <rect x="1.5" y="1.5" width="15" height="15" rx="3.5" fill="#0284c7" />
+    <g transform="translate(1, 1)">
+        <polygon points="8,9.5 11,11.5 8,13.5 5,11.5" fill="none" stroke="#ffffff" stroke-width="0.8" stroke-linejoin="round" />
+        <line x1="8" y1="7.5" x2="8" y2="13.5" stroke="#ffffff" stroke-width="0.8" />
+        <polygon points="8,5 11,7 8,9 5,7" fill="none" stroke="#ffffff" stroke-width="1.0" stroke-linejoin="round"/>
+        <circle cx="8" cy="7" r="0.8" fill="#ffffff" />
     </g>
 "@
 
 # Tiny Design (16)
-# Plate expanded to 9x9 (nearly spans top-left quadrant)
+# Extremely crisp, lightweight 8x8 Sky Blue Plate with pure White vector markings.
 $tinyInnerSvg = @"
     <path d="M5 1 H11 L15 5 V15 C15 15.5 14.5 16 14 16 H6 C5.5 16 5 15.5 5 15 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8" />
     <path d="M11 1 V5 H15 Z" fill="#cbd5e1" />
     
-    <!-- Massive 9x9 Plate at 16px -->
-    <rect x="0.5" y="0.5" width="9" height="9" rx="2" fill="#0f172a" />
-    <!-- Cyan indicator -->
-    <polygon points="5,3.5 7.5,4.5 5,5.5 2.5,4.5" fill="#38bdf8" />
+    <!-- Sky Blue 8x8 Plate - Zero Blackness! -->
+    <rect x="0.5" y="0.5" width="8" height="8" rx="2.2" fill="#0284c7" />
+    <!-- Ultra Crisp White Stack -->
+    <polygon points="4.5,2.2 7.2,3.2 4.5,4.2 1.8,3.2" fill="#ffffff" />
+    <line x1="4.5" y1="3.2" x2="4.5" y2="6.5" stroke="#ffffff" stroke-width="0.8"/>
+    <polygon points="4.5,5.2 7.2,6.2 4.5,7.2 1.8,6.2" fill="none" stroke="#ffffff" stroke-width="0.8" />
     
     <rect x="7.5" y="11" width="5" height="2" fill="#0284c7" rx="0.5" />
 "@
 
 # ---------------------------------------------------------
-# 2. Generate All Components
+# Generate All Elements
 # ---------------------------------------------------------
 $renders = @()
 $renders += [PSCustomObject]@{Size=256; Path=(Render-DocPng -Size 256 -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256")}
@@ -217,10 +212,7 @@ $renders += [PSCustomObject]@{Size=48;  Path=(Render-DocPng -Size 48  -InnerSvgC
 $renders += [PSCustomObject]@{Size=32;  Path=(Render-DocPng -Size 32  -InnerSvgContent $mediumInnerSvg -ViewBox "0 0 32 32")}
 $renders += [PSCustomObject]@{Size=16;  Path=(Render-DocPng -Size 16  -InnerSvgContent $tinyInnerSvg -ViewBox "0 0 16 16")}
 
-# ---------------------------------------------------------
-# 3. Assemble Final Expanded ICO
-# ---------------------------------------------------------
 $finalIcoPath = Join-Path $outputDir "data-file-icon.ico"
 New-IcoFile -ImageObjects $renders -OutputPath $finalIcoPath
 
-Write-Host "Super-Expanded Brand Document Icon generated successfully!"
+Write-Host "Vibrant Blue Premium Doc Icon Packing completed!"
