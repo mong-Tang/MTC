@@ -7,7 +7,7 @@ $tempDir = "d:\my_Work\workspace\MTC\scratch"
 $edgePath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 
 # Function to render specific PNG sizes
-function Render-DocPng {
+function New-DocPng {
     param (
         [int]$Size,
         [string]$InnerSvgContent,
@@ -52,7 +52,7 @@ function Render-DocPng {
     
     Write-Host "Rendering Doc Icon (Vibrant Blue Tone): ${Size}x${Size}..."
     
-    $args = @(
+    $edgeArgs = @(
         "--headless",
         "--disable-gpu",
         "--screenshot=""$pngFile""",
@@ -63,7 +63,7 @@ function Render-DocPng {
         "file:///$($htmlFile.Replace('\', '/'))"
     )
     
-    Start-Process -FilePath $edgePath -ArgumentList $args -Wait -WindowStyle Hidden
+    Start-Process -FilePath $edgePath -ArgumentList $edgeArgs -Wait -WindowStyle Hidden
     return $pngFile
 }
 
@@ -186,31 +186,26 @@ $mediumInnerSvg = @"
 "@
 
 # Tiny Design (16)
-# Extremely crisp, lightweight 8x8 Sky Blue Plate with pure White vector markings.
+# Perfectly traces the user's minimalist sketch: Dark-outlined tall document with two solid blue horizontal bars!
 $tinyInnerSvg = @"
-    <path d="M5 1 H11 L15 5 V15 C15 15.5 14.5 16 14 16 H6 C5.5 16 5 15.5 5 15 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.8" />
-    <path d="M11 1 V5 H15 Z" fill="#cbd5e1" />
+    <!-- 1. Tall Plain Document Sheet (Crisp dark outline) -->
+    <rect x="3.5" y="1.5" width="11" height="13" fill="#ffffff" stroke="#111827" stroke-width="1.2" rx="0.5" />
     
-    <!-- Sky Blue 8x8 Plate - Zero Blackness! -->
-    <rect x="0.5" y="0.5" width="8" height="8" rx="2.2" fill="#0284c7" />
-    <!-- Ultra Crisp White Stack -->
-    <polygon points="4.5,2.2 7.2,3.2 4.5,4.2 1.8,3.2" fill="#ffffff" />
-    <line x1="4.5" y1="3.2" x2="4.5" y2="6.5" stroke="#ffffff" stroke-width="0.8"/>
-    <polygon points="4.5,5.2 7.2,6.2 4.5,7.2 1.8,6.2" fill="none" stroke="#ffffff" stroke-width="0.8" />
-    
-    <rect x="7.5" y="11" width="5" height="2" fill="#0284c7" rx="0.5" />
+    <!-- 2. Two Vibrant Blue Horizontal Stack Bars (Extremely legible at 16px!) -->
+    <rect x="1.5" y="3.5" width="9" height="2.2" fill="#0284c7" rx="0.4" />
+    <rect x="1.5" y="7.5" width="9" height="2.2" fill="#0284c7" rx="0.4" />
 "@
 
 # ---------------------------------------------------------
 # Generate All Elements
 # ---------------------------------------------------------
 $renders = @()
-$renders += [PSCustomObject]@{Size=256; Path=(Render-DocPng -Size 256 -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256")}
-$renders += [PSCustomObject]@{Size=128; Path=(Render-DocPng -Size 128 -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256")}
-$renders += [PSCustomObject]@{Size=64;  Path=(Render-DocPng -Size 64  -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256")}
-$renders += [PSCustomObject]@{Size=48;  Path=(Render-DocPng -Size 48  -InnerSvgContent $mediumInnerSvg -ViewBox "0 0 32 32")}
-$renders += [PSCustomObject]@{Size=32;  Path=(Render-DocPng -Size 32  -InnerSvgContent $mediumInnerSvg -ViewBox "0 0 32 32")}
-$renders += [PSCustomObject]@{Size=16;  Path=(Render-DocPng -Size 16  -InnerSvgContent $tinyInnerSvg -ViewBox "0 0 16 16")}
+$renders += [PSCustomObject]@{Size = 256; Path = (New-DocPng -Size 256 -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256") }
+$renders += [PSCustomObject]@{Size = 128; Path = (New-DocPng -Size 128 -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256") }
+$renders += [PSCustomObject]@{Size = 64; Path = (New-DocPng -Size 64  -InnerSvgContent $largeInnerSvg -ViewBox "0 0 256 256") }
+$renders += [PSCustomObject]@{Size = 48; Path = (New-DocPng -Size 48  -InnerSvgContent $mediumInnerSvg -ViewBox "0 0 32 32") }
+$renders += [PSCustomObject]@{Size = 32; Path = (New-DocPng -Size 32  -InnerSvgContent $mediumInnerSvg -ViewBox "0 0 32 32") }
+$renders += [PSCustomObject]@{Size = 16; Path = (New-DocPng -Size 16  -InnerSvgContent $tinyInnerSvg -ViewBox "0 0 16 16") }
 
 $finalIcoPath = Join-Path $outputDir "data-file-icon.ico"
 New-IcoFile -ImageObjects $renders -OutputPath $finalIcoPath
