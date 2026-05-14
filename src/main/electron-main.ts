@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, type MenuItemConstructorOptions } from 'electron';
@@ -57,6 +58,35 @@ let currentCanOpenPrevBook = false;
 let currentCanOpenNextBook = false;
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
+function getFilePathFromArgs(argv: string[]): string | null {
+  // Skip Electron's internal runner arguments
+  const startIndex = app.isPackaged ? 1 : 2;
+  for (let i = startIndex; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('-')) continue;
+    
+    // Skip common build scripts / runner configurations
+    if (arg === '.' || arg.includes('node_modules') || arg.endsWith('.js') || arg.endsWith('.ts')) {
+      continue;
+    }
+
+    try {
+      const resolvedPath = path.resolve(arg);
+      if (fs.existsSync(resolvedPath)) {
+        const stat = fs.statSync(resolvedPath);
+        if (stat.isFile() || stat.isDirectory()) {
+          return resolvedPath;
+        }
+      }
+    } catch {
+      // Continue checking other arguments
+    }
+  }
+  return null;
+}
+
+const initialFilePath = getFilePathFromArgs(process.argv);
+
 function persistAppSettings(partial: Partial<AppSettings>, context: string): void {
   void saveAppSettings(partial)
     .then((saved) => {
@@ -68,7 +98,7 @@ function persistAppSettings(partial: Partial<AppSettings>, context: string): voi
 }
 
 function createMainWindow(): BrowserWindow {
-  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const iconPath = path.join(app.getAppPath(), 'build', 'icon.ico');
   const appIcon = nativeImage.createFromPath(iconPath);
 
   const window = new BrowserWindow({
@@ -100,7 +130,7 @@ function createMainWindow(): BrowserWindow {
 }
 
 function createConverterWindow(): BrowserWindow {
-  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const iconPath = path.join(app.getAppPath(), 'build', 'icon.ico');
   const appIcon = nativeImage.createFromPath(iconPath);
 
   const window = new BrowserWindow({
@@ -250,7 +280,7 @@ function openConverterWindow(): void {
 }
 
 function createHelpWindow(): BrowserWindow {
-  const iconPath = path.join(app.getAppPath(), 'assets', 'mongTang_ico256X256.png');
+  const iconPath = path.join(app.getAppPath(), 'build', 'icon.ico');
   const appIcon = nativeImage.createFromPath(iconPath);
 
   const window = new BrowserWindow({
@@ -667,7 +697,7 @@ if (!gotSingleInstanceLock) {
   app.quit();
 }
 
-app.on('second-instance', () => {
+app.on('second-instance', (event, commandLine) => {
   if (!mainWindow) {
     return;
   }
@@ -677,6 +707,11 @@ app.on('second-instance', () => {
   }
 
   mainWindow.focus();
+
+  const filePath = getFilePathFromArgs(commandLine);
+  if (filePath) {
+    mainWindow.webContents.send('menu:open-recent', filePath);
+  }
 });
 
 app.whenReady().then(async () => {
@@ -689,6 +724,7 @@ app.whenReady().then(async () => {
   currentShowSidebarList = currentSettings.showSidebarList;
   setLocale(currentLocale);
   registerIpcHandlers();
+  ipcMain.handle('app:get-initial-file', () => initialFilePath);
   ipcMain.handle('app:get-settings', () => currentSettings);
   ipcMain.handle('app:update-settings', async (_event, partial: Partial<AppSettings>) => {
     currentSettings = await saveAppSettings(partial);

@@ -93,6 +93,7 @@ const api = {
   getAppSettings: () => ipcRenderer.invoke('app:get-settings') as Promise<AppSettings>,
   updateAppSettings: (settings: Partial<AppSettings>) => ipcRenderer.invoke('app:update-settings', settings) as Promise<AppSettings>,
   setAppLocale: (locale: Locale) => ipcRenderer.invoke('app:set-locale', locale) as Promise<boolean>,
+  getInitialFile: () => ipcRenderer.invoke('app:get-initial-file') as Promise<string | null>,
   updateViewerStatus: (statusText: string) => ipcRenderer.send('menu:update-viewer-status', statusText),
   updateRecentMenu: (items: MenuRecentItem[]) => ipcRenderer.send('menu:update-recent-items', items),
   updateFileEditState: (hasTransferClipboard: boolean) =>

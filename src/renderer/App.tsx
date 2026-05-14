@@ -82,6 +82,7 @@ function readSavedThemeMode(): ThemeMode {
 
 function App() {
   // 🚥 메인 레이아웃 및 콘텐츠 상태
+  const handleRecentItemSelectRef = useRef<((filePath: string) => Promise<void>) | null>(null);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isSidebarMenuOpen, setSidebarMenuOpen] = useState(false);
   const [isSettingsOpen, setSettingsOpen] = useState(false); // ⚙️ [신규] 통합 설정 모달 라이브 채널 개방
@@ -439,8 +440,8 @@ function App() {
   // 🚀 [백엔드 마스터 로더] 앱 구동 즉시 디스크 금고에서 최후의 설정을 가져와 투입합니다.
   useEffect(() => {
     const bootstrapSettings = async () => {
+      const appApi = (window as any).appApi;
       try {
-        const appApi = (window as any).appApi;
         if (!appApi?.getAppSettings) return;
         
         const settings = await appApi.getAppSettings();
@@ -460,6 +461,21 @@ function App() {
       } finally {
         // 🔓 복원 완료! 이제부터 발생하는 모든 변화는 기록할 가치가 있습니다.
         isSettingsLoadedRef.current = true;
+
+        // 🚀 OS 파일 연동 지원: 앱 초기 실행 시 인수로 넘어온 파일이 있다면 즉시 로드!
+        if (appApi?.getInitialFile) {
+          try {
+            const initialFile = await appApi.getInitialFile();
+            if (initialFile) {
+              console.log('[System] Detected initial file from OS arguments:', initialFile);
+              setTimeout(() => {
+                void handleRecentItemSelectRef.current?.(initialFile);
+              }, 0);
+            }
+          } catch (initErr) {
+            console.warn('[System] Failed to retrieve initial OS file args:', initErr);
+          }
+        }
       }
     };
     bootstrapSettings();
@@ -765,6 +781,24 @@ function App() {
       setIsAppLoading(false);
     }
   };
+
+  // 📡 [OS 연동 레퍼런스 주입] 렌더 시마다 최신 버전의 핸들러를 갱신하여 클로저 정체 방지
+  handleRecentItemSelectRef.current = handleRecentItemSelect;
+
+  // 🛰️ [중복 실행 연동] 앱이 이미 실행 중인 상태에서 OS 파일 더블클릭 시의 통신망 대기선 구축
+  useEffect(() => {
+    const appApi = (window as any).appApi;
+    if (!appApi?.onOpenRecent) return;
+
+    const unsubscribe = appApi.onOpenRecent((filePath: string) => {
+      console.log('[System] Multi-instance open file requested from OS:', filePath);
+      void handleRecentItemSelectRef.current?.(filePath);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // 📚 사이드바 라이브러리 항목 클릭 핸들러
   const handleLibraryItemClick = async (filePath: string) => {
