@@ -17,6 +17,8 @@ import { ConverterFooter } from './components/converter/ConverterFooter';
 
 import { ConverterPanelShell } from './components/converter/ConverterPanelShell';
 import { ConverterModal } from './components/modals/ConverterModal';
+import { SettingsModal } from './components/modals/SettingsModal';
+import { SidebarContextMenu } from './components/ui/SidebarContextMenu';
 
 import type { ConverterSourceItem } from './components/layout/ConverterPanel';
 import './index.css';
@@ -132,10 +134,58 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
       );
     }
   },
+  'SettingsModal': {
+    label: 'SettingsModal',
+    desc: '통합 환경 설정 팝업 모달',
+    render: () => {
+      const [open, setOpen] = useState(true);
+      const [theme, setTheme] = useState('default');
+      const [view, setView] = useState<'1' | '2'>('2');
+      const [fit, setFit] = useState<'auto' | 'actual' | 'width' | 'height'>('auto');
+      const [load, setLoad] = useState(true);
+      return (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={() => setOpen(true)} style={{ background: 'var(--accent)', border: 'none', color: '#FFF', padding: '12px 24px', borderRadius: '6px' }}>Open Settings</button>
+          <SettingsModal
+            isOpen={open}
+            onClose={() => setOpen(false)}
+            themeMode={theme}
+            onChangeThemeMode={setTheme}
+            viewMode={view}
+            onChangeViewMode={setView}
+            imageFitMode={fit}
+            onChangeImageFitMode={setFit}
+            loadSameBook={load}
+            onChangeLoadSameBook={setLoad}
+            onResetSidebarWidth={() => alert('Reset sidebar width')}
+            onResetNoticePos={() => alert('Reset notice pos')}
+          />
+        </div>
+      );
+    }
+  },
   'ContextMenu': {
     label: 'ContextMenu',
     desc: '우클릭 플로팅 컨텍스트 메뉴',
     render: () => <div style={{ height: '100vh' }}><ContextMenu show={true} x={50} y={50} onClose={()=>{}} imageFitMode="auto" onChangeImageFitMode={()=>{}} viewMode="2" onChangeViewMode={()=>{}} themeMode="dark" onChangeThemeMode={()=>{}} /></div>
+  },
+  'SidebarContextMenu': {
+    label: 'SidebarContextMenu',
+    desc: '좌측 사이드바 문서 우클릭 컨텍스트 메뉴',
+    render: () => (
+      <div style={{ height: '100vh', background: 'rgba(0,0,0,0.2)' }}>
+        <SidebarContextMenu
+          x={100}
+          y={100}
+          show={true}
+          onClose={() => {}}
+          onOpen={() => alert('문서 열기')}
+          onCloseDoc={() => alert('문서 닫기')}
+          onRemove={() => alert('목록에서 제거')}
+          onDeleteFile={() => alert('파일 완전 삭제')}
+        />
+      </div>
+    )
   },
   'EmptyState': {
     label: 'EmptyState',
