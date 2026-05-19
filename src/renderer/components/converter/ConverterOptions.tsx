@@ -37,6 +37,7 @@ interface ConverterOptionsProps {
   progressPercent: number;
   executionLogs: string[];
   isProcessing: boolean;
+  generatedItems: { name: string; isDirectory: boolean; path: string }[];
   language: AppLanguage; // 🌍 [전파 완료]
 }
 
@@ -70,10 +71,13 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
   progressPercent,
   executionLogs,
   isProcessing,
+  generatedItems,
   language
 }) => {
   const t = TRANSLATIONS[language]; // ⚡ 로컬 번역기 기동!
   const terminalRef = useRef<HTMLDivElement>(null);
+
+
 
   // 📜 [자동 스크롤 매직] 로그가 들어올 때마다 자동으로 최하단으로 스르륵 스크롤
   useEffect(() => {
@@ -139,6 +143,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
         <h3 className="converter-section-title">{t.optionsTitle}</h3>
       </div>
       <div className="converter-option-stack">
+        {mode !== 'unzip' && (
         <label className="converter-option-row">
           <span>{t.outputFormat}</span>
           <select
@@ -150,6 +155,8 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             <option value="cbz">CBZ (.cbz)</option>
           </select>
         </label>
+        )}
+        {mode !== 'unzip' && (
         <label className="converter-option-row">
           <span>{t.outputFilename}</span>
           <div className="converter-option-path-row">
@@ -162,6 +169,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             <span className="converter-option-suffix">.{outputFormat}</span>
           </div>
         </label>
+        )}
 
         {/* 🎯 [긴급 투입] 병합 모드 전용: 압축 해제 여부를 결정하는 하이레벨 선택 시스템! */}
         {mode === 'merge' && (
@@ -273,6 +281,56 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             </button>
           </div>
         </label>
+
+        {/* 📂 [대상 경로 열기 버튼] */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+          <button
+            type="button"
+            className="converter-mini-btn"
+            style={{ width: '100%', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.76rem' }}
+            onClick={async () => {
+              if (!outputDirectory) return;
+              const appApi = (window as any).appApi;
+              if (appApi && typeof appApi.openPath === 'function') {
+                await appApi.openPath(outputDirectory);
+              }
+            }}
+            disabled={!outputDirectory}
+          >
+            📂 {t.openOutputDir}
+          </button>
+        </div>
+
+        {/* 📁 [출력 폴더 파일 목록 감시창] */}
+        <div className="converter-output-watcher">
+          <div className="converter-output-watcher-header">
+            <span>{language === 'ko' ? '📁 생성된 파일/폴더 목록' : '📁 Generated Files & Folders'}</span>
+          </div>
+          <div className="converter-output-watcher-body">
+            {generatedItems.length === 0 ? (
+              <div className="converter-watcher-empty">{t.emptyOutputDir}</div>
+            ) : (
+              generatedItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="converter-watcher-item"
+                  onClick={async () => {
+                    const appApi = (window as any).appApi;
+                    if (appApi && typeof appApi.openPath === 'function') {
+                      await appApi.openPath(item.path);
+                    }
+                  }}
+                  title={item.path}
+                >
+                  <span className="converter-watcher-item-icon">
+                    {item.isDirectory ? '📁' : '📄'}
+                  </span>
+                  <span className="converter-watcher-item-name">{item.name}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
       {mode === 'merge' ? (
         <div className="converter-option-stack">
@@ -325,7 +383,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             </div>
           </div>
         </div>
-      ) : (
+      ) : mode === 'split' ? (
         <div className="converter-option-stack" style={{ padding: '11px 13px' }}>
           <div className="converter-option-block">
             <p className="converter-option-block-label">{t.splitCriteria}</p>
@@ -390,7 +448,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
             </>
           )}
         </div>
-      )}
+      ) : null}
 
 
     </section>

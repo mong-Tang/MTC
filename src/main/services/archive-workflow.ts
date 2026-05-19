@@ -352,3 +352,67 @@ export async function mergeArchivesWorkflow(
 }
 
 
+/**
+ * 📦 [압축 해제 엔진] 하나 이상의 아카이브 파일들을 지정된 출력 폴더에 해제합니다.
+ * 각 아카이브는 파일명을 기반으로 한 하위 폴더에 해제됩니다.
+ */
+export async function extractArchiveWorkflow(
+  sourcePaths: string[],
+  outputDirectory: string,
+  onProgress?: (event: { percent: number; message: string }) => void
+): Promise<{ logs: string[]; extractedDirs: string[] }> {
+  const logs: string[] = [`[Extract Started] Total sources: ${sourcePaths.length}`];
+  const extractedDirs: string[] = [];
+
+  const report = (percent: number, message: string) => {
+    logs.push(message);
+    if (onProgress) {
+      onProgress({ percent: Math.min(Math.max(0, percent), 100), message });
+    }
+  };
+
+  try {
+    report(2, `[Stage 1] Extracting ${sourcePaths.length} archive(s) to: ${outputDirectory}`);
+
+    for (let i = 0; i < sourcePaths.length; i++) {
+      const src = sourcePaths[i];
+      const baseName = path.basename(src, path.extname(src));
+      const startPercent = Math.floor(5 + (90 * i) / sourcePaths.length);
+      const endPercent = Math.floor(5 + (90 * (i + 1)) / sourcePaths.length);
+
+      report(startPercent, `-> Extracting [${i + 1}/${sourcePaths.length}]: ${path.basename(src)}`);
+
+      // 각 아카이브별 하위 폴더 생성 (중복 방지)
+      let extractDir = path.join(outputDirectory, baseName);
+      let suffix = 0;
+      while (true) {
+        try {
+          await fs.access(extractDir);
+          suffix++;
+          extractDir = path.join(outputDirectory, `${baseName}_${suffix}`);
+        } catch (err: any) {
+          if (err.code === 'ENOENT') break;
+          throw err;
+        }
+      }
+
+      await fs.mkdir(extractDir, { recursive: true });
+
+      try {
+        await run7zCommand(['x', src, `-o${extractDir}`, '-y']);
+        report(endPercent, `   [OK] Extracted to: ${path.basename(extractDir)}`);
+        extractedDirs.push(extractDir);
+      } catch (e: any) {
+        report(endPercent, `   [Warning] Failed to extract ${path.basename(src)}: ${e.message}`);
+      }
+    }
+
+    report(100, `[Complete] All archives extracted successfully.`);
+    return { logs, extractedDirs };
+
+  } catch (error: any) {
+    const errMsg = error.message || String(error);
+    logs.push(`[Fatal Error] ${errMsg}`);
+    throw new AppError('UNKNOWN', logs.join('\n'));
+  }
+}

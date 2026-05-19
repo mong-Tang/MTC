@@ -8,7 +8,7 @@ import type { SerializableAppError } from '../../shared/ipc/ipc-result';
 import type { UpsertRecentInput } from '../../shared/stores/reading-state';
 import en from '../../locales/en.json';
 import ko from '../../locales/ko.json';
-import { applyZipEditInTemp, convertArchiveToZipWorkflow, mergeArchivesWorkflow, type ZipEditRequest } from '../services/archive-workflow';
+import { applyZipEditInTemp, convertArchiveToZipWorkflow, mergeArchivesWorkflow, extractArchiveWorkflow, type ZipEditRequest } from '../services/archive-workflow';
 import { getZipPage, openZip } from '../services/zip-index-service';
 import { getProgress, getRecentItems, removeRecentItemByZipPath, setProgress, upsertRecentItem } from '../stores/reading-state-store';
 
@@ -249,11 +249,12 @@ export function registerIpcHandlers(): void {
     return result.filePaths;
   });
 
-  ipcMain.handle('folder:open-dialog', async (_event, title: string) => {
+  ipcMain.handle('folder:open-dialog', async (_event, title: string, defaultPath?: string) => {
     const focusedWindow = BrowserWindow.getFocusedWindow();
     const dialogOptions: Electron.OpenDialogOptions = {
       title,
-      properties: ['openDirectory']
+      properties: ['openDirectory'],
+      defaultPath
     };
     const result = focusedWindow 
       ? await dialog.showOpenDialog(focusedWindow, dialogOptions)
@@ -264,6 +265,68 @@ export function registerIpcHandlers(): void {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('folder:open-path', async (_event, folderPath: string) => {
+    try {
+      if (!folderPath) {
+        throw new AppError('UNKNOWN', 'Folder path is empty.');
+      }
+      
+      const normalizedPath = path.normalize(folderPath);
+      let targetToOpen = normalizedPath;
+
+      try {
+        await fs.stat(normalizedPath);
+      } catch (err) {
+        // 경로가 존재하지 않는 경우
+        const ext = path.extname(normalizedPath);
+        if (!ext) {
+          // 폴더 경로인 경우 생성
+          await fs.mkdir(normalizedPath, { recursive: true });
+        } else {
+          // 파일 경로인 경우 부모 폴더 생성 후 부모 폴더를 열도록 설정
+          const parentDir = path.dirname(normalizedPath);
+          await fs.mkdir(parentDir, { recursive: true });
+          targetToOpen = parentDir;
+        }
+      }
+
+      const errMsg = await shell.openPath(targetToOpen);
+      if (errMsg) {
+        console.error(`[IPC] Failed to open path: ${targetToOpen}. Error: ${errMsg}`);
+        throw new AppError('UNKNOWN', errMsg);
+      }
+      return { ok: true } as const;
+    } catch (error) {
+      console.error('[IPC] openPath error:', error);
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
+  ipcMain.handle('folder:get-contents', async (_event, folderPath: string) => {
+    try {
+      if (!folderPath) {
+        return { ok: true, data: [] } as const;
+      }
+      const entries = await fs.readdir(folderPath, { withFileTypes: true });
+      const items = entries.map((entry) => ({
+        name: entry.name,
+        isDirectory: entry.isDirectory(),
+        path: path.join(folderPath, entry.name)
+      }));
+      // 폴더가 우선 정렬되고, 그 뒤 파일들이 오도록 자연 정렬 적용
+      const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+      items.sort((a, b) => {
+        if (a.isDirectory !== b.isDirectory) {
+          return a.isDirectory ? -1 : 1;
+        }
+        return collator.compare(a.name, b.name);
+      });
+      return { ok: true, data: items } as const;
+    } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
   });
 
   ipcMain.handle('folder:list-items', async (_event, folderPath: string) => {
@@ -472,7 +535,12 @@ export function registerIpcHandlers(): void {
         ok: true,
         data: {
           outputPath: destinationPath,
-          logs: [...logs, ...workflowResult.logs]
+          logs: [...logs, ...workflowResult.logs],
+          generatedItems: [{
+            name: path.basename(destinationPath),
+            isDirectory: false,
+            path: destinationPath
+          }]
         }
       } as const;
 
@@ -510,10 +578,55 @@ export function registerIpcHandlers(): void {
         ok: true,
         data: {
           outputPath: destinationPath,
-          logs: [...logs, ...workflowResult.logs]
+          logs: [...logs, ...workflowResult.logs],
+          generatedItems: [{
+            name: path.basename(destinationPath),
+            isDirectory: false,
+            path: destinationPath
+          }]
         }
       } as const;
     } catch (error) {
+      return { ok: false, error: toSerializableError(error) } as const;
+    }
+  });
+
+  ipcMain.handle('converter:extract', async (_event, sourcePaths: string[], outputDirectory: string) => {
+    try {
+      if (!sourcePaths || sourcePaths.length === 0) {
+        throw new AppError('UNKNOWN', 'No source files selected for extraction.');
+      }
+
+      await ensureDirectoryExists(outputDirectory);
+
+      const logs: string[] = [
+        `[Extract Engine Init]`,
+        `[Items Count] ${sourcePaths.length}`
+      ];
+
+      const workflowResult = await extractArchiveWorkflow(
+        sourcePaths,
+        outputDirectory,
+        (event) => {
+          _event.sender.send('converter:progress', event);
+        }
+      );
+
+      return {
+        ok: true,
+        data: {
+          outputPath: outputDirectory,
+          logs: [...logs, ...workflowResult.logs],
+          generatedItems: workflowResult.extractedDirs.map(d => ({
+            name: path.basename(d),
+            isDirectory: true,
+            path: d
+          }))
+        }
+      } as const;
+
+    } catch (error) {
+      console.error('[IPC] Converter Extract Failed:', error);
       return { ok: false, error: toSerializableError(error) } as const;
     }
   });

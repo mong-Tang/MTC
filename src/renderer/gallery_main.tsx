@@ -95,6 +95,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
               progressPercent={0}
               executionLogs={[]}
               isProcessing={false}
+              generatedItems={[]}
               language="ko"
             />
           </section>
@@ -166,9 +167,10 @@ const App = () => {
 
   // 🕵️‍♀️ Case A: Dynamic Render In-Isolation
   if (targetComp && COMPONENTS[targetComp]) {
+    const ComponentToRender = COMPONENTS[targetComp].render;
     return (
       <div style={{ background: 'var(--bg-base)', minHeight: '100vh', color: 'var(--text-main)' }}>
-         {COMPONENTS[targetComp].render()}
+         <ComponentToRender />
       </div>
     );
   }

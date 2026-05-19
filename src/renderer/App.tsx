@@ -346,6 +346,33 @@ function App() {
       const openResult = await appApi.openZip(filePath);
       if (openResult.ok) {
         const loadedPages = openResult.data.pages;
+
+        // 🚨 [자동 리다이렉트] 파일 내부에 이미지가 없을 경우(일반 데이터/텍스트 압축파일), 뷰어가 아닌 컨버터(압축해제) 모드로 즉시 이관!
+        if (loadedPages.length === 0) {
+          const goUnzip = window.confirm(
+            '이 아카이브에는 이미지 파일이 없습니다.\n(일반 데이터가 포함된 압축 파일로 보입니다.)\n\n[압축 해제] 모드로 이동하여 파일을 푸시겠습니까?'
+          );
+          
+          if (goUnzip) {
+            const fileName = await appApi.getBasename(filePath);
+            setConverterSourceItems([{
+              path: filePath,
+              name: fileName,
+              type: 'zip',
+              totalPages: 0,
+              sizeBytes: openResult.data.meta.totalUncompressedSizeBytes || 0
+            }]);
+            
+            setConverterMode('unzip');
+            setWorkspaceMode('converter');
+          }
+          
+          setHasActiveFile(false);
+          setZipPath(null);
+          setSelectedPath(null);
+          return false;
+        }
+
         setPages(loadedPages);
         
         // 🎯 착륙 지점 보정: 명시된 인덱스 > 저장된 마지막 페이지 > 0
@@ -363,6 +390,33 @@ function App() {
         setHasActiveFile(true);
         return true;
       } else {
+        const isNoImage = openResult.error?.code === 'ZIP_NO_IMAGE' || openResult.error?.message?.includes('No supported image');
+        
+        if (isNoImage) {
+          const goUnzip = window.confirm(
+            '이 아카이브에는 뷰어가 지원하는 이미지 파일이 없습니다.\n(일반 데이터/문서가 포함된 압축 파일로 보입니다.)\n\n[압축 해제] 모드로 이동하여 파일을 푸시겠습니까?'
+          );
+          
+          if (goUnzip) {
+            const fileName = await appApi.getBasename(filePath);
+            setConverterSourceItems([{
+              path: filePath,
+              name: fileName,
+              type: 'zip',
+              totalPages: 0,
+              sizeBytes: 0
+            }]);
+            
+            setConverterMode('unzip');
+            setWorkspaceMode('converter');
+          }
+          
+          setHasActiveFile(false);
+          setZipPath(null);
+          setSelectedPath(null);
+          return false;
+        }
+
         alert(`[에러] 파일을 열 수 없습니다.\n${openResult.error?.message || 'Unknown error'}`);
         return false;
       }

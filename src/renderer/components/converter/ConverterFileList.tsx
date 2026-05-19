@@ -602,14 +602,14 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     const isOpen = targetPath ? viewingInternalPath === targetPath : false;
 
     // 🎯 실행 가능 조건 규격화
-    const canToggleList = mode === 'split' && isSingle && !!targetPath;
+    const canToggleList = (mode === 'split' || mode === 'unzip') && isSingle && !!targetPath;
 
     return (
       <>
         <div className="converter-dropdown-title">{t.editList}</div>
 
         {/* 🔮 [컨텍스트 고정] 숨김 대신 '비활성화' 처리하여 항상 유저 인지 가능하도록 구현! */}
-        {mode === 'split' && (
+        {(mode === 'split' || mode === 'unzip') && (
           <>
             <button
               className="converter-dropdown-item"
@@ -657,7 +657,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
         </button>
 
         {/* 🗑️ [중복 제거] 분할 모드에서는 Clear 버튼만으로 충분하므로 Delete(Redundant) 숨김 처리! */}
-        {mode !== 'split' && (
+        {mode !== 'split' && mode !== 'unzip' && (
           <>
             <div className="converter-dropdown-divider" />
             <button
@@ -689,7 +689,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
     >
       <div className="converter-file-list-header">
         <h3 className="converter-section-title">
-          {mode === 'merge' ? t.inputFileList : (
+          {mode === 'merge' ? t.inputFileList : mode === 'unzip' ? t.unzipFileList : (
             <>
               <span
                 title={activeViewingItem?.name}
@@ -739,13 +739,13 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
           onContextMenu={(e) => handleOpenContextMenu(e)}
         >
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '4px' }}>
-            {mode === 'merge' ? t.hintAddSequential : t.hintSelectOneFile}
+            {mode === 'merge' ? t.hintAddSequential : mode === 'unzip' ? t.hintSelectUnzipFiles : t.hintSelectOneFile}
           </p>
           <EmptyStateHelpLine>- {t.hintSidebarAddAll}</EmptyStateHelpLine>
           <EmptyStateHelpLine>- {t.hintSidebarClick}</EmptyStateHelpLine>
           <EmptyStateHelpLine>- {t.hintAddExplorer}</EmptyStateHelpLine>
           <EmptyStateHelpLine>- {t.hintRemoveItem}</EmptyStateHelpLine>
-          {mode === 'split' && (
+          {(mode === 'split' || mode === 'unzip') && (
             <EmptyStateHelpLine style={{ color: 'var(--accent)', fontWeight: 600 }}>
               - {t.hintDoubleClickTree}
             </EmptyStateHelpLine>
@@ -784,10 +784,10 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
                 <React.Fragment key={item.path}>
                   <div
                     className={`converter-item-row ${isSelected ? 'selected' : ''} ${isExpanded ? 'is-expanded-parent' : ''}`}
-                    title={language === 'ko' ? `클릭하여 선택 (더블클릭하여 ${mode === 'split' ? '내용물 열기/닫기' : '제거'})` : `Click to select (Double-click to ${mode === 'split' ? 'open/close contents' : 'remove'})`}
+                    title={language === 'ko' ? `클릭하여 선택 (더블클릭하여 ${mode === 'split' || mode === 'unzip' ? '내용물 열기/닫기' : '제거'})` : `Click to select (Double-click to ${mode === 'split' || mode === 'unzip' ? 'open/close contents' : 'remove'})`}
                     onClick={(e) => handleRowClick(item.path, e)}
                     onDoubleClick={() => {
-                      if (mode === 'split') {
+                      if (mode === 'split' || mode === 'unzip') {
                         void handleViewInternalList(item.path);
                       } else {
                         onRemoveItems([item.path]);
@@ -927,7 +927,7 @@ export const ConverterFileList: React.FC<ConverterFileListProps> = ({
               style={{ borderRadius: '8px', height: '27px' }}
             >
               <span className="btn-label-text" style={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                {isProcessing ? t.stop : mode === 'merge' ? t.runMerge : t.runSplit}
+                {isProcessing ? t.stop : mode === 'merge' ? t.runMerge : mode === 'unzip' ? t.runUnzip : t.runSplit}
               </span>
             </button>
           </div>

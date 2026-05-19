@@ -76,6 +76,7 @@ interface ImageOpenResult {
 interface ConverterResult {
   outputPath: string;
   logs: string[];
+  generatedItems?: { name: string; isDirectory: boolean; path: string }[];
 }
 
 type ZipEditRequest =
@@ -115,7 +116,9 @@ const api = {
   openFileDialog: (options: OpenFileDialogOptions) => ipcRenderer.invoke('file:open-dialog', options) as Promise<string | null>,
   openFileDialogMulti: (options: OpenFileDialogOptions) =>
     ipcRenderer.invoke('file:open-dialog-multi', options) as Promise<string[] | null>,
-  openFolderDialog: (title: string) => ipcRenderer.invoke('folder:open-dialog', title) as Promise<string | null>,
+  openFolderDialog: (title: string, defaultPath?: string) => ipcRenderer.invoke('folder:open-dialog', title, defaultPath) as Promise<string | null>,
+  openPath: (folderPath: string) => ipcRenderer.invoke('folder:open-path', folderPath) as Promise<IpcResult<void>>,
+  getFolderContents: (folderPath: string) => ipcRenderer.invoke('folder:get-contents', folderPath) as Promise<IpcResult<{ name: string; isDirectory: boolean; path: string }[]>>,
   getDirectory: (filePath: string) => ipcRenderer.invoke('path:dirname', filePath) as Promise<string>,
   getBasename: (filePath: string) => ipcRenderer.invoke('path:basename', filePath) as Promise<string>,
   getFileSize: (filePath: string) => ipcRenderer.invoke('path:file-size', filePath) as Promise<number>,
@@ -172,6 +175,8 @@ const api = {
     ipcRenderer.invoke('converter:to-zip', sourcePath, outputDirectory, targetExtension, customFilename) as Promise<IpcResult<ConverterResult>>,
   mergeFiles: (sourcePaths: string[], outputDirectory: string, outputFilename: string, targetExtension?: string, mergeStrategy?: string) =>
     ipcRenderer.invoke('converter:merge-files', sourcePaths, outputDirectory, outputFilename, targetExtension, mergeStrategy) as Promise<IpcResult<ConverterResult>>,
+  extractArchive: (sourcePaths: string[], outputDirectory: string) =>
+    ipcRenderer.invoke('converter:extract', sourcePaths, outputDirectory) as Promise<IpcResult<ConverterResult>>,
   isFullscreen: () => ipcRenderer.invoke('window:is-fullscreen') as Promise<boolean>,
   toggleFullscreen: () => ipcRenderer.invoke('window:toggle-fullscreen') as Promise<boolean>,
   exitFullscreen: () => ipcRenderer.invoke('window:exit-fullscreen') as Promise<boolean>,

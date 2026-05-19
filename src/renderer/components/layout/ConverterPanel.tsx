@@ -7,7 +7,7 @@ import { TRANSLATIONS } from '../../i18n';
 import type { AppLanguage } from '../../i18n';
 // 💡 Toolbar has been elevated to system Titlebar.
 
-export type ConverterMode = 'merge' | 'split';
+export type ConverterMode = 'merge' | 'split' | 'unzip';
 export type CompressionPolicy = 'auto' | 'store' | 'compress';
 export type SplitCriterion = 'pages' | 'sizeMb' | 'custom';
 export type OutputNamePattern = 'name-index' | 'index-name' | 'name_underscore_index' | 'index_underscore_name';
@@ -67,6 +67,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const [executionLogs, setExecutionLogs] = useState<string[]>([]); // 📝 실시간 로깅 스트림
   const [elapsedTime, setElapsedTime] = useState(0); // ⏱️ [정밀 타이머] 작업 경과 시간 실시간 트래킹
   const [processingMode, setProcessingMode] = useState<ConverterMode | null>(null); // 🚦 [모드 고유 인식표] 어느 화면에서 작업을 시작했는지 박제
+  const [generatedItems, setGeneratedItems] = useState<{ name: string; isDirectory: boolean; path: string }[]>([]);
 
   // ⏱️ [실시간 타이머 박동] 작업 시작 시 1초마다 째깍째깍!
   useEffect(() => {
@@ -87,6 +88,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     setExecutionLogs([]);
     setProgressPercent(0);
     setElapsedTime(0);
+    setGeneratedItems([]);
   }, [mode]);
 
   // 🌍 [언어 동적 동기화] 사용자가 파일명을 별도로 수정하지 않고 디폴트 상태인 경우, 설정 언어가 바뀌면 그에 맞춰 기본 파일명 예시도 자동 번역!
@@ -135,7 +137,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [outputDirectory, sourceItems]);
+  }, [sourceItems]); // 🐛 [버그 픽스] outputDirectory가 변경될 때마다 다시 원본 폴더로 덮어쓰는 문제 해결을 위해 의존성에서 제거!
 
   // 🧩 [분할 타겟 동기화 엔진] 분할 모드에서 대상 파일이 등록되면, 해당 아카이브의 실측 '총 페이지 수'를 즉각 UI 상태에 자동 연동!
   useEffect(() => {
@@ -153,7 +155,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   const handlePickOutputDirectory = async () => {
     try {
       const appApi = (window as any).appApi;
-      const selected = await appApi.openFolderDialog(t.selectOutputDirTitle);
+      const selected = await appApi.openFolderDialog(t.selectOutputDirTitle, outputDirectory);
       if (!selected) return;
       setOutputDirectory(selected);
     } catch (error) {
@@ -195,7 +197,8 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     hasOutputDirectory &&
     (splitCriterion !== 'custom' || hasValidCustomCutPoints);
   const isMergeReady = hasSourceItems && hasOutputName && hasOutputDirectory;
-  const isExecuteEnabled = (mode === 'merge' ? isMergeReady : isSplitReady) && !isProcessing;
+  const isUnzipReady = hasSourceItems && hasOutputDirectory;
+  const isExecuteEnabled = (mode === 'merge' ? isMergeReady : mode === 'unzip' ? isUnzipReady : isSplitReady) && !isProcessing;
 
   const disabledReason = isProcessing
     ? t.conversionInProgress
@@ -222,7 +225,9 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
       ? `[${t.awaiting}] ${disabledReason}`
       : mode === 'merge'
         ? t.combinesToSingle.replace('{{format}}', outputFormat)
-        : t.splitsLargeTo.replace('{{hint}}', splitHint).replace('{{format}}', outputFormat);
+        : mode === 'unzip'
+          ? t.extractsToFolder
+          : t.splitsLargeTo.replace('{{hint}}', splitHint).replace('{{format}}', outputFormat);
 
     onUpdateStatusText(msg);
   }, [
@@ -244,10 +249,11 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
     setProcessingMode(mode); // 📡 현재 동작 중인 모드 낙인 찍기!
     setProgressPercent(0); // 게이지 초기화
     setExecutionLogs([]); // 로그 리셋
+    setGeneratedItems([]); // 📁 신규 결과물 목록 초기화
     const startTime = Date.now();
 
     if (onUpdateStatusText) {
-      onUpdateStatusText(t.runningTask.replace('{{mode}}', mode === 'merge' ? t.merge : t.split));
+      onUpdateStatusText(t.runningTask.replace('{{mode}}', mode === 'merge' ? t.merge : mode === 'unzip' ? t.unzip : t.split));
     }
 
     try {
@@ -272,6 +278,12 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
 
         if (result.ok) {
           setProgressPercent(100); // 💯 최후의 방어선: 무조건 100% 완료 상태 강제 고정
+          if (result.data?.logs) {
+            setExecutionLogs(result.data.logs); // 📝 최후의 순간에 전체 로그를 확실히 박제!
+          }
+          if (result.data?.generatedItems) {
+            setGeneratedItems(result.data.generatedItems);
+          }
           if (onUpdateStatusText) {
             onUpdateStatusText(`[${t.done}] ${t.merge} ${t.done} (${elapsed}${t.timeSecShort}): ${outputNameBase}.${outputFormat}`);
           }
@@ -286,6 +298,45 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
           }
           setTimeout(() => {
             alert(`${t.mergeFailed}\n\n${err}`);
+          }, 200);
+        }
+      } else if (mode === 'unzip') {
+        // 🗂️ Unzip 모드: 압축 해제 실행!
+        const sourcePaths = sourceItems.map(item => item.path);
+
+        const appApi = (window as any).appApi;
+        if (!appApi || !appApi.extractArchive) {
+          throw new Error(t.connectUnzipEngineFailed);
+        }
+
+        const result = await appApi.extractArchive(
+          sourcePaths,
+          outputDirectory
+        );
+
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+        if (result.ok) {
+          setProgressPercent(100);
+          if (result.data?.logs) {
+            setExecutionLogs(result.data.logs); // 📝 최후의 순간에 전체 로그를 확실히 박제!
+          }
+          if (result.data?.generatedItems) {
+            setGeneratedItems(result.data.generatedItems);
+          }
+          if (onUpdateStatusText) {
+            onUpdateStatusText(`[${t.done}] ${t.unzip} ${t.done} (${elapsed}${t.timeSecShort})`);
+          }
+          setTimeout(() => {
+            alert(`${t.unzipSuccess}\n\n${t.locationLabel}: ${outputDirectory}\n${t.timeLabel}: ${elapsed}${t.timeSecShort}`);
+          }, 200);
+        } else {
+          const err = result.error?.message || t.unknownError;
+          if (onUpdateStatusText) {
+            onUpdateStatusText(`[${t.fatalError}] ${t.errorOccurredDuringUnzip || '압축 해제 실패'}`);
+          }
+          setTimeout(() => {
+            alert(`${t.unzipFailed}\n\n${err}`);
           }, 200);
         }
       } else {
@@ -307,9 +358,9 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
   };
 
   const isEffectiveProcessing = isProcessing && processingMode === mode;
-  const currentProgress = isEffectiveProcessing ? progressPercent : 0;
-  const currentLogs = isEffectiveProcessing ? executionLogs : [];
-  const currentElapsedTime = isEffectiveProcessing ? elapsedTime : 0;
+  const currentProgress = progressPercent;
+  const currentLogs = executionLogs;
+  const currentElapsedTime = elapsedTime;
 
   return (
     <ConverterPanelShell>
@@ -317,7 +368,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
         {/* 🛸 [원점 회귀 완료] 사용자의 엄명에 따라 외곽 판넬 박스 내부 최상단으로 복귀한 컨트롤 타워! */}
         <div className="titlebar-converter-header">
           <h2 className="titlebar-converter-title">
-            {mode === 'split' ? t.converterSplit : t.converterMerge}
+            {mode === 'split' ? t.converterSplit : mode === 'unzip' ? t.converterUnzip : t.converterMerge}
           </h2>
 
           <div className="converter-mode-switch" role="tablist" aria-label="Converter Mode">
@@ -338,6 +389,15 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
               type="button"
             >
               {t.split}
+            </button>
+            <button
+              className={`converter-mode-btn ${mode === 'unzip' ? 'active' : ''}`}
+              onClick={() => onChangeMode('unzip')}
+              role="tab"
+              aria-selected={mode === 'unzip'}
+              type="button"
+            >
+              {t.unzip}
             </button>
           </div>
         </div>
@@ -394,6 +454,7 @@ export const ConverterPanel: React.FC<ConverterPanelProps> = ({
             progressPercent={currentProgress}
             executionLogs={currentLogs}
             isProcessing={isEffectiveProcessing}
+            generatedItems={generatedItems}
             language={language} // 🌍 [전파] 언어 주입!
           />
         </div>
