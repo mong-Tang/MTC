@@ -1265,7 +1265,8 @@
   background: var(--bg-sidebar-inset);
   border: 1px solid rgba(var(--rgb-contrast), 0.08);
   border-radius: 8px;
-  height: 220px; /* 고정 높이 */
+  flex: 1; /* 🚀 자율 주행 팽창! */
+  min-height: 150px; /* 최소 높이 보장 */
   overflow: hidden;
 }
 

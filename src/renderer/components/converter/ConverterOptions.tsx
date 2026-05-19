@@ -142,7 +142,7 @@ export const ConverterOptions: React.FC<ConverterOptionsProps> = ({
       <div className="converter-file-list-header">
         <h3 className="converter-section-title">{t.optionsTitle}</h3>
       </div>
-      <div className="converter-option-stack">
+      <div className="converter-option-stack" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {mode !== 'unzip' && (
         <label className="converter-option-row">
           <span>{t.outputFormat}</span>
