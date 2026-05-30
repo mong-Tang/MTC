@@ -52,6 +52,8 @@
     "menu.view.imageFitWidth":  "↔️ Fit Width",
     "error.archive.converterRequired":  "This archive requires ZIP conversion: {name}",
     "menu.view.doublePage":  "👥 Double Page",
+    "menu.view.directionLtr":  "↔ Left to Right",
+    "menu.view.directionRtl":  "↔ Right to Left",
     "sidebar.emptyList":  "No archive or image files found.",
     "dialog.openImage.filterImage":  "Image Files",
     "sidebar.emptyFolder":  "No folder selected",

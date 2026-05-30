@@ -9,6 +9,8 @@ import { TRANSLATIONS, AppLanguage } from '../../i18n'; // 🌍 [글로벌] 다�
 interface TitleBarProps {
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
+  pageReadDirection: 'ltr' | 'rtl';
+  onChangePageReadDirection: (direction: 'ltr' | 'rtl') => void;
   themeMode: 'default' | 'light' | 'dark' | 'system' | 'hwasa';
   onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system' | 'hwasa') => void;
   
@@ -24,6 +26,8 @@ type ActiveMenuKey = 'view' | 'move' | 'edit';
 export const TitleBarControls: React.FC<TitleBarProps> = ({ 
   viewMode, 
   onChangeViewMode, 
+  pageReadDirection,
+  onChangePageReadDirection,
   themeMode, 
   onChangeThemeMode,
   workspaceMode = 'viewer',
@@ -234,6 +238,25 @@ export const TitleBarControls: React.FC<TitleBarProps> = ({
                       <span className="check-slot">✓</span>
                       <div className="item-label-group">
                         <span>👥 {t.menuDoublePage}</span> <span className="shortcut">2</span>
+                      </div>
+                    </button>
+                    <div className="ribbon-divider" />
+                    <button
+                      className={`ribbon-dropdown-item ${pageReadDirection === 'ltr' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangePageReadDirection('ltr'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>↔ {t.menuPageDirectionLtr}</span>
+                      </div>
+                    </button>
+                    <button
+                      className={`ribbon-dropdown-item ${pageReadDirection === 'rtl' ? 'active-mode' : ''}`}
+                      onClick={() => { onChangePageReadDirection('rtl'); setActiveMenu(null); }}
+                    >
+                      <span className="check-slot">✓</span>
+                      <div className="item-label-group">
+                        <span>↔ {t.menuPageDirectionRtl}</span>
                       </div>
                     </button>
                     <div className="ribbon-divider" />

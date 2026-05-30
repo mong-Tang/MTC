@@ -5,7 +5,7 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, type MenuItemCo
 
 import { registerIpcHandlers } from './ipc/ipc-handlers';
 import { setLocale, t, type Locale } from '../shared/i18n/i18n';
-import { defaultAppSettings, type AppSettings, type ImageFitMode, type PageViewMode } from '../shared/stores/app-settings';
+import { defaultAppSettings, type AppSettings, type ImageFitMode, type PageReadDirection, type PageViewMode } from '../shared/stores/app-settings';
 import type { RecentItem } from '../shared/stores/reading-state';
 import { getAppSettings, saveAppSettings } from './stores/app-settings-store';
 
@@ -37,6 +37,8 @@ type MenuAction =
   | 'edit-insert-after-current-page'
   | 'view-single-page'
   | 'view-double-page'
+  | 'view-direction-ltr'
+  | 'view-direction-rtl'
   | 'image-fit-auto'
   | 'image-fit-actual'
   | 'image-fit-width'
@@ -45,6 +47,7 @@ type ConverterMenuAction = 'select-source' | 'select-output' | 'start-conversion
 
 let currentSettings: AppSettings = defaultAppSettings;
 let currentPageViewMode: PageViewMode = currentSettings.pageViewMode;
+let currentPageReadDirection: PageReadDirection = currentSettings.pageReadDirection;
 let currentImageFitMode: ImageFitMode = currentSettings.imageFitMode;
 let currentShowSidebarList = currentSettings.showSidebarList;
 let currentViewerStatus = '';
@@ -531,6 +534,29 @@ function buildViewContextMenuItems(): MenuItemConstructorOptions[] {
             applyApplicationMenu();
             sendMenuAction('view-double-page');
           }
+        },
+        { type: 'separator' },
+        {
+          label: t('menu.view.directionLtr'),
+          type: 'checkbox',
+          checked: currentPageReadDirection === 'ltr',
+          click: () => {
+            currentPageReadDirection = 'ltr';
+            persistAppSettings({ pageReadDirection: 'ltr' }, 'context-view-direction-ltr');
+            applyApplicationMenu();
+            sendMenuAction('view-direction-ltr');
+          }
+        },
+        {
+          label: t('menu.view.directionRtl'),
+          type: 'checkbox',
+          checked: currentPageReadDirection === 'rtl',
+          click: () => {
+            currentPageReadDirection = 'rtl';
+            persistAppSettings({ pageReadDirection: 'rtl' }, 'context-view-direction-rtl');
+            applyApplicationMenu();
+            sendMenuAction('view-direction-rtl');
+          }
         }
       ]
     },
@@ -720,6 +746,7 @@ app.whenReady().then(async () => {
   currentSettings = await getAppSettings();
   currentLocale = currentSettings.locale;
   currentPageViewMode = currentSettings.pageViewMode;
+  currentPageReadDirection = currentSettings.pageReadDirection;
   currentImageFitMode = currentSettings.imageFitMode;
   currentShowSidebarList = currentSettings.showSidebarList;
   setLocale(currentLocale);
@@ -730,6 +757,7 @@ app.whenReady().then(async () => {
     currentSettings = await saveAppSettings(partial);
     currentLocale = currentSettings.locale;
     currentPageViewMode = currentSettings.pageViewMode;
+    currentPageReadDirection = currentSettings.pageReadDirection;
     currentImageFitMode = currentSettings.imageFitMode;
     currentShowSidebarList = currentSettings.showSidebarList;
     setLocale(currentLocale);

@@ -2,6 +2,7 @@ import type { Locale } from '../i18n/i18n';
 
 export type PageViewMode = 'single' | 'double';
 export type ImageFitMode = 'auto' | 'actual' | 'width' | 'height';
+export type PageReadDirection = 'ltr' | 'rtl';
 
 export interface WindowBounds {
   x?: number;
@@ -14,6 +15,7 @@ export interface AppSettings {
   locale: Locale;
   pageViewMode: PageViewMode;
   imageFitMode: ImageFitMode;
+  pageReadDirection: PageReadDirection;
   showSidebarList: boolean;
   sidebarWidth: number;
   windowBounds: WindowBounds;
@@ -25,6 +27,7 @@ export const defaultAppSettings: AppSettings = {
   locale: 'ko',
   pageViewMode: 'double', // 📐 [유저 최종 선호] 양면 보기 기본화!
   imageFitMode: 'width',  // 📐 [유저 최종 선호] 가로 폭 맞춤 기본화!
+  pageReadDirection: 'ltr',  // 📖 [기본 진행 방향] 좌에서 우로 보기
   showSidebarList: true, // 📐 [상태 보존] 사이드바 스플릿이 바로 보이도록 활성 상태로 격상!
   sidebarWidth: 230, // 📐 [황금비 초기간격] 기존 180에서 종료 시점의 230으로 격상!
   windowBounds: {

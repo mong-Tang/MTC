@@ -44,7 +44,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'TitleBarControls': {
     label: 'TitleBarControls',
     desc: '타이틀바 윈도우 제어 & 리본 메뉴',
-    render: () => <div style={{ height: '32px', background:'rgba(0,0,0,0.4)', position:'fixed', top:0, width:'100%' }}><TitleBarControls viewMode="1" onChangeViewMode={()=>{}} themeMode="dark" onChangeThemeMode={()=>{}} /></div>
+    render: () => <div style={{ height: '32px', background:'rgba(0,0,0,0.4)', position:'fixed', top:0, width:'100%' }}><TitleBarControls viewMode="1" onChangeViewMode={()=>{}} pageReadDirection="ltr" onChangePageReadDirection={()=>{}} themeMode="dark" onChangeThemeMode={()=>{}} /></div>
   },
   'StatusBar': {
     label: 'StatusBar',
@@ -167,7 +167,7 @@ const COMPONENTS: Record<string, { label: string, desc: string, render: () => Re
   'ContextMenu': {
     label: 'ContextMenu',
     desc: '우클릭 플로팅 컨텍스트 메뉴',
-    render: () => <div style={{ height: '100vh' }}><ContextMenu show={true} x={50} y={50} onClose={()=>{}} imageFitMode="auto" onChangeImageFitMode={()=>{}} viewMode="2" onChangeViewMode={()=>{}} themeMode="dark" onChangeThemeMode={()=>{}} /></div>
+    render: () => <div style={{ height: '100vh' }}><ContextMenu show={true} x={50} y={50} onClose={()=>{}} imageFitMode="auto" onChangeImageFitMode={()=>{}} viewMode="2" onChangeViewMode={()=>{}} pageReadDirection="ltr" onChangePageReadDirection={()=>{}} themeMode="dark" onChangeThemeMode={()=>{}} /></div>
   },
   'SidebarContextMenu': {
     label: 'SidebarContextMenu',

@@ -50,6 +50,8 @@ type MenuAction =
   | 'edit-insert-after-current-page'
   | 'view-single-page'
   | 'view-double-page'
+  | 'view-direction-ltr'
+  | 'view-direction-rtl'
   | 'image-fit-auto'
   | 'image-fit-actual'
   | 'image-fit-width'

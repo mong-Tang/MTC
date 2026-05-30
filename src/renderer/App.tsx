@@ -44,11 +44,13 @@ interface ViewerPage {
 }
 
 const VIEW_MODE_STORAGE_KEY = 'mtc:viewMode';
+const PAGE_READ_DIRECTION_STORAGE_KEY = 'mtc:pageReadDirection';
 const PAGE_MEMORY_STORAGE_KEY = 'mtc:lastPageByPath';
 const THEME_MODE_STORAGE_KEY = 'mtc:themeMode';
 const LANGUAGE_STORAGE_KEY = 'mtc:language'; // 📡 [글로벌] 언어 코드 메모리 주소
 type ThemeMode = 'default' | 'light' | 'dark' | 'system' | 'hwasa'; /* 🌸 [유저 특명] 화사(Hwasa) 차원 신설! */
 type WorkspaceMode = 'viewer' | 'converter';
+type PageReadDirection = 'ltr' | 'rtl';
 
 function readSavedLanguage(): AppLanguage {
   const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -58,6 +60,11 @@ function readSavedLanguage(): AppLanguage {
 function readSavedViewMode(): '1' | '2' {
   const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
   return saved === '2' ? '2' : '1';
+}
+
+function readSavedPageReadDirection(): PageReadDirection {
+  const saved = localStorage.getItem(PAGE_READ_DIRECTION_STORAGE_KEY);
+  return saved === 'rtl' ? 'rtl' : 'ltr';
 }
 
 function readSavedPageMemory(): Record<string, number> {
@@ -111,6 +118,7 @@ function App() {
   // 🎬 [신규] 콘텐츠 시연 모드 및 뷰 모드(1쪽/2쪽) 추적기 탑재!
   const [hasActiveFile, setHasActiveFile] = useState(false);
   const [viewMode, setViewMode] = useState<'1' | '2'>(() => readSavedViewMode()); // 기본값: 저장값 우선
+  const [pageReadDirection, setPageReadDirection] = useState<PageReadDirection>(() => readSavedPageReadDirection());
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readSavedThemeMode());
   const [imageFitMode, setImageFitMode] = useState<'auto' | 'actual' | 'width' | 'height'>('auto'); // 🔍 [신규] 스케일 추적기 탑재!
   const [language, setLanguage] = useState<AppLanguage>(() => readSavedLanguage()); // 🌍 [글로벌] 다국어 뇌관 가동!
@@ -432,7 +440,10 @@ function App() {
   const handleDeletePage = useCallback(async (target: 'left' | 'right') => {
     if (!hasActiveFile || !zipPath || pages.length === 0) return;
 
-    const targetIdx = target === 'right' ? currentIndex + 1 : currentIndex;
+    const isRightToLeftSpread = viewMode === '2' && pageReadDirection === 'rtl';
+    const targetIdx = target === 'right'
+      ? currentIndex + (isRightToLeftSpread ? 0 : 1)
+      : currentIndex + (isRightToLeftSpread ? 1 : 0);
     const targetPage = pages[targetIdx];
 
     if (!targetPage) {
@@ -489,7 +500,7 @@ function App() {
     } finally {
       setIsAppLoading(false);
     }
-  }, [hasActiveFile, zipPath, pages, currentIndex, loadZipIntoViewer]);
+  }, [hasActiveFile, zipPath, pages, currentIndex, loadZipIntoViewer, viewMode, pageReadDirection]);
 
   // 🚀 [백엔드 마스터 로더] 앱 구동 즉시 디스크 금고에서 최후의 설정을 가져와 투입합니다.
   useEffect(() => {
@@ -508,6 +519,7 @@ function App() {
             document.documentElement.setAttribute('data-theme', settings.theme);
           }
           if (settings.pageViewMode) setViewMode(settings.pageViewMode === 'double' ? '2' : '1');
+          if (settings.pageReadDirection) setPageReadDirection(settings.pageReadDirection === 'rtl' ? 'rtl' : 'ltr');
           if (settings.imageFitMode) setImageFitMode(settings.imageFitMode);
         }
       } catch (err) {
@@ -560,6 +572,7 @@ function App() {
       showSidebarList: isSidebarOpen,
       theme: themeMode,
       pageViewMode: viewMode === '2' ? 'double' : 'single' as 'single' | 'double',
+      pageReadDirection,
       imageFitMode
     };
     
@@ -570,7 +583,23 @@ function App() {
     appApi.updateAppSettings(payload).catch((err: any) => {
       console.error('[Settings] Persistent auto-save failed:', err);
     });
-  }, [sidebarWidth, isSidebarOpen, themeMode, viewMode, imageFitMode]);
+  }, [sidebarWidth, isSidebarOpen, themeMode, viewMode, pageReadDirection, imageFitMode]);
+
+  useEffect(() => {
+    localStorage.setItem(PAGE_READ_DIRECTION_STORAGE_KEY, pageReadDirection);
+  }, [pageReadDirection]);
+
+  useEffect(() => {
+    const appApi = (window as any).appApi;
+    if (!appApi?.onMenuAction) return;
+
+    return appApi.onMenuAction((action: string) => {
+      if (action === 'view-single-page') setViewMode('1');
+      if (action === 'view-double-page') setViewMode('2');
+      if (action === 'view-direction-ltr') setPageReadDirection('ltr');
+      if (action === 'view-direction-rtl') setPageReadDirection('rtl');
+    });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(PAGE_MEMORY_STORAGE_KEY, JSON.stringify(pageMemoryByPath));
@@ -1168,7 +1197,7 @@ function App() {
           packets.push({ filePath: nextItem.path, entryName: '__IMAGE_SINGLE_ENTRY__' });
         }
       }
-      return packets;
+      return pageReadDirection === 'rtl' ? [...packets].reverse() : packets;
     }
 
     // ZIP 압축파일 다중 열람 또는 단면 모드인 경우
@@ -1176,11 +1205,15 @@ function App() {
       ? [pages[currentIndex], pages[currentIndex + 1]].filter(Boolean)
       : [pages[currentIndex]].filter(Boolean);
 
-    return rawActivePages.map(p => ({
+    const activePages = pageReadDirection === 'rtl' && viewMode === '2'
+      ? [...rawActivePages].reverse()
+      : rawActivePages;
+
+    return activePages.map(p => ({
       filePath: zipPath,
       entryName: p.entryName
     }));
-  }, [zipPath, pages, currentIndex, viewMode, isLooseImageMode, libraryItems, currentLibraryIndex]);
+  }, [zipPath, pages, currentIndex, viewMode, pageReadDirection, isLooseImageMode, libraryItems, currentLibraryIndex]);
 
   // 🎹 [유저 특명] 키보드 화살표 & 🎡 마우스 휠 지능형 텔레파시 시스템 연동!
   useEffect(() => {
@@ -1328,6 +1361,8 @@ function App() {
       <TitleBarControls 
         viewMode={viewMode}
         onChangeViewMode={setViewMode}
+        pageReadDirection={pageReadDirection}
+        onChangePageReadDirection={setPageReadDirection}
         themeMode={themeMode}
         onChangeThemeMode={setThemeMode}
         // 🚀 [New] Global Workspace Integration
@@ -1466,6 +1501,8 @@ function App() {
           show={contextMenu.show} 
           viewMode={viewMode}
           onChangeViewMode={setViewMode}
+          pageReadDirection={pageReadDirection}
+          onChangePageReadDirection={setPageReadDirection}
           themeMode={themeMode}
           onChangeThemeMode={setThemeMode}
           imageFitMode={imageFitMode} /* 🔍 [전송] 현재 스케일 */

@@ -170,6 +170,8 @@ export const TRANSLATIONS = {
     menuFitHeight: '높이 맞춤',
     menuSinglePage: '1쪽 보기',
     menuDoublePage: '2쪽 보기',
+    menuPageDirectionLtr: '좌에서 우로 보기',
+    menuPageDirectionRtl: '우에서 좌로 보기',
 
     menuThemeDefault: '기본설정',
     menuThemeHwasa: '화사함',
@@ -363,6 +365,8 @@ export const TRANSLATIONS = {
     menuFitHeight: 'Fit Height',
     menuSinglePage: '1-Page View',
     menuDoublePage: '2-Page View',
+    menuPageDirectionLtr: 'Left to Right',
+    menuPageDirectionRtl: 'Right to Left',
 
     menuThemeDefault: 'Default (Warm Mocha)',
     menuThemeHwasa: 'Hwasa (Bright Beige)',

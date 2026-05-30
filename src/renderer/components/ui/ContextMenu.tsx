@@ -8,6 +8,8 @@ interface ContextMenuProps {
   onClose: () => void;
   viewMode: '1' | '2';
   onChangeViewMode: (mode: '1' | '2') => void;
+  pageReadDirection: 'ltr' | 'rtl';
+  onChangePageReadDirection: (direction: 'ltr' | 'rtl') => void;
   themeMode: 'default' | 'light' | 'dark' | 'system' | 'hwasa';
   onChangeThemeMode: (mode: 'default' | 'light' | 'dark' | 'system' | 'hwasa') => void;
   imageFitMode: 'auto' | 'actual' | 'width' | 'height'; // 🔍 [신규] 스케일 모드 수신
@@ -18,7 +20,7 @@ interface ContextMenuProps {
 }
 
 export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  x, y, show, onClose, viewMode, onChangeViewMode, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode, onDeletePage,
+  x, y, show, onClose, viewMode, onChangeViewMode, pageReadDirection, onChangePageReadDirection, themeMode, onChangeThemeMode, imageFitMode, onChangeImageFitMode, onDeletePage,
   language = 'ko' /* 🌍 기본 한국어 안전 락온 */
 }) => {
   const t = TRANSLATIONS[language]; // ⚡ 실시간 다국어 팩 번역기 구동!
@@ -206,6 +208,26 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         <span className="check-slot">✓</span>
         <div className="item-label-group">
           <span>👥 {t.menuDoublePage}</span> <span className="shortcut">2</span>
+        </div>
+      </button>
+
+      <div className="ribbon-divider" />
+      <button
+        className={`context-item ${pageReadDirection === 'ltr' ? 'active-mode' : ''}`}
+        onClick={() => { onChangePageReadDirection('ltr'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>↔ {t.menuPageDirectionLtr}</span>
+        </div>
+      </button>
+      <button
+        className={`context-item ${pageReadDirection === 'rtl' ? 'active-mode' : ''}`}
+        onClick={() => { onChangePageReadDirection('rtl'); onClose(); }}
+      >
+        <span className="check-slot">✓</span>
+        <div className="item-label-group">
+          <span>↔ {t.menuPageDirectionRtl}</span>
         </div>
       </button>
 

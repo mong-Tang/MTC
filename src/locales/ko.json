@@ -52,6 +52,8 @@
     "menu.view.imageFitWidth":  "↔️ 폭 맞춤",
     "error.archive.converterRequired":  "이 압축파일은 ZIP 변환이 필요합니다: {name}",
     "menu.view.doublePage":  "👥 2쪽 보기",
+    "menu.view.directionLtr":  "↔ 좌에서 우로 보기",
+    "menu.view.directionRtl":  "↔ 우에서 좌로 보기",
     "sidebar.emptyList":  "표시할 압축파일 또는 이미지 파일이 없습니다.",
     "dialog.openImage.filterImage":  "이미지 파일",
     "sidebar.emptyFolder":  "선택된 폴더 없음",
